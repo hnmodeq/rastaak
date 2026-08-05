@@ -1,0 +1,31 @@
+// RASTAAK — Prisma schema (Neon serverless Postgres)
+//
+// Usage:
+//   1. Set DATABASE_URL (Neon pooled connection string) in .env / Vercel env vars
+//   2. pnpm db:push        (create tables)   — or `pnpm db:generate` to just regen the client
+//   3. pnpm db:studio      (browse the DB)
+//
+// The landing page renders without a database; the DB powers /api/contact.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  message   String?
+  source    String   @default("landing-page")
+  createdAt DateTime @default(now())
+
+  @@map("contact_submissions")
+  @@index([email])
+  @@index([createdAt])
+}
