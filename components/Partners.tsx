@@ -9,21 +9,20 @@ const PARTNERS = [
   { name: "ORBITWORKS", icon: "M12 2l7 3v8l-7 3-7-3V5l7-3z" },
 ];
 
-export default function Partners() {
+export default function شرکا() {
   return (
     <section className="section partners on-light" id="partners">
       <div className="container">
         <p className="eyebrow reveal" style={{ justifyContent: "center", display: "flex" }}>
-          Partners
+          شرکا
         </p>
         <h2 className="h2 reveal reveal-d1">
-          Partnered with the world&rsquo;s
+          همراه با برترین
           <br />
-          leading technology providers
+          ارائه‌دهندگان فناوری جهان
         </h2>
         <p className="lede reveal reveal-d2">
-          Built to work seamlessly across the platforms enterprises rely on,
-          giving teams a reliable, unified experience.
+          برای کار یکپارچه با پلتفرم‌های سازمانی ساخته شده؛ تجربه‌ای قابل اعتماد و یکپارچه.
         </p>
         <div className="partner-grid">
           {PARTNERS.map((p, i) => (

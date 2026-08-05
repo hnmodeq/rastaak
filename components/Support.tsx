@@ -1,22 +1,20 @@
-const ITEMS = ["24/7 real engineers", "No ticket queue", "Sub-15 min response"];
+const ITEMS = ["پشتیبانی واقعی ۲۴/۷", "بدون صف تیکت", "پاسخ‌گویی کمتر از ۱۵ دقیقه"];
 
-export default function Support() {
+export default function پشتیبانی() {
   return (
     <section className="section support">
       <div className="container">
         <div className="support-inner">
           <p className="eyebrow reveal" style={{ justifyContent: "center", display: "flex" }}>
-            Support
+            پشتیبانی
           </p>
           <h2 className="h2 reveal reveal-d1">
-            One Platform. One Partner.
+            یک پلتفرم؛ یک شریک.
             <br />
-            <span className="grad">Experts on standby.</span>
+            <span className="grad">متخصصان همیشه آماده‌اند.</span>
           </h2>
           <p className="lede reveal reveal-d2">
-            No ticket queue. 24/7 support from engineers who understand
-            distributed data access, cloud and edge compute, and high-performance
-            workloads. Real humans. Real answers.
+            بدون صف تیکت؛ پشتیبانی ۲۴/۷ از مهندسانی که دسترسی توزیع‌شده به داده، ابر و محاسبات لبه را می‌شناسند. انسان‌های واقعی، پاسخ‌های واقعی.
           </p>
           <ul className="support-list reveal reveal-d3">
             {ITEMS.map((item) => (
@@ -29,7 +27,7 @@ export default function Support() {
             ))}
           </ul>
           <a href="#contact" className="btn btn-primary btn-lg reveal reveal-d4">
-            Talk to an expert
+            گفت‌وگو با متخصص
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>

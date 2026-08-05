@@ -2,20 +2,20 @@ import { assetUrl } from "@/lib/images";
 
 const COLUMNS = [
   {
-    title: "Product",
-    links: ["Platform", "Pricing", "Try it free", "What's new", "Security"],
+    title: "محصول",
+    links: ["پلتفرم", "قیمت‌گذاری", "امتحان رایگان", "تازه‌ها", "امنیت"],
   },
   {
-    title: "Solutions",
-    links: ["AI & Machine Learning", "Backup & Recovery", "High-Performance", "Surveillance", "Virtual Desktop"],
+    title: "راهکارها",
+    links: ["هوش مصنوعی و یادگیری ماشین", "پشتیبان‌گیری و بازیابی", "عملکرد بالا", "نظارت تصویری", "دسکتاپ مجازی"],
   },
   {
-    title: "Resources",
-    links: ["Documentation", "Blog", "Case studies", "Events & webinars", "API reference"],
+    title: "منابع",
+    links: ["مستندات", "وبلاگ", "مطالعات موردی", "رویدادها و وبینارها", "مرجع API"],
   },
   {
-    title: "Company",
-    links: ["About", "Careers", "Press", "Contact", "Partners"],
+    title: "شرکت",
+    links: ["درباره ما", "فرصت‌های شغلی", "رسانه", "تماس با ما", "شرکا"],
   },
 ];
 
@@ -51,8 +51,7 @@ export default function Footer() {
               </span>
             </a>
             <p>
-              Data simplified anywhere at any scale. A unified global file
-              platform across data centers, edge, and cloud.
+              داده‌ها را در هر مکان و هر مقیاسی ساده مدیریت کنید؛ پلتفرمی یکپارچه در دیتاسنتر، لبه و ابر.
             </p>
             <div className="footer-social">
               {SOCIALS.map((s) => (
@@ -80,9 +79,9 @@ export default function Footer() {
         <div className="footer-bottom">
           <p>&copy; {new Date().getFullYear()} RASTAAK, Inc. All rights reserved.</p>
           <div className="legal">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Cookies</a>
+            <a href="#">حریم خصوصی</a>
+            <a href="#">قوانین</a>
+            <a href="#">کوکی‌ها</a>
           </div>
         </div>
       </div>

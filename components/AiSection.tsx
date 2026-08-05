@@ -1,9 +1,9 @@
 import { assetUrl } from "@/lib/images";
 
 const POINTS = [
-  "From large-scale AI in the cloud to real-time video analytics",
-  "Medical imaging, genomics, and autonomous-driving pipelines",
-  "The enterprise-grade platform for users, machines, devices, and AI",
+  "از هوش مصنوعی ابری تا تحلیل ویدیویی بلادرنگ",
+  "تصویربرداری پزشکی، ژنومیک و سامانه‌های رانندگی خودران",
+  "پلتفرم سازمانی برای کاربران، ماشین‌ها، دستگاه‌ها و هوش مصنوعی",
 ];
 
 export default function AiSection() {
@@ -14,29 +14,29 @@ export default function AiSection() {
           <div className="ai-visual reveal">
             <div className="frame">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={assetUrl("ai.jpg")} alt="Abstract AI neural network visualization" />
+              <img src={assetUrl("ai.jpg")} alt="تصویر انتزاعی شبکه عصبی هوش مصنوعی" />
             </div>
             <div className="ai-badge">
               <div>
                 <div className="num">3.2x</div>
-                <div className="lbl">faster AI training</div>
+                <div className="lbl">آموزش سریع‌تر هوش مصنوعی</div>
               </div>
               <div className="sep" />
               <div>
                 <div className="num">100k</div>
-                <div className="lbl">GPU hours / wk</div>
+                <div className="lbl">ساعت GPU در هفته</div>
               </div>
               <div className="sep" />
               <div>
                 <div className="num">&lt;1ms</div>
-                <div className="lbl">checkpoint latency</div>
+                <div className="lbl">تأخیر ثبت وضعیت</div>
               </div>
             </div>
           </div>
           <div className="ai-copy">
-            <p className="eyebrow reveal">Enterprise AI</p>
+            <p className="eyebrow reveal">هوش مصنوعی سازمانی</p>
             <h2 className="h2 reveal reveal-d1">
-              Fueling the future of <span className="grad">enterprise AI</span>
+              Fueling the future of <span className="grad">هوش مصنوعی سازمانی</span>
             </h2>
             <p className="lede reveal reveal-d2">
               Turn enterprise data into a foundation for AI reasoning — unifying

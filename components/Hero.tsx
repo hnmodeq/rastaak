@@ -73,7 +73,7 @@ export default function Hero() {
       <div className="orb orb-o orb-c" style={{ width: "44rem", height: "44rem", top: "38%", left: "38%" }} aria-hidden="true" />
 
       {/* hero image slider */}
-      <div className="hero-slider" ref={sliderRef} aria-label="Featured imagery">
+      <div className="hero-slider" ref={sliderRef} aria-label="تصاویر ویژه">
         {SLIDES.map((src, i) => (
           <div key={src} className={`hero-slide${i === current ? " active" : ""}`}>
             <div className="slide-img" style={{ backgroundImage: `url(${assetUrl(src)})` }} />
@@ -96,28 +96,26 @@ export default function Hero() {
       <div className="container">
         <div className="hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow reveal">The data platform for the AI era</p>
+            <p className="eyebrow reveal">پلتفرم داده برای عصر هوش مصنوعی</p>
             <h1 className="h1 reveal reveal-d1">
-              Every Byte.
+              هر بایت.
               <br />
-              <span className="grad">Every Workload.</span>
+              <span className="grad">هر بارکاری.</span>
               <br />
-              One Platform.
+              یک پلتفرم.
             </h1>
             <p className="hero-sub reveal reveal-d2">
-              A unified global file platform built for the most demanding
-              enterprise workloads — across data centers, edge, and cloud. Move
-              faster, scale further, and work without limits.
+              پلتفرم یکپارچه فایل برای سخت‌ترین بارهای سازمانی؛ در دیتاسنتر، لبه و ابر. سریع‌تر حرکت کنید، گسترده‌تر مقیاس دهید و بدون محدودیت کار کنید.
             </p>
             <div className="hero-cta reveal reveal-d3">
               <a href="#demo" className="btn btn-primary btn-lg">
-                Try RASTAAK
+                امتحان رایگان راستاک
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
               </a>
               <a href="#contact" className="btn btn-ghost btn-lg">
-                Talk to sales
+                گفت‌وگو با کارشناسان
               </a>
             </div>
             <div className="hero-meta reveal reveal-d4">
@@ -125,21 +123,21 @@ export default function Hero() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" />
                 </svg>
-                SOC 2 Type II
+                استاندارد امنیتی SOC 2
               </span>
               <span className="item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 17l6-6 4 4 8-8" />
                   <path d="M14 7h7v7" />
                 </svg>
-                99.99% uptime SLA
+                تضمین دسترس‌پذیری ۹۹.۹۹٪
               </span>
               <span className="item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="9" />
                   <path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z" />
                 </svg>
-                56 countries
+                ۵۶ کشور
               </span>
             </div>
           </div>
@@ -147,7 +145,7 @@ export default function Hero() {
           <div className="hero-visual reveal reveal-d2">
             <div className="frame">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={assetUrl("hero.jpg")} alt="Modern data center with blue and orange lighting" />
+              <img src={assetUrl("hero.jpg")} alt="دیتاسنتر مدرن با نورپردازی آبی و نارنجی" />
             </div>
             <div className="float-card fc1">
               <span className="dot" />
@@ -160,7 +158,7 @@ export default function Hero() {
               <span className="dot blue" />
               <div>
                 <b>1.2M IOPS</b>
-                <small>mixed workloads</small>
+                <small>بارهای کاری ترکیبی</small>
               </div>
             </div>
           </div>
@@ -168,16 +166,16 @@ export default function Hero() {
 
         <div className="press-row">
           <a href="#" className="press-card reveal reveal-d3">
-            <span className="tag">Press Release</span>
+            <span className="tag">اخبار</span>
             <div>
-              <b>RASTAAK and NorthGrid deliver a cloud-bridge architecture that bypasses the hardware crunch</b>
-              <span>Industry-first architecture to eliminate the 4x &ldquo;flash tax&rdquo; on enterprise storage.</span>
+              <b>راستاک و نورث‌گرید معماری ابری نوینی برای عبور از محدودیت سخت‌افزار معرفی کردند</b>
+              <span>معماری پیشرو برای کاهش هزینه‌های زیرساخت ذخیره‌سازی سازمانی.</span>
             </div>
           </a>
           <a href="#" className="press-card reveal reveal-d4">
-            <span className="tag">Press Release</span>
+            <span className="tag">اخبار</span>
             <div>
-              <b>RASTAAK announces NeuralShield&trade; and an ISV partnership with DataSphere</b>
+              <b>راستاک از نسل جدید امنیت هوشمند داده رونمایی کرد partnership with DataSphere</b>
               <span>AI-driven ransomware detection and native integration for the modern data stack.</span>
             </div>
           </a>

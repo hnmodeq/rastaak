@@ -52,11 +52,11 @@ export default function CaseStudies() {
     <section className="section cases" id="cases">
       <div className="container">
         <div className="features-head">
-          <p className="eyebrow reveal">Customer stories</p>
+          <p className="eyebrow reveal">داستان مشتریان</p>
           <h2 className="h2 reveal reveal-d1">
             Real teams. Real results,
             <br />
-            <span className="grad">with RASTAAK.</span>
+            <span className="grad">با راستاک.</span>
           </h2>
         </div>
         <div className="case-grid">

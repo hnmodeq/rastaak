@@ -1,38 +1,38 @@
 const RESOURCES = [
   {
-    tag: "Press Release",
+    tag: "اخبار",
     icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6M9 13h6M9 17h4",
-    title: "RASTAAK launches NeuralShield&trade; to deliver real-time AI-driven ransomware detection",
-    body: "Deep file inspection at the point of write stops attacks before data is encrypted.",
-    link: "Read more",
+    title: "راستاک NeuralShield را برای شناسایی بلادرنگ باج‌افزار معرفی می‌کند",
+    body: "بازرسی عمیق فایل هنگام نوشتن، حمله را پیش از رمزنگاری داده متوقف می‌کند",
+    link: "بیشتر بخوانید",
     orange: false,
   },
   {
-    tag: "Webinar",
+    tag: "وبینار",
     icon: "M2 5h20v14H2zM10 9l5 3-5 3z",
-    title: "On-demand: eliminating the gap between ransomware detection and recovery",
-    body: "How AI-driven detection and smart switching stop attacks at the source.",
-    link: "Watch now",
+    title: "تماشای درخواستی: حذف فاصله میان شناسایی و بازیابی باج‌افزار",
+    body: "چگونه شناسایی هوشمند و سوییچ خودکار حملات را از مبدأ متوقف می‌کنند",
+    link: "تماشا کنید",
     orange: true,
   },
   {
-    tag: "Blog",
+    tag: "وبلاگ",
     icon: "M12 12a10 10 0 1 1 0-20 10 10 0 0 1 0 20zM12 6v6l4 2",
-    title: "Why the hardware crunch is really a storage opportunity",
-    body: "Cloud-native relief for the enterprise hardware supply chain crisis.",
-    link: "Read more",
+    title: "چرا چالش سخت‌افزار فرصتی برای ذخیره‌سازی است",
+    body: "راهکاری بومی ابر برای بحران زنجیره تأمین سخت‌افزار سازمانی.",
+    link: "بیشتر بخوانید",
     orange: false,
   },
 ];
 
-export default function Resources() {
+export default function منابع() {
   return (
     <section className="section resources" id="resources">
       <div className="container">
         <div className="features-head">
-          <p className="eyebrow reveal">Resources</p>
+          <p className="eyebrow reveal">منابع</p>
           <h2 className="h2 reveal reveal-d1">
-            Latest from <span className="grad">RASTAAK</span>
+            آخرین مطالب <span className="grad">RASTAAK</span>
           </h2>
         </div>
         <div className="res-grid">

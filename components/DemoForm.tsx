@@ -27,16 +27,16 @@ export default function DemoForm() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok) {
-        setStatus({ kind: "ok", message: "Thanks! We'll be in touch within one business day." });
+        setStatus({ kind: "ok", message: "سپاسگزاریم! حداکثر تا یک روز کاری با شما تماس می‌گیریم." });
         form.reset();
       } else {
         setStatus({
           kind: "err",
-          message: json.message || "Something went wrong. Please try again.",
+          message: json.message || "خطایی رخ داد. دوباره تلاش کنید.",
         });
       }
     } catch {
-      setStatus({ kind: "err", message: "Network error. Please try again." });
+      setStatus({ kind: "err", message: "خطای شبکه. دوباره تلاش کنید." });
     } finally {
       setSending(false);
     }
@@ -44,30 +44,30 @@ export default function DemoForm() {
 
   return (
     <form className="demo-card" onSubmit={onSubmit}>
-      <h3>Request a demo</h3>
+      <h3>درخواست دموی محصول</h3>
       <p className="sub">
-        See the platform in action with your own workloads. No commitment.
+        پلتفرم را با بارهای کاری خود ببینید؛ بدون تعهد.
       </p>
 
       <div className="form-field">
-        <label htmlFor="df-name">Full name</label>
-        <input id="df-name" name="name" className="form-input" required placeholder="Jane Doe" />
+        <label htmlFor="df-name">نام و نام خانوادگی</label>
+        <input id="df-name" name="name" className="form-input" required placeholder="نام شما" />
       </div>
       <div className="form-field">
-        <label htmlFor="df-email">Work email</label>
+        <label htmlFor="df-email">ایمیل کاری</label>
         <input id="df-email" name="email" type="email" className="form-input" required placeholder="jane@company.com" />
       </div>
       <div className="form-field">
-        <label htmlFor="df-company">Company</label>
-        <input id="df-company" name="company" className="form-input" placeholder="Acme Inc." />
+        <label htmlFor="df-company">شرکت</label>
+        <input id="df-company" name="company" className="form-input" placeholder="نام شرکت" />
       </div>
       <div className="form-field">
-        <label htmlFor="df-message">What are you trying to solve?</label>
-        <textarea id="df-message" name="message" className="form-input" placeholder="Tell us about your data workloads…" />
+        <label htmlFor="df-message">چه مسئله‌ای را می‌خواهید حل کنید؟</label>
+        <textarea id="df-message" name="message" className="form-input" placeholder="درباره بارهای کاری داده خود بنویسید…" />
       </div>
 
       <button type="submit" className="btn btn-primary btn-lg" disabled={sending} style={{ width: "100%" }}>
-        {sending ? "Sending…" : "Request demo"}
+        {sending ? "در حال ارسال…" : "درخواست دمو"}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
           <path d="M5 12h14M13 6l6 6-6 6" />
         </svg>
@@ -79,8 +79,7 @@ export default function DemoForm() {
         </div>
       )}
       <p className="form-note">
-        Saved to your Neon Postgres database via Prisma. If the database isn&rsquo;t
-        configured yet, this endpoint returns a friendly notice instead.
+        اطلاعات از طریق Prisma در پایگاه داده Neon ذخیره می‌شود.
       </p>
     </form>
   );

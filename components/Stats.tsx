@@ -1,7 +1,7 @@
 const STATS = [
-  { target: 7, suffix: "EB", label: "Capacity shipped" },
-  { target: 56, suffix: "", label: "Countries" },
-  { target: 95, suffix: "", label: "Net Promoter Score" },
+  { target: 7, suffix: "EB", label: "ظرفیت ارائه‌شده" },
+  { target: 56, suffix: "", label: "کشورها" },
+  { target: 95, suffix: "", label: "امتیاز رضایت مشتری" },
 ];
 
 export default function Stats() {
@@ -10,10 +10,10 @@ export default function Stats() {
       <div className="container">
         <div className="stats-head">
           <p className="eyebrow reveal" style={{ justifyContent: "center", display: "flex" }}>
-            Proven at global scale
+            اثبات‌شده در مقیاس جهانی
           </p>
           <h2 className="h2 reveal reveal-d1">
-            Supporting thousands of data-intensive
+            پشتیبانیing thousands of data-intensive
             <br />
             teams worldwide
           </h2>

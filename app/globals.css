@@ -568,3 +568,31 @@ textarea.form-input{resize:vertical;min-height:10rem}
   .h1 span.grad,.h2 span.grad,.h3 span.grad,.case-stat,.stat-card .num,
   .marquee-track,.float-card{animation:none !important}
 }
+
+/* RASTAAK Persian / RTL presentation overrides */
+html[dir="rtl"] body{font-family:'Vazirmatn','Montserrat',Tahoma,Arial,sans-serif;direction:rtl}
+html[dir="rtl"] .h1,html[dir="rtl"] .h2,html[dir="rtl"] .h3,html[dir="rtl"] .lede,html[dir="rtl"] .hero-sub{letter-spacing:0}
+html[dir="rtl"] .eyebrow{letter-spacing:0;text-transform:none}
+html[dir="rtl"] .eyebrow::before{order:2}
+html[dir="rtl"] .hero-copy,.on-light{text-align:right}
+html[dir="rtl"] .hero-cta,html[dir="rtl"] .hero-meta,html[dir="rtl"] .cta-btns{justify-content:flex-start}
+html[dir="rtl"] .hero-meta .item{direction:rtl}
+html[dir="rtl"] .btn svg{transform:scaleX(-1)}
+html[dir="rtl"] .nav-inner{direction:rtl}
+html[dir="rtl"] .nav-links{direction:rtl}
+html[dir="rtl"] .nav-right{direction:rtl}
+html[dir="rtl"] .mobile-menu{direction:rtl;text-align:right}
+html[dir="rtl"] .mobile-menu .btn{align-self:stretch}
+html[dir="rtl"] .marquee-track{animation-name:scroll-rtl}
+@keyframes scroll-rtl{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+html[dir="rtl"] .press-card,html[dir="rtl"] .float-card,html[dir="rtl"] .cta-feat{direction:rtl}
+html[dir="rtl"] .case-quote{border-left:0;border-right:2px solid var(--orange);padding-left:0;padding-right:1.6rem}
+html[dir="rtl"] .form-input{text-align:right}
+html[dir="rtl"] .form-field label{display:block;text-align:right}
+html[dir="rtl"] .footer{text-align:right}
+html[dir="rtl"] .footer-bottom{direction:rtl}
+@media(max-width:900px){html[dir="rtl"] .hero-copy{text-align:right}}
+html[dir="rtl"]{font-size:62.5%}
+html[dir="rtl"] input,html[dir="rtl"] textarea{font-family:'Vazirmatn','Montserrat',Tahoma,sans-serif}
+html[dir="rtl"] .platform-copy,html[dir="rtl"] .ai-copy,html[dir="rtl"] .features-head,html[dir="rtl"] .stats-head{text-align:right}
+html[dir="rtl"] .on-light .eyebrow::before{background:var(--grad-orange)}

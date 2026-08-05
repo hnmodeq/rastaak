@@ -1,26 +1,23 @@
 import { assetUrl } from "@/lib/images";
 
-const FEATS = ["SMB, NFS, S3 & more", "Global namespace", "Real-time analytics", "Zero-downtime upgrades"];
+const FEATS = ["SMB, NFS, S3 & more", "فضای نام جهانی", "تحلیل بلادرنگ", "ارتقا بدون قطعی"];
 
-export default function Platform() {
+export default function پلتفرم() {
   return (
     <section className="section platform on-light" id="platform">
       <div className="container">
         <div className="platform-grid">
           <div className="platform-copy">
-            <p className="eyebrow reveal">The platform</p>
+            <p className="eyebrow reveal">پلتفرم</p>
             <h2 className="h2 reveal reveal-d1">
-              One file system.
+              یک فایل‌سیستم.
               <br />
-              Every environment.
+              هر محیط.
               <br />
-              <span className="grad">Infinite scale.</span>
+              <span className="grad">مقیاس بی‌نهایت.</span>
             </h2>
             <p className="lede reveal reveal-d2">
-              A single, multi-protocol platform that spans on-premises, edge, and
-              cloud infrastructure — without replication overhead, vendor lock-in,
-              or performance trade-offs. Consolidate your storage stack and
-              eliminate data silos.
+              یک پلتفرم چندپروتکلی برای زیرساخت داخلی، لبه و ابر؛ بدون سربار کپی، وابستگی به فروشنده یا افت عملکرد. زیرساخت ذخیره‌سازی خود را یکپارچه و جزیره‌های داده را حذف کنید.
             </p>
             <ul className="platform-feats reveal reveal-d3">
               {FEATS.map((f) => (
@@ -33,7 +30,7 @@ export default function Platform() {
               ))}
             </ul>
             <a href="#" className="btn btn-grad reveal reveal-d4">
-              View solution brief
+              مشاهده معرفی راهکار
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16" />
               </svg>
@@ -42,7 +39,7 @@ export default function Platform() {
           <div className="platform-visual reveal reveal-d2">
             <div className="frame">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={assetUrl("platform.jpg")} alt="Global data network connecting locations worldwide" />
+              <img src={assetUrl("platform.jpg")} alt="شبکه جهانی داده برای اتصال همه مکان‌ها" />
             </div>
           </div>
         </div>
