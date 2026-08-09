@@ -1,0 +1,21 @@
+{
+  "name": "vectrfl-clone",
+  "version": "1.0.0",
+  "description": "Pixel-perfect clone of Vectr (https://www.vectrfl.com)",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "vectr",
+    "staffing",
+    "clone",
+    "threejs",
+    "webgl",
+    "interactive"
+  ],
+  "author": "",
+  "license": "ISC"
+}
