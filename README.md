@@ -1,43 +1,86 @@
-# Vectr Website Clone
+# Vectr — Next.js App Router Edition
 
-A pixel-perfect, fully interactive clone of [Vectr](https://www.vectrfl.com/).
+A pixel-perfect, modular, and component-driven clone of [Vectr](https://www.vectrfl.com/), built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, **Three.js (WebGL + Draco WASM)**, and **Framer Motion**.
 
-## Features
+---
 
-- **3D WebGL / Three.js Hero Scene**: Custom dark-mode nuclear facility industrial site with glowing wireframes, animated turbines, rigged craft workers, particle smoke, and dynamic scroll synchronization.
-- **Draco 3D Mesh Compression**: Pre-configured Draco WebAssembly decoders (`draco_decoder.wasm`) for high performance.
-- **8 Pages & Sub-routes**:
-  - `/` (Home)
-  - `/apply` (Apply to Vectr with multi-step application modal)
-  - `/industries` (Nuclear, Gas, Data Centers, Semiconductor with stacked cards)
-  - `/our-mission` (Mission, Middleman model, and Outcomes)
-  - `/request-crew` (24/7 Outage mobilization form)
-  - `/privacy` (Privacy Policy)
-  - `/privacy-request` (Privacy Requests)
-  - `/terms` (Terms of Service)
-- **Taxi.js Page Transitions**: Fluid, SPA routing and animated transitions between pages without full page reloads.
-- **Full Backend Server (`server.js`)**:
-  - Built with Node.js
-  - Fast static file serving with exact MIME types
-  - `POST /api/request-crew` endpoint
-  - `POST /api/apply` endpoint
-  - `GET /api/submissions` endpoint
+## 🌟 Highlights & Architecture
 
-## Quick Start
+- **Next.js App Router**: Full App Router structure with React Server Components & Client Components.
+- **3D WebGL / Three.js Hero Scene**:
+  - Interactive dark-mode blueprint of the nuclear power generation facility.
+  - Decompressed with Google Draco WebAssembly decoders (`draco_decoder.wasm`).
+  - Animated industrial turbines, rigged craft workers, and dynamic camera scroll interpolation.
+  - Client-side isolated with dynamic hydration to prevent SSR mismatch.
+- **Design Token System (`tokens/design-tokens.ts`)**:
+  - Centralized tokens for Colors, Typography, Border Radii, Spacing, Transitions, and Shadows.
+  - Deeply integrated into Tailwind CSS and CSS Custom Properties.
+- **Componentized & Modular**:
+  - `components/layout/`: Header, MobileNav, Footer, NavigationContext.
+  - `components/canvas/`: HeroCanvas3D, HeroCanvasWrapper, LoaderOverlay.
+  - `components/home/`: HeroSection, FlowSteps, FeaturesGrid, StandardsSection, FaqSection, CtaBanner.
+  - `components/industries/`: IndustryCard (Sticky stack).
+  - `components/mission/`: MissionAccordion.
+  - `components/forms/`: RequestCrewForm, ApplyModal (Multi-step application).
+  - `components/ui/`: Logo, PillButton.
+- **API Route Handlers (`app/api/`)**:
+  - `POST /api/request-crew`: Outage mobilization dispatch requests.
+  - `POST /api/apply`: Multi-part career application submissions.
 
-### 1. Install & Run
+---
+
+## 🚀 Getting Started Locally
+
+### 1. Install Dependencies
 ```bash
-# Start server
-node server.js
+npm install
 ```
-The server will be available at `http://localhost:3000`.
 
-### 2. Available Routes
-- `http://localhost:3000/`
-- `http://localhost:3000/apply`
-- `http://localhost:3000/industries`
-- `http://localhost:3000/our-mission`
-- `http://localhost:3000/request-crew`
-- `http://localhost:3000/privacy`
-- `http://localhost:3000/privacy-request`
-- `http://localhost:3000/terms`
+### 2. Run the Development Server
+```bash
+npm run dev
+```
+
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+
+### 3. Production Build
+```bash
+npm run build
+npm start
+```
+
+---
+
+## 📁 Directory Structure
+
+```text
+├── app/
+│   ├── layout.tsx                # Root layout with 3D canvas, Header, Footer & Modals
+│   ├── page.tsx                  # Home route (Hero, 4-step Flow, Features, FAQ, CTA)
+│   ├── globals.css               # Design tokens & core styles
+│   ├── apply/page.tsx            # Career application & features
+│   ├── industries/page.tsx       # Industries sticky stack showcase
+│   ├── our-mission/page.tsx      # Mission, Middleman model & Outcomes
+│   ├── request-crew/page.tsx     # 24/7 Outage mobilization form
+│   ├── privacy/page.tsx          # Privacy Policy
+│   ├── privacy-request/page.tsx  # CCPA/CPRA Request
+│   ├── terms/page.tsx            # Terms of Service
+│   └── api/
+│       ├── apply/route.ts        # Next.js Route Handler for applications
+│       └── request-crew/route.ts # Next.js Route Handler for crew requests
+├── components/
+│   ├── canvas/                   # 3D Three.js scene & loaders
+│   ├── forms/                    # RequestCrewForm & ApplyModal
+│   ├── home/                     # Home page section modules
+│   ├── industries/               # Industry cards
+│   ├── layout/                   # Header, MobileNav, Footer, NavigationContext
+│   ├── mission/                  # Mission accordion
+│   └── ui/                       # Logo, PillButton primitives
+├── tokens/
+│   └── design-tokens.ts          # Centralized Design Tokens
+├── public/                       # 3D GLB models, Draco decoders, icons & media
+├── tailwind.config.ts
+├── postcss.config.mjs
+├── tsconfig.json
+└── next.config.mjs
+```

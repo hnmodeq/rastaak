@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #3932DC;
+  --color-bg: #FCFCFC;
+  --color-bg-hero: #D0E1EB;
+  --color-bg-alt: #D9E8F1;
+  --color-bg-muted: #EFF4F4;
+  --color-dark: #050419;
+  --color-dark-alt: #373647;
+  --color-text: #050419;
+  --color-text-muted: #585765;
+  --color-text-disabled: #8C8C95;
+  --color-text-subtle: #B2B1B8;
+  --color-border: #E6E6E8;
+  --color-border-dark: #373647;
+  --font-roboto: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-roboto);
+  overflow-x: hidden;
+}
+
+/* Glassmorphism & Pill Buttons */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  text-decoration: none;
+}
+
+.pill-btn--dark {
+  background-color: #050419;
+  color: #FCFCFC;
+  border: 1px solid #050419;
+}
+
+.pill-btn--dark:hover {
+  background-color: #3932DC;
+  border-color: #3932DC;
+  color: #FCFCFC;
+  transform: translateY(-1px);
+}
+
+.pill-btn--light {
+  background-color: #FCFCFC;
+  color: #050419;
+  border: 1px solid #FCFCFC;
+}
+
+.pill-btn--light:hover {
+  background-color: #3932DC;
+  border-color: #3932DC;
+  color: #FCFCFC;
+  transform: translateY(-1px);
+}
+
+.pill-btn--glass {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #050419;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.pill-btn--glass:hover {
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+}
+
+/* Footer Dynamic Navigation Buttons */
+.footer-nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 28px 32px;
+  border-top: 1px solid #373647;
+  color: #FCFCFC;
+  text-decoration: none;
+  font-size: 28px;
+  font-weight: 500;
+  overflow: hidden;
+  transition: color 0.3s ease;
+}
+
+.footer-nav-btn__bg {
+  position: absolute;
+  inset: 0;
+  background-color: #3932DC;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+}
+
+.footer-nav-btn:hover .footer-nav-btn__bg {
+  transform: scaleY(1);
+}
+
+.footer-nav-btn__label,
+.footer-nav-btn__arrows {
+  position: relative;
+  z-index: 1;
+}
+
+.footer-nav-btn__arrows {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+}
+
+.footer-nav-btn__arrow {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.footer-nav-btn__arrow--current {
+  transform: translateX(0);
+}
+
+.footer-nav-btn:hover .footer-nav-btn__arrow--current {
+  transform: translateX(28px);
+}
+
+.footer-nav-btn__arrow--next {
+  position: absolute;
+  left: -28px;
+}
+
+.footer-nav-btn:hover .footer-nav-btn__arrow--next {
+  transform: translateX(28px);
+}
+
+/* Sticky Stack Animation */
+.sticky-stack__item {
+  position: sticky;
+  top: 96px;
+  margin-bottom: 48px;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050419;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #373647;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3932DC;
+}
