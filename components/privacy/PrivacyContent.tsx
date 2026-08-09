@@ -10,7 +10,7 @@ export const PrivacyContent: React.FC = () => {
           <div className="sub-hero__content">
             <div className="sub-hero__body">
               <p className="sub-hero__text">
-                This Privacy Policy explains how Vectr, Inc. (&quot;Vectr,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, discloses, and protects your personal information when you use our website.
+                This Privacy Policy explains how Rastaak, Inc.. (&quot;Rastaak,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, discloses, and protects your personal information when you use our website.
               </p>
             </div>
           </div>
@@ -33,7 +33,7 @@ export const PrivacyContent: React.FC = () => {
         <section className="privacy-section">
           <h2>3. Contact Us</h2>
           <p>
-            If you have questions about this policy, please contact us at <a href="mailto:privacy@vectrfl.com">privacy@vectrfl.com</a> or visit our <Link href="/privacy-request">Privacy Request page</Link>.
+            If you have questions about this policy, please contact us at <a href="mailto:privacy@rastaak.com">privacy@rastaak.com</a> or visit our <Link href="/privacy-request">Privacy Request page</Link>.
           </p>
         </section>
       </div>

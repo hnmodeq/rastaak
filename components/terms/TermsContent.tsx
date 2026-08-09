@@ -25,7 +25,7 @@ export const TermsContent: React.FC = () => {
         <section className="privacy-section">
           <h2>2. Services</h2>
           <p>
-            Vectr provides specialized workforce mobilization and staffing solutions for high-consequence industrial facilities and outages.
+            Rastaak provides specialized workforce mobilization and staffing solutions for high-consequence industrial facilities and outages.
           </p>
         </section>
       </div>

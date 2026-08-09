@@ -1,6 +1,6 @@
-# Vectr — Next.js App Router Edition
+# Rastaak — Next.js App Router Edition
 
-A pixel-perfect, modular, and component-driven clone of [Vectr](https://www.vectrfl.com/), built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, **Three.js (WebGL + Draco WASM)**, and **Framer Motion**.
+A pixel-perfect, modular, and component-driven clone of [Rastaak](https://www.rastaak.com/), built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, **Three.js (WebGL + Draco WASM)**, and **Framer Motion**.
 
 ---
 
