@@ -1,23 +1,20 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { NavigationProvider } from '@/components/layout/NavigationContext';
 import { Header } from '@/components/layout/Header';
-import { MobileNav } from '@/components/layout/MobileNav';
 import { Footer } from '@/components/layout/Footer';
-import { ApplyModal } from '@/components/forms/ApplyModal';
-import { LoaderOverlay } from '@/components/canvas/LoaderOverlay';
-import { HeroCanvasWrapper } from '@/components/canvas/HeroCanvasWrapper';
+import { Loader } from '@/components/layout/Loader';
+import { ClientScripts } from '@/components/layout/ClientScripts';
 
 export const metadata: Metadata = {
   title: 'Vectr | The New Standard in Staffing',
-  description: 'AI driven precision staffing for critical outages in high-consequence industrial environments.',
+  description: 'AI driven precision staffing for critical outages in high-consequence environments.',
   icons: {
     icon: '/favicon.svg',
     apple: '/icons/apple-touch-icon.png',
   },
   openGraph: {
     title: 'Vectr | AI Driven Precision Staffing',
-    description: 'We mobilize verified industrial crews in hours, not days.',
+    description: 'We mobilize verified industrial crews to protect your schedule and your bottom line.',
     images: ['/share/ogp.png'],
   },
 };
@@ -28,38 +25,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en-US" className="preload">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-surface-hero min-h-screen flex flex-col justify-between selection:bg-brand-primary selection:text-white">
-        <NavigationProvider>
-          {/* Initial Intro Loader Overlay */}
-          <LoaderOverlay />
+      <body style={{ backgroundColor: '#D0E1EB', overflow: 'hidden' }}>
+        <div className="transition-pages" />
+        <div className="mobile-nav__overlay" />
 
-          {/* Persistent Three.js 3D WebGL Scene Background */}
-          <HeroCanvasWrapper />
+        {/* Site Header */}
+        <Header />
 
-          {/* Site Navigation Header */}
-          <Header />
+        {/* Dynamic Route View */}
+        <main data-taxi>{children}</main>
 
-          {/* Mobile Navigation Drawer */}
-          <MobileNav />
+        {/* Site Footer */}
+        <Footer />
 
-          {/* Global Multi-step Apply Modal */}
-          <ApplyModal />
+        {/* Introductory SVG Loader */}
+        <Loader />
 
-          {/* Main Route Content */}
-          <main className="relative flex-grow z-10">{children}</main>
-
-          {/* Global Footer */}
-          <Footer />
-        </NavigationProvider>
+        {/* Client Initialization Scripts (3D Three.js, Draco, Shaders, SPA Taxi routing) */}
+        <ClientScripts />
       </body>
     </html>
   );
