@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { tokens } from '@/tokens/design-tokens';
 
 export const LoaderOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
@@ -22,10 +23,10 @@ export const LoaderOverlay: React.FC = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
-          style={{ backgroundColor: '#D0E1EB' }}
+          style={{ backgroundColor: tokens.colors.bgHero }}
         >
           <div className="relative flex items-center justify-center w-32 h-32">
-            {/* Spinning Cube Logo */}
+            {/* Spinning Cube Logo linked to primary token */}
             <motion.svg
               width="96"
               height="96"
@@ -35,7 +36,7 @@ export const LoaderOverlay: React.FC = () => {
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
             >
-              <g id="block_full" fill="#0F32DC">
+              <g id="block_full" fill={tokens.colors.primary}>
                 <path d="M39.9963 96.0002H55.9926V80.0039H39.9963V96.0002Z" />
                 <path d="M76.2787 87.59L64.9673 76.2787L76.2787 64.9673L87.59 76.2787L76.2787 87.59Z" />
                 <path d="M80.0039 55.9926V39.9963H96.0001V55.9926H80.0039Z" />
@@ -47,7 +48,7 @@ export const LoaderOverlay: React.FC = () => {
               </g>
               <path
                 d="M53.6557 53.6557C56.7827 50.5287 56.7827 45.4713 53.6557 42.3443V42.3556L19.7103 8.41016L13.7046 14.4158L8.39887 19.7215L28.6736 40.0188H0V56.015H28.6849L19.7103 64.9784L8.39887 76.2897L19.7103 87.6011L53.6557 53.6557Z"
-                fill="#0F32DC"
+                fill={tokens.colors.primary}
               />
             </motion.svg>
           </div>

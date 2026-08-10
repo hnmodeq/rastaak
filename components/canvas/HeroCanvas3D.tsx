@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { tokens } from '@/tokens/design-tokens';
 
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,9 +18,9 @@ export const HeroCanvas3D: React.FC = () => {
     let isDisposed = false;
     let animationFrameId: number;
 
-    // Scene setup
+    // Scene setup using design tokens
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#050419');
+    scene.background = new THREE.Color(tokens.colors.bgDark);
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
@@ -40,23 +41,23 @@ export const HeroCanvas3D: React.FC = () => {
     containerRef.current.innerHTML = '';
     containerRef.current.appendChild(renderer.domElement);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0x0f32dc, 1.5);
+    // Lights linked to design tokens
+    const ambientLight = new THREE.AmbientLight(tokens.colors.primary, 1.5);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0x3932dc, 0x050419, 2);
+    const hemiLight = new THREE.HemisphereLight(tokens.colors.primary, tokens.colors.bgDark, 2);
     scene.add(hemiLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x4f86ff, 3);
+    const dirLight1 = new THREE.DirectionalLight(tokens.colors.sceneKeyLight, 3);
     dirLight1.position.set(20, 40, 20);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x3932dc, 2);
+    const dirLight2 = new THREE.DirectionalLight(tokens.colors.primary, 2);
     dirLight2.position.set(-20, -10, -20);
     scene.add(dirLight2);
 
-    // Blue Grid Floor
-    const gridHelper = new THREE.GridHelper(120, 60, 0x3932dc, 0x12113a);
+    // Grid Floor linked to design tokens
+    const gridHelper = new THREE.GridHelper(120, 60, tokens.colors.primary, tokens.colors.sceneGridSecondary);
     gridHelper.position.y = -2;
     scene.add(gridHelper);
 
@@ -85,7 +86,6 @@ export const HeroCanvas3D: React.FC = () => {
 
         root.traverse((child: any) => {
           if (child.isMesh) {
-            // Apply blueprint glowing wireframe/metallic style
             child.material.wireframe = false;
             child.castShadow = true;
             child.receiveShadow = true;
@@ -152,15 +152,12 @@ export const HeroCanvas3D: React.FC = () => {
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      // Smooth scroll interpolation
       currentScrollProgress += (targetScrollProgress - currentScrollProgress) * 0.05;
 
-      // Rotate turbines
       turbines.forEach((t) => {
         t.rotation.z += delta * 2.5;
       });
 
-      // Smooth camera path through facility based on scroll
       const radius = 30 - currentScrollProgress * 12;
       const angle = currentScrollProgress * Math.PI * 0.8 - 0.2;
 
@@ -169,7 +166,6 @@ export const HeroCanvas3D: React.FC = () => {
       camera.position.y = 8 + Math.sin(elapsed * 0.5) * 0.3 - currentScrollProgress * 3;
       camera.lookAt(0, 2 - currentScrollProgress * 1.5, 0);
 
-      // Subtle breathing motion on model
       modelGroup.rotation.y = Math.sin(elapsed * 0.2) * 0.05;
 
       renderer.render(scene, camera);

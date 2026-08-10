@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../ui/Logo';
 import { PillButton } from '../ui/PillButton';
 import { useNavigation } from './NavigationContext';
+import { tokens } from '@/tokens/design-tokens';
 
 export const MobileNav: React.FC = () => {
   const { isMobileMenuOpen, setIsMobileMenuOpen, openApplyModal } = useNavigation();
@@ -53,8 +54,8 @@ export const MobileNav: React.FC = () => {
                   className="p-2 text-content-dark"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
-                    <rect y="14.1421" width="20" height="2" transform="rotate(-45 0 14.1421)" fill="#050419" />
-                    <rect x="1.41406" y="0.000610352" width="20" height="2" transform="rotate(45 1.41406 0.000610352)" fill="#050419" />
+                    <rect y="14.1421" width="20" height="2" transform="rotate(-45 0 14.1421)" fill={tokens.colors.textDark} />
+                    <rect x="1.41406" y="0.000610352" width="20" height="2" transform="rotate(45 1.41406 0.000610352)" fill={tokens.colors.textDark} />
                   </svg>
                 </button>
               </div>
