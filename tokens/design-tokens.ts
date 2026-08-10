@@ -20,7 +20,7 @@ export const tokens = {
     bgCardDark: '#12112A',
 
     // Text colors
-    textDark: '#333333',
+    textDark: '#050419',
     textMuted: '#585765',
     textDisabled: '#8C8C95',
     textSubtle: '#B2B1B8',
@@ -40,9 +40,23 @@ export const tokens = {
   },
 
   fonts: {
-    ui: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    body: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    display: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    ui: 'var(--font-ui), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    body: 'var(--font-body), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    display: 'var(--font-display), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    kalameh: "'Kalameh', var(--font-roboto), -apple-system, sans-serif",
+    mono: 'var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+  },
+
+  fontWeights: {
+    thin: '100',
+    extralight: '200',
+    light: '300',
+    normal: '400',
+    medium: '500',
+    semibold: '600',
+    bold: '700',
+    extrabold: '800',
+    black: '900',
   },
 
   fontSizes: {
