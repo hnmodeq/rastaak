@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { tokens } from '@/tokens/design-tokens';
 
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -18,9 +17,9 @@ export const HeroCanvas3D: React.FC = () => {
     let isDisposed = false;
     let animationFrameId: number;
 
-    // Scene setup using design tokens
+    // Scene setup using valid Three.js colors matching tokens
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(tokens.colors.bgDark);
+    scene.background = new THREE.Color(0x050419);
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
@@ -41,23 +40,23 @@ export const HeroCanvas3D: React.FC = () => {
     containerRef.current.innerHTML = '';
     containerRef.current.appendChild(renderer.domElement);
 
-    // Lights linked to design tokens
-    const ambientLight = new THREE.AmbientLight(tokens.colors.primary, 1.5);
+    // Lights matching canonical blue (#261779) and keylights
+    const ambientLight = new THREE.AmbientLight(0x261779, 1.5);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(tokens.colors.primary, tokens.colors.bgDark, 2);
+    const hemiLight = new THREE.HemisphereLight(0x261779, 0x050419, 2);
     scene.add(hemiLight);
 
-    const dirLight1 = new THREE.DirectionalLight(tokens.colors.sceneKeyLight, 3);
+    const dirLight1 = new THREE.DirectionalLight(0x4f86ff, 3);
     dirLight1.position.set(20, 40, 20);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(tokens.colors.primary, 2);
+    const dirLight2 = new THREE.DirectionalLight(0x261779, 2);
     dirLight2.position.set(-20, -10, -20);
     scene.add(dirLight2);
 
-    // Grid Floor linked to design tokens
-    const gridHelper = new THREE.GridHelper(120, 60, tokens.colors.primary, tokens.colors.sceneGridSecondary);
+    // Grid Floor
+    const gridHelper = new THREE.GridHelper(120, 60, 0x261779, 0x12113a);
     gridHelper.position.y = -2;
     scene.add(gridHelper);
 
