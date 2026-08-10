@@ -18,3 +18,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated from tokens/design-tokens.ts by npm run tokens:generate
+tokens/generated.css
+public/_astro/scene-tokens.js

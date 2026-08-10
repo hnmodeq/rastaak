@@ -1,8 +1,13 @@
 /**
  * Rastaak design-token source of truth.
  *
- * Raw color values belong only in this file. Run `npm run tokens:generate`
- * to create the CSS custom properties and the legacy WebGL scene-token module.
+ * SOURCE OF TRUTH: edit color values only in this file.
+ *
+ * - `colors` is for CSS, Tailwind, and React UI values.
+ * - `scene` is for Three.js/WebGL numeric values.
+ *
+ * Run `npm run tokens:generate` after an edit to create the ignored runtime
+ * artifacts used by CSS and the legacy WebGL bundle.
  */
 
 export const tokens = {

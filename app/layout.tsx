@@ -7,6 +7,7 @@ import { ClientScripts } from '@/components/layout/ClientScripts';
 import { tokens } from '@/tokens/design-tokens';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://rastaak.com'),
   title: 'Rastaak | The New Standard in Staffing',
   description: 'AI driven precision staffing for critical outages in high-consequence environments.',
   icons: {
@@ -49,7 +50,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body style={{ backgroundColor: tokens.colors.bgHero, overflow: 'hidden' }}>
+      <body style={{ backgroundColor: tokens.colors.bgHero }}>
         <div className="transition-pages" />
         <div className="mobile-nav__overlay" />
 

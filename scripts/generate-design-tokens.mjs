@@ -94,7 +94,7 @@ const aliases = {
 };
 
 const css = [
-  '/* This file is generated from tokens/design-tokens.ts. Do not edit it directly. */',
+  '/* GENERATED FILE — edit tokens/design-tokens.ts, then run npm run tokens:generate. */',
   ':root {',
   ...Object.entries(tokens.colors).map(([name, value]) => `  ${colorVariable(name)}: ${value};`),
   '',
@@ -104,7 +104,7 @@ const css = [
 ].join('\n');
 
 const sceneModule = [
-  '// This file is generated from tokens/design-tokens.ts. Do not edit it directly.',
+  '// GENERATED FILE — edit tokens/design-tokens.ts, then run npm run tokens:generate.',
   `export const sceneTokens = Object.freeze(${JSON.stringify(tokens.scene, null, 2)});`,
   '',
 ].join('\n');
