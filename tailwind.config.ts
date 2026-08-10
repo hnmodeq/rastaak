@@ -38,6 +38,11 @@ const config: Config = {
           dark: tokens.colors.borderDark,
           'dark-subtle': tokens.colors.borderDarkSubtle,
         },
+        state: {
+          success: tokens.colors.success,
+          error: tokens.colors.error,
+          warning: tokens.colors.warning,
+        },
       },
       fontFamily: {
         ui: ['var(--font-roboto)', 'sans-serif'],

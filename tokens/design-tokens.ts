@@ -1,42 +1,43 @@
 /**
  * Rastaak Design Token System
  * Centralized design tokens for colors, typography, spacing, shadows, and animation curves.
+ * Color tokens use the modern OKLCH color space for superior perceptual uniformity and contrast.
  */
 
 export const tokens = {
   colors: {
-    // Brand & Highlights
-    primary: '#261779',
-    primaryHover: '#261779',
-    primaryGlow: '#261779',
+    // 🎨 Brand & Highlights (Single unified primary blue: #261779)
+    primary: 'oklch(30.52% 0.154 279.05)',
+    primaryHover: 'oklch(30.52% 0.154 279.05)',
+    primaryGlow: 'oklch(30.52% 0.154 279.05 / 0.35)',
 
-    // Backgrounds
-    bgLight: '#FCFCFC',
-    bgHero: '#D0E1EB',
-    bgAlt: '#D9E8F1',
-    bgMuted: '#EFF4F4',
-    bgDark: '#050419',
-    bgDarkElevated: '#0F0E28',
-    bgCardDark: '#12112A',
+    // 🖼️ Backgrounds
+    bgLight: 'oklch(99.11% 0.0 89.88)',              // #FCFCFC / #FFFFFF
+    bgHero: 'oklch(90.0% 0.0228 233.38)',            // #D0E1EB
+    bgAlt: 'oklch(92.24% 0.0202 233.86)',            // #D9E8F1
+    bgMuted: 'oklch(96.34% 0.0053 197.07)',          // #EFF4F4
+    bgDark: 'oklch(12.78% 0.0477 280.42)',           // #050419
+    bgDarkElevated: 'oklch(18.24% 0.0517 281.71)',   // #0F0E28
+    bgCardDark: 'oklch(18.24% 0.0517 281.71)',       // #12112A (consolidated with bgDarkElevated)
 
-    // Text colors
-    textDark: '#333333',
-    textMuted: '#585765',
-    textDisabled: '#8C8C95',
-    textSubtle: '#B2B1B8',
-    textLight: '#FCFCFC',
-    textGlass: 'rgba(252, 252, 252, 0.85)',
+    // ✍️ Text colors
+    textDark: 'oklch(12.78% 0.0477 280.42)',         // #050419 / #333333
+    textMuted: 'oklch(46.28% 0.0225 288.76)',        // #585765
+    textDisabled: 'oklch(64.3% 0.0133 286.02)',      // #8C8C95
+    textSubtle: 'oklch(76.33% 0.0099 292.73)',       // #B2B1B8
+    textLight: 'oklch(99.11% 0.0 89.88)',            // #FCFCFC
+    textGlass: 'oklch(99.11% 0.0 89.88 / 0.85)',
 
-    // Borders & Dividers
-    borderLight: '#E6E6E8',
-    borderMuted: '#D0D0D5',
-    borderDark: '#373647',
-    borderDarkSubtle: 'rgba(255, 255, 255, 0.12)',
+    // 🔲 Borders & Dividers
+    borderLight: 'oklch(92.55% 0.0027 286.35)',      // #E6E6E8 / #D9D9D9
+    borderMuted: 'oklch(85.91% 0.0068 286.25)',      // #D0D0D5
+    borderDark: 'oklch(34.11% 0.0296 287.41)',       // #373647
+    borderDarkSubtle: 'oklch(99.11% 0.0 89.88 / 0.12)',
 
-    // UI States
-    success: '#10B981',
-    error: '#EF4444',
-    warning: '#F59E0B',
+    // 🚦 UI States
+    success: 'oklch(69.59% 0.1491 162.48)',          // #10B981
+    error: 'oklch(63.68% 0.2078 25.33)',             // #EF4444
+    warning: 'oklch(76.86% 0.1647 70.08)',           // #F59E0B
   },
 
   fonts: {
@@ -74,7 +75,7 @@ export const tokens = {
     lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     glass: '0 8px 32px 0 rgba(0, 0, 0, 0.08)',
-    glow: '0 0 25px rgba(57, 50, 220, 0.45)',
+    glow: '0 0 25px oklch(30.52% 0.154 279.05 / 0.45)',
   },
 
   transitions: {
