@@ -6,53 +6,46 @@
 
 export const tokens = {
   colors: {
-    // 🎨 Brand & Highlights (Single canonical primary blue: #261779)
     primary: 'oklch(30.52% 0.154 279.05)',
     primaryHover: 'oklch(25.3% 0.1219 279.99)',
     primaryLight: 'oklch(80.11% 0.1264 229.37)',
     primaryGlow: 'oklch(30.52% 0.154 279.05 / 0.35)',
     primaryHoverGlow: 'oklch(30.52% 0.154 279.05 / 0.45)',
 
-    // 🖼️ Backgrounds
-    bgLight: 'oklch(99.11% 0.0 89.88)',              // #FCFCFC / #FFFFFF
-    bgHero: 'oklch(90.0% 0.0228 233.38)',            // #D0E1EB
-    bgAlt: 'oklch(92.24% 0.0202 233.86)',            // #D9E8F1
-    bgMuted: 'oklch(96.34% 0.0053 197.07)',          // #EFF4F4
-    bgDark: 'oklch(12.78% 0.0477 280.42)',           // #050419
-    bgDarkElevated: 'oklch(18.24% 0.0517 281.71)',   // #0F0E28
-    bgCardDark: 'oklch(19.45% 0.0492 282.62)',       // #12112A
+    bgLight: 'oklch(99.11% 0.0 89.88)',     
+    bgHero: 'oklch(99.11% 0.0 89.88)',       
+    bgAlt: 'oklch(99.11% 0.0 89.88)',  
+    bgMuted: 'oklch(99.11% 0.0 89.88)',          
+    bgDark: 'oklch(12.78% 0.0477 280.42)',         
+    bgDarkElevated: 'oklch(18.24% 0.0517 281.71)', 
+    bgCardDark: 'oklch(19.45% 0.0492 282.62)',    
 
-    // ✍️ Text & Content Colors
-    textDark: 'oklch(12.78% 0.0477 280.42)',         // #050419 / #333333
-    textMuted: 'oklch(46.28% 0.0225 288.76)',        // #585765
-    textDisabled: 'oklch(64.3% 0.0133 286.02)',      // #8C8C95
-    textSubtle: 'oklch(76.33% 0.0099 292.73)',       // #B2B1B8
-    textLight: 'oklch(99.11% 0.0 89.88)',            // #FCFCFC / #FFFFFF
+    textDark: 'oklch(12.78% 0.0477 280.42)',      
+    textMuted: 'oklch(46.28% 0.0225 288.76)',     
+    textDisabled: 'oklch(64.3% 0.0133 286.02)',     
+    textSubtle: 'oklch(76.33% 0.0099 292.73)', 
+    textLight: 'oklch(99.11% 0.0 89.88)',       
     textGlass: 'oklch(99.11% 0.0 89.88 / 0.85)',
-    textSemiOpaque: 'oklch(99.11% 0.0 89.88 / 0.70)',// #FCFCFCB3
+    textSemiOpaque: 'oklch(99.11% 0.0 89.88 / 0.70)',
 
-    // 🔲 Borders & Dividers
-    borderLight: 'oklch(92.55% 0.0027 286.35)',      // #E6E6E8
-    borderNeutral: 'oklch(88.53% 0.0 89.88)',        // #D9D9D9
-    borderMuted: 'oklch(85.91% 0.0068 286.25)',      // #D0D0D5
-    borderDark: 'oklch(34.11% 0.0296 287.41)',       // #373647
+    borderLight: 'oklch(92.55% 0.0027 286.35)',   
+    borderNeutral: 'oklch(88.53% 0.0 89.88)',      
+    borderMuted: 'oklch(85.91% 0.0068 286.25)',  
+    borderDark: 'oklch(34.11% 0.0296 287.41)', 
     borderDarkSubtle: 'oklch(100.0% 0.0 89.88 / 0.12)',
 
-    // 🚦 UI States
-    success: 'oklch(69.59% 0.1491 162.48)',          // #10B981
-    error: 'oklch(63.68% 0.2078 25.33)',             // #EF4444
-    warning: 'oklch(76.86% 0.1647 70.08)',           // #F59E0B
+    success: 'oklch(69.59% 0.1491 162.48)',   
+    error: 'oklch(63.68% 0.2078 25.33)',           
+    warning: 'oklch(76.86% 0.1647 70.08)',    
 
-    // 🌐 3D WebGL Scene & Shader Engine Palette
-    sceneWireframeMain: 'oklch(84.32% 0.0745 249.94)',   // #A7D0FB
-    sceneWireframeFloor: 'oklch(77.88% 0.0735 250.65)',  // #94BBE5
-    sceneLaserRed: 'oklch(67.73% 0.2129 16.81)',         // #FF4D67
-    sceneLaserBlue: 'oklch(65.64% 0.183 250.17)',        // #0E94FB
-    scenePulse: 'oklch(80.11% 0.1264 229.37)',           // #57CDFF
-    sceneKeyLight: 'oklch(64.48% 0.1893 263.59)',        // #4F86FF (0x4f86ff)
-    sceneGridSecondary: 'oklch(20.92% 0.0769 278.5)',    // #12113A (0x12113a)
+    sceneWireframeMain: 'oklch(99.11% 0.0 89.88)',
+    sceneWireframeFloor: 'oklch(99.11% 0.0 89.88)', 
+    sceneLaserRed: 'oklch(20.92% 0.0769 278.5)',     
+    sceneLaserBlue: 'oklch(20.92% 0.0769 278.5)',     
+    scenePulse: 'oklch(99.11% 0.0 89.88)',        
+    sceneKeyLight: 'oklch(699.11% 0.0 89.88)',   
+    sceneGridSecondary: 'oklch(99.11% 0.0 89.88)',  
 
-    // 🌫️ Transparency & Overlays
     overlayDark10: 'oklch(12.78% 0.0477 280.42 / 0.10)', // #0504191A
     overlayDark20: 'oklch(12.78% 0.0477 280.42 / 0.20)', // #05041933
     overlayDark30: 'oklch(12.78% 0.0477 280.42 / 0.30)', // #0504194D
