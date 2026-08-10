@@ -14,9 +14,9 @@ export const tokens = {
   colors: {
     primary: 'oklch(30.52% 0.154 279.05)',
     primaryHover: 'oklch(25.3% 0.1219 279.99)',
-    primaryLight: 'oklch(80.11% 0.1264 229.37)',
+    primaryLight: 'oklch(100.00% 0.0000 89.88)',
     primaryGlow: 'oklch(30.52% 0.154 279.05 / 0.35)',
-    primaryHoverGlow: 'oklch(30.52% 0.154 279.05 / 0.45)',
+    primaryHoverGlow: 'oklch(100.00% 0.0000 89.88 / 0.45)',
 
     bgLight: 'oklch(99.11% 0 89.88)',
     bgHero: 'oklch(99.11% 0 89.88)',
@@ -72,18 +72,18 @@ export const tokens = {
 
   /** Values consumed by Three.js / WebGL. Keep these numeric, not CSS strings. */
   scene: {
-    canvasBackground: 0x050419,
-    ambient: 0x261779,
-    hemisphereGround: 0x050419,
+    canvasBackground: 0x363636,
+    ambient: 0x353535,
+    hemisphereGround: 0x2e2e2e,
     keyLight: 0x4f86ff,
     fillLight: 0x261779,
     gridPrimary: 0x261779,
     gridSecondary: 0x12113a,
-    wireframeMain: 0xa7d0fb,
-    wireframeFloor: 0x94bbe5,
-    laserRed: 0xff4d67,
-    laserBlue: 0x0e94fb,
-    pulse: 0x57cdff,
+    wireframeMain: 0x1e1e1e,
+    wireframeFloor: 0x000064,
+    laserRed: 0xffffff,
+    laserBlue: 0x000064,
+    pulse: 0x313131,
     buildingLogo: 0x261779,
   },
 
