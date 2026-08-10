@@ -6,9 +6,9 @@
 export const tokens = {
   colors: {
     // Brand & Highlights
-    primary: '#3932DC',
-    primaryHover: '#2A24B8',
-    primaryGlow: 'rgba(57, 50, 220, 0.35)',
+    primary: '#261779',
+    primaryHover: '#261779',
+    primaryGlow: '#261779',
 
     // Backgrounds
     bgLight: '#FCFCFC',
