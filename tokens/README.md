@@ -23,9 +23,10 @@ They are intentionally not committed and are overwritten by every generator run.
 ## Safe edit workflow
 
 1. In development, open [http://localhost:3000/token-studio](http://localhost:3000/token-studio).
-2. Pick a token, adjust its native picker or OKLCH controls, and copy the generated source line.
-3. Update that matching field in `tokens/design-tokens.ts`.
-4. Generate and validate:
+2. Choose **UI colors** for `tokens.colors`, or **3D scene** for `tokens.scene`.
+3. Adjust the native picker (and, for UI tokens, the OKLCH controls), then copy the generated source line.
+4. Update that matching field in `tokens/design-tokens.ts`.
+5. Generate and validate:
 
    ```bash
    npm run tokens:generate
@@ -33,7 +34,7 @@ They are intentionally not committed and are overwritten by every generator run.
    npm run build
    ```
 
-5. Commit **only the source-token change** (plus any intentional component use changes). Generated files are ignored.
+6. Commit **only the source-token change** (plus any intentional component use changes). Generated files are ignored.
 
 ## How values reach the application
 

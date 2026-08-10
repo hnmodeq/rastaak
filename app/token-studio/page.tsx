@@ -16,5 +16,5 @@ export default function TokenStudioPage() {
     notFound();
   }
 
-  return <TokenStudio colorTokens={tokens.colors} />;
+  return <TokenStudio colorTokens={tokens.colors} sceneTokens={tokens.scene} />;
 }

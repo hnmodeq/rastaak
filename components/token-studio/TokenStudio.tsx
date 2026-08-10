@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './TokenStudio.module.css';
 
-type ColorTokens = Record<string, string>;
+type ColorTokens = Readonly<Record<string, string>>;
+type SceneTokens = Readonly<Record<string, number>>;
+type StudioMode = 'ui' | 'scene';
 
 type Oklch = {
   lightness: number;
@@ -14,6 +16,7 @@ type Oklch = {
 
 interface TokenStudioProps {
   colorTokens: ColorTokens;
+  sceneTokens: SceneTokens;
 }
 
 const tokenGroup = (name: string) => {
@@ -25,6 +28,34 @@ const tokenGroup = (name: string) => {
   if (name.startsWith('debug')) return 'Debug';
   if (['success', 'error', 'errorSurface', 'warning'].includes(name)) return 'State';
   return 'Other';
+};
+
+const sceneGroup = (name: string) => {
+  if (['canvasBackground', 'hemisphereGround'].includes(name)) return 'Environment';
+  if (['ambient', 'keyLight', 'fillLight'].includes(name)) return 'Lighting and glow';
+  if (name.startsWith('grid') || name.startsWith('wireframe')) return 'Grid and lines';
+  if (name.startsWith('laser') || name === 'pulse') return 'Lasers and effects';
+  if (name === 'buildingLogo') return 'Branding';
+  return 'Other';
+};
+
+const sceneLabel = (name: string) => {
+  const labels: Record<string, string> = {
+    canvasBackground: 'Canvas background',
+    ambient: 'Ambient light',
+    hemisphereGround: 'Hemisphere ground',
+    keyLight: 'Key light',
+    fillLight: 'Fill light',
+    gridPrimary: 'Grid primary line',
+    gridSecondary: 'Grid secondary line',
+    wireframeMain: 'Wireframe main',
+    wireframeFloor: 'Wireframe floor',
+    laserRed: 'Red laser',
+    laserBlue: 'Blue laser',
+    pulse: 'Pulse / glow',
+    buildingLogo: 'Building logo',
+  };
+  return labels[name] ?? name;
 };
 
 const parseOklch = (value: string): Oklch | null => {
@@ -86,32 +117,62 @@ const formatOklch = ({ lightness, chroma, hue, alpha }: Oklch) => {
   return alpha < 1 ? `${base} / ${alpha.toFixed(2)})` : `${base})`;
 };
 
-export function TokenStudio({ colorTokens }: TokenStudioProps) {
-  const editableTokens = useMemo(
+const sceneNumberToHex = (value: number) => `#${value.toString(16).padStart(6, '0')}`;
+const hexToSceneNumber = (value: string) => Number.parseInt(value.slice(1), 16);
+const sceneSourceValue = (value: number) => `0x${value.toString(16).padStart(6, '0')}`;
+
+export function TokenStudio({ colorTokens, sceneTokens }: TokenStudioProps) {
+  const uiEntries = useMemo(
     () => Object.entries(colorTokens).filter(([name]) => name !== 'transparent'),
     [colorTokens],
   );
-  const sourceValues = useMemo(() => Object.fromEntries(editableTokens), [editableTokens]);
-  const [draft, setDraft] = useState<ColorTokens>(sourceValues);
-  const [selectedName, setSelectedName] = useState(editableTokens[0]?.[0] ?? '');
+  const sceneEntries = useMemo(() => Object.entries(sceneTokens), [sceneTokens]);
+  const sourceUiValues = useMemo(() => Object.fromEntries(uiEntries), [uiEntries]);
+  const sourceSceneValues = useMemo(() => Object.fromEntries(sceneEntries), [sceneEntries]);
+  const [uiDraft, setUiDraft] = useState<Record<string, string>>(sourceUiValues);
+  const [sceneDraft, setSceneDraft] = useState<Record<string, number>>(sourceSceneValues);
+  const [mode, setMode] = useState<StudioMode>('ui');
+  const [selectedName, setSelectedName] = useState(uiEntries[0]?.[0] ?? '');
   const [copied, setCopied] = useState(false);
 
-  const selectedValue = draft[selectedName];
-  const selectedColor = parseOklch(selectedValue);
-  const selectedHex = selectedColor ? oklchToHex(selectedColor) : undefined;
-  const groupedTokens = editableTokens.reduce<Record<string, string[]>>((groups, [name]) => {
-    const group = tokenGroup(name);
+  const activeEntries = mode === 'ui' ? uiEntries : sceneEntries;
+  const selectedUiValue = uiDraft[selectedName];
+  const selectedSceneValue = sceneDraft[selectedName];
+  const selectedValue = mode === 'ui' ? selectedUiValue : sceneNumberToHex(selectedSceneValue);
+  const selectedColor = mode === 'ui' ? parseOklch(selectedUiValue) : null;
+  const selectedHex = selectedColor ? oklchToHex(selectedColor) : selectedValue;
+  const sourceLine = mode === 'ui'
+    ? `    ${selectedName}: '${selectedUiValue}',`
+    : `    ${selectedName}: ${sceneSourceValue(selectedSceneValue)},`;
+
+  const groupedTokens = activeEntries.reduce<Record<string, string[]>>((groups, [name]) => {
+    const group = mode === 'ui' ? tokenGroup(name) : sceneGroup(name);
     groups[group] ??= [];
     groups[group].push(name);
     return groups;
   }, {});
 
-  const updateSelected = (nextColor: Oklch) => {
-    setDraft((current) => ({ ...current, [selectedName]: formatOklch(nextColor) }));
+  useEffect(() => {
+    setSelectedName((mode === 'ui' ? uiEntries : sceneEntries)[0]?.[0] ?? '');
+    setCopied(false);
+  }, [mode, sceneEntries, uiEntries]);
+
+  const updateUiToken = (nextColor: Oklch) => {
+    setUiDraft((current) => ({ ...current, [selectedName]: formatOklch(nextColor) }));
+  };
+
+  const updateSceneToken = (hex: string) => {
+    setSceneDraft((current) => ({ ...current, [selectedName]: hexToSceneNumber(hex) }));
+  };
+
+  const resetDrafts = () => {
+    setUiDraft(sourceUiValues);
+    setSceneDraft(sourceSceneValues);
+    setCopied(false);
   };
 
   const copySelected = async () => {
-    await navigator.clipboard.writeText(`    ${selectedName}: '${selectedValue}',`);
+    await navigator.clipboard.writeText(sourceLine);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   };
@@ -122,13 +183,34 @@ export function TokenStudio({ colorTokens }: TokenStudioProps) {
         <p className={styles.eyebrow}>Local development tool</p>
         <h1>Color Token Studio</h1>
         <p className={styles.intro}>
-          Tune an OKLCH token visually, preview it in context, then copy the resulting line into{' '}
+          Tune UI or WebGL scene tokens visually, preview the result, then copy the resulting line into{' '}
           <code>tokens/design-tokens.ts</code>. Changes remain reviewable in Git.
         </p>
       </header>
 
       <section className={styles.workspace} aria-label="Color token editor">
         <aside className={styles.tokenList}>
+          <div className={styles.modeTabs} role="tablist" aria-label="Token collection">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'ui'}
+              className={mode === 'ui' ? styles.activeTab : ''}
+              onClick={() => setMode('ui')}
+            >
+              UI colors
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'scene'}
+              className={mode === 'scene' ? styles.activeTab : ''}
+              onClick={() => setMode('scene')}
+            >
+              3D scene
+            </button>
+          </div>
+
           {Object.entries(groupedTokens).map(([group, names]) => (
             <section key={group} className={styles.group}>
               <h2>{group}</h2>
@@ -139,80 +221,91 @@ export function TokenStudio({ colorTokens }: TokenStudioProps) {
                   className={`${styles.tokenButton} ${name === selectedName ? styles.isSelected : ''}`}
                   onClick={() => setSelectedName(name)}
                 >
-                  <span className={styles.swatch} style={{ backgroundColor: draft[name] }} />
-                  <span>{name}</span>
+                  <span className={styles.swatch} style={{ backgroundColor: mode === 'ui' ? uiDraft[name] : sceneNumberToHex(sceneDraft[name]) }} />
+                  <span>{mode === 'ui' ? name : sceneLabel(name)}</span>
                 </button>
               ))}
             </section>
           ))}
         </aside>
 
-        {selectedColor && selectedHex && (
+        {selectedHex && (
           <section className={styles.editor}>
             <div className={styles.editorHeading}>
               <div>
-                <p className={styles.eyebrow}>Editing token</p>
-                <h2>{selectedName}</h2>
+                <p className={styles.eyebrow}>{mode === 'ui' ? 'Editing UI token' : 'Editing 3D scene token'}</p>
+                <h2>{mode === 'ui' ? selectedName : sceneLabel(selectedName)}</h2>
               </div>
-              <button type="button" className={styles.reset} onClick={() => setDraft(sourceValues)}>
+              <button type="button" className={styles.reset} onClick={resetDrafts}>
                 Reset all drafts
               </button>
             </div>
 
             <div className={styles.colorPreview} style={{ backgroundColor: selectedValue }}>
-              <span>Live preview</span>
+              <span>{mode === 'ui' ? 'Live UI preview' : 'Live 3D color preview'}</span>
             </div>
 
             <label className={styles.nativePicker}>
-              <span>Native color picker</span>
+              <span>{mode === 'ui' ? 'Native color picker' : '3D numeric color picker'}</span>
               <input
                 type="color"
                 value={selectedHex}
-                onChange={(event) => updateSelected(hexToOklch(event.target.value, selectedColor.alpha))}
+                onChange={(event) => {
+                  if (mode === 'ui' && selectedColor) {
+                    updateUiToken(hexToOklch(event.target.value, selectedColor.alpha));
+                  }
+                  if (mode === 'scene') updateSceneToken(event.target.value);
+                }}
               />
               <code>{selectedHex.toUpperCase()}</code>
             </label>
 
-            <div className={styles.controls}>
-              <RangeControl
-                label="Lightness"
-                value={selectedColor.lightness}
-                min={0}
-                max={100}
-                step={0.01}
-                unit="%"
-                onChange={(lightness) => updateSelected({ ...selectedColor, lightness })}
-              />
-              <RangeControl
-                label="Chroma"
-                value={selectedColor.chroma}
-                min={0}
-                max={0.4}
-                step={0.0001}
-                onChange={(chroma) => updateSelected({ ...selectedColor, chroma })}
-              />
-              <RangeControl
-                label="Hue"
-                value={selectedColor.hue % 360}
-                min={0}
-                max={360}
-                step={0.01}
-                unit="°"
-                onChange={(hue) => updateSelected({ ...selectedColor, hue })}
-              />
-              <RangeControl
-                label="Opacity"
-                value={selectedColor.alpha}
-                min={0}
-                max={1}
-                step={0.01}
-                onChange={(alpha) => updateSelected({ ...selectedColor, alpha })}
-              />
-            </div>
+            {selectedColor ? (
+              <div className={styles.controls}>
+                <RangeControl
+                  label="Lightness"
+                  value={selectedColor.lightness}
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  unit="%"
+                  onChange={(lightness) => updateUiToken({ ...selectedColor, lightness })}
+                />
+                <RangeControl
+                  label="Chroma"
+                  value={selectedColor.chroma}
+                  min={0}
+                  max={0.4}
+                  step={0.0001}
+                  onChange={(chroma) => updateUiToken({ ...selectedColor, chroma })}
+                />
+                <RangeControl
+                  label="Hue"
+                  value={selectedColor.hue % 360}
+                  min={0}
+                  max={360}
+                  step={0.01}
+                  unit="°"
+                  onChange={(hue) => updateUiToken({ ...selectedColor, hue })}
+                />
+                <RangeControl
+                  label="Opacity"
+                  value={selectedColor.alpha}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onChange={(alpha) => updateUiToken({ ...selectedColor, alpha })}
+                />
+              </div>
+            ) : (
+              <p className={styles.sceneHelp}>
+                Three.js consumes numeric RGB values. The picker writes a numeric scene token while preserving the required format.
+              </p>
+            )}
 
             <div className={styles.output}>
-              <p>Token source line</p>
-              <code>{`    ${selectedName}: '${selectedValue}',`}</code>
+              <p>{mode === 'ui' ? 'UI token source line' : '3D scene source line'}</p>
+              <code>{sourceLine}</code>
               <button type="button" className={styles.copy} onClick={copySelected}>
                 {copied ? 'Copied' : 'Copy token line'}
               </button>
@@ -220,20 +313,37 @@ export function TokenStudio({ colorTokens }: TokenStudioProps) {
           </section>
         )}
 
-        {selectedColor && (
+        {selectedHex && (
           <aside className={styles.context}>
-            <p className={styles.eyebrow}>Context preview</p>
+            <p className={styles.eyebrow}>{mode === 'ui' ? 'Context preview' : '3D context preview'}</p>
             <div className={styles.contextCard}>
               <span className={styles.contextMark} style={{ backgroundColor: selectedValue }} />
               <div>
-                <strong>Rastaak token</strong>
-                <p>Token-driven colors keep components and CSS aligned.</p>
+                <strong>{mode === 'ui' ? 'Rastaak UI token' : sceneLabel(selectedName)}</strong>
+                <p>
+                  {mode === 'ui'
+                    ? 'Token-driven colors keep components and CSS aligned.'
+                    : 'This source value is shared by the Three.js scene and legacy WebGL worker.'}
+                </p>
               </div>
             </div>
-            <div className={styles.contextPanel} style={{ backgroundColor: selectedValue }}>
-              <span>Surface sample</span>
-              <button type="button">Button sample</button>
-            </div>
+            {mode === 'ui' ? (
+              <div className={styles.contextPanel} style={{ backgroundColor: selectedValue }}>
+                <span>Surface sample</span>
+                <button type="button">Button sample</button>
+              </div>
+            ) : (
+              <div className={styles.scenePreview}>
+                <svg viewBox="0 0 320 180" aria-hidden="true">
+                  <path d="M0 135 160 38 320 135M0 152 160 55 320 152M40 180V95M100 180V59M160 180V24M220 180V59M280 180V95" stroke={selectedValue} strokeWidth="2" />
+                  <path d="M24 28h164l-38 24H24z" fill={selectedValue} opacity="0.85" />
+                  <path d="M24 52h126l-36 92H24z" fill={selectedValue} opacity="0.35" />
+                  <path d="M210 45 306 136" stroke={selectedValue} strokeWidth="4" />
+                  <circle cx="252" cy="86" r="22" fill={selectedValue} opacity="0.3" />
+                </svg>
+                <span>Grid · architecture · laser · pulse</span>
+              </div>
+            )}
             <ol className={styles.steps}>
               <li>Copy the source line.</li>
               <li>Replace the matching value in the canonical token file.</li>
