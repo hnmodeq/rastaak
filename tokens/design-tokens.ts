@@ -20,7 +20,7 @@ export const tokens = {
     bgCardDark: '#12112A',
 
     // Text colors
-    textDark: '#050419',
+    textDark: '#333333',
     textMuted: '#585765',
     textDisabled: '#8C8C95',
     textSubtle: '#B2B1B8',

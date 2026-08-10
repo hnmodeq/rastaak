@@ -18,6 +18,7 @@ export const Logo: React.FC<LogoProps> = ({
       } ${className}`}
       style={{
         fontWeight: 800,
+        fontSize: '50px',
         letterSpacing: '-0.02em',
         lineHeight: 1,
       }}
