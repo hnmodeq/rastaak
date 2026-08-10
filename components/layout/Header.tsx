@@ -43,8 +43,8 @@ export const Header: React.FC = () => {
             </Link>
             <button className="mobile-nav__close" type="button" aria-label="Close menu">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect y="14.1421" width="20" height="2" transform="rotate(-45 0 14.1421)" fill="currentColor" />
-                <rect x="1.41406" y="0.000610352" width="20" height="2" transform="rotate(45 1.41406 0.000610352)" fill="currentColor" />
+                <rect y="14.1421" width="20" height="2" transform="rotate(-45 0 14.1421)" fill="#050419" />
+                <rect x="1.41406" y="0.000610352" width="20" height="2" transform="rotate(45 1.41406 0.000610352)" fill="#050419" />
               </svg>
             </button>
           </div>
