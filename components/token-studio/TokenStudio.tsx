@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { tokens as designTokens } from '@/tokens/design-tokens';
 import styles from './TokenStudio.module.css';
 
 type ColorTokens = Readonly<Record<string, string>>;
@@ -15,8 +16,8 @@ type Oklch = {
 };
 
 interface TokenStudioProps {
-  colorTokens: ColorTokens;
-  sceneTokens: SceneTokens;
+  colorTokens?: ColorTokens;
+  sceneTokens?: SceneTokens;
 }
 
 const tokenGroup = (name: string) => {
@@ -121,7 +122,10 @@ const sceneNumberToHex = (value: number) => `#${value.toString(16).padStart(6, '
 const hexToSceneNumber = (value: string) => Number.parseInt(value.slice(1), 16);
 const sceneSourceValue = (value: number) => `0x${value.toString(16).padStart(6, '0')}`;
 
-export function TokenStudio({ colorTokens, sceneTokens }: TokenStudioProps) {
+export function TokenStudio({
+  colorTokens = designTokens.colors,
+  sceneTokens = designTokens.scene,
+}: TokenStudioProps) {
   const uiEntries = useMemo(
     () => Object.entries(colorTokens).filter(([name]) => name !== 'transparent'),
     [colorTokens],
@@ -152,10 +156,12 @@ export function TokenStudio({ colorTokens, sceneTokens }: TokenStudioProps) {
     return groups;
   }, {});
 
-  useEffect(() => {
-    setSelectedName((mode === 'ui' ? uiEntries : sceneEntries)[0]?.[0] ?? '');
+  const selectMode = (nextMode: StudioMode) => {
+    const nextEntries = nextMode === 'ui' ? uiEntries : sceneEntries;
+    setMode(nextMode);
+    setSelectedName(nextEntries[0]?.[0] ?? '');
     setCopied(false);
-  }, [mode, sceneEntries, uiEntries]);
+  };
 
   const updateUiToken = (nextColor: Oklch) => {
     setUiDraft((current) => ({ ...current, [selectedName]: formatOklch(nextColor) }));
@@ -196,7 +202,7 @@ export function TokenStudio({ colorTokens, sceneTokens }: TokenStudioProps) {
               role="tab"
               aria-selected={mode === 'ui'}
               className={mode === 'ui' ? styles.activeTab : ''}
-              onClick={() => setMode('ui')}
+              onClick={() => selectMode('ui')}
             >
               UI colors
             </button>
