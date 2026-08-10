@@ -13,6 +13,7 @@ const config: Config = {
         brand: {
           primary: tokens.colors.primary,
           'primary-hover': tokens.colors.primaryHover,
+          light: tokens.colors.primaryLight,
           glow: tokens.colors.primaryGlow,
         },
         surface: {
@@ -31,9 +32,11 @@ const config: Config = {
           subtle: tokens.colors.textSubtle,
           light: tokens.colors.textLight,
           glass: tokens.colors.textGlass,
+          'semi-opaque': tokens.colors.textSemiOpaque,
         },
         edge: {
           light: tokens.colors.borderLight,
+          neutral: tokens.colors.borderNeutral,
           muted: tokens.colors.borderMuted,
           dark: tokens.colors.borderDark,
           'dark-subtle': tokens.colors.borderDarkSubtle,
@@ -42,6 +45,15 @@ const config: Config = {
           success: tokens.colors.success,
           error: tokens.colors.error,
           warning: tokens.colors.warning,
+        },
+        scene: {
+          main: tokens.colors.sceneWireframeMain,
+          floor: tokens.colors.sceneWireframeFloor,
+          laserRed: tokens.colors.sceneLaserRed,
+          laserBlue: tokens.colors.sceneLaserBlue,
+          pulse: tokens.colors.scenePulse,
+          keyLight: tokens.colors.sceneKeyLight,
+          gridSecondary: tokens.colors.sceneGridSecondary,
         },
       },
       fontFamily: {
