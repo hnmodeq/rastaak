@@ -150,7 +150,7 @@ export const ApplyModal: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-bold text-content-dark mb-2">Application Received!</h3>
                 <p className="text-content-muted mb-6">
-                  Thank you for applying to Rastaak. Our recruiting team will review your profile and reach out for upcoming project dispatches.
+                  Thank you for applying to Vectr. Our recruiting team will review your profile and reach out for upcoming project dispatches.
                 </p>
                 <PillButton variant="dark" onClick={handleReset}>
                   Close

@@ -37,12 +37,12 @@ export const PrivacyRequestContent: React.FC = () => {
             <ul>
               <li>
                 <strong>Email:</strong>
-                <a href="mailto:privacy@rastaak.com?subject=Privacy%20Request"> privacy@rastaak.com </a>
+                <a href="mailto:privacy@vectrfl.com?subject=Privacy%20Request"> privacy@vectrfl.com </a>
                 <br />
                 <small>Include &quot;Privacy Request&quot; in the subject line.</small>
               </li>
               <li>
-                <strong>Mail:</strong> Rastaak, Inc.., 480 N Orlando Ave, Suite 236, Winter Park, FL 32789, United States
+                <strong>Mail:</strong> Vectr, Inc., 480 N Orlando Ave, Suite 236, Winter Park, FL 32789, United States
               </li>
             </ul>
             <p className="form__disclaimer">

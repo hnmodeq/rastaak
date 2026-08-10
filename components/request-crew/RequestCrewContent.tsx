@@ -9,7 +9,7 @@ export const RequestCrewContent: React.FC = () => {
           <h1 className="request-crew__title">Request Crews</h1>
           <div className="request-crew__description">
             <p>Critical outages don&apos;t wait.</p>
-            <p>Contact Rastaak 24/7 to mobilize a specialized team to your site immediately.</p>
+            <p>Contact Vectr 24/7 to mobilize a specialized team to your site immediately.</p>
             <p>&nbsp;</p>
             <p>Tell us your scope; we&apos;ll handle the scale.</p>
           </div>
@@ -97,7 +97,7 @@ export const RequestCrewContent: React.FC = () => {
                 <div className="form__disclaimer-wrap">
                   <p className="form__disclaimer">
                     {' '}
-                    By submitting, you agree that Rastaak collects the information in this form to respond to your staffing inquiry. We do not sell or share it for advertising. See our{' '}
+                    By submitting, you agree that Vectr collects the information in this form to respond to your staffing inquiry. We do not sell or share it for advertising. See our{' '}
                     <Link href="/privacy">Privacy Policy</Link>.
                   </p>
                   <details className="form__disclaimer-details">

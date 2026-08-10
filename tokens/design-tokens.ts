@@ -1,5 +1,5 @@
 /**
- * Rastaak Design Token System
+ * Vectr Design Token System
  * Centralized design tokens for colors, typography, spacing, shadows, and animation curves.
  */
 

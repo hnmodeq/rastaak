@@ -281,14 +281,14 @@ export const HomeContent: React.FC = () => {
 
               <div className="faq-item">
                 <button className="faq-item__header" type="button" aria-expanded="false">
-                  <span className="faq-item__question">How does Rastaak differ from traditional staffing vendors?</span>
+                  <span className="faq-item__question">How does Vectr differ from traditional staffing vendors?</span>
                   <span className="faq-item__icon">
                     <img src="/icons/chevron-down.svg" alt="" loading="lazy" decoding="async" />
                   </span>
                 </button>
                 <div className="faq-item__content">
                   <p className="faq-item__answer">
-                    Traditional vendors are reactive; Rastaak is an operational engine. While legacy agencies rely on manual resumes and &apos;available&apos; warm bodies, we use intelligent workflows and expert curation to deliver field-validated precision. We don&apos;t just find people who are looking for work; we deploy proven crews that are engineered for the high-tempo grind of a critical path environment.
+                    Traditional vendors are reactive; Vectr is an operational engine. While legacy agencies rely on manual resumes and &apos;available&apos; warm bodies, we use intelligent workflows and expert curation to deliver field-validated precision. We don&apos;t just find people who are looking for work; we deploy proven crews that are engineered for the high-tempo grind of a critical path environment.
                   </p>
                 </div>
               </div>
