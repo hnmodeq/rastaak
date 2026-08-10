@@ -13,10 +13,11 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   return (
     <span
-      className={`inline-block font-extrabold select-none transition-colors duration-200 font-kalameh ${fontSize} ${
+      className={`inline-block font-extrabold select-none transition-colors duration-200 ${fontSize} ${
         variant === 'light' ? 'text-[#FCFCFC]' : 'text-[#050419]'
       } ${className}`}
       style={{
+        fontFamily: "'Kalameh', 'Roboto', sans-serif",
         fontWeight: 800,
         fontSize: '50px',
         letterSpacing: '-0.02em',
