@@ -24,9 +24,10 @@ They are intentionally not committed and are overwritten by every generator run.
 
 1. In development, open [http://localhost:3000/token-studio](http://localhost:3000/token-studio).
 2. Choose **UI colors** for `tokens.colors`, or **3D scene** for `tokens.scene`.
-3. Adjust the native picker (and, for UI tokens, the OKLCH controls), then copy the generated source line.
-4. Update that matching field in `tokens/design-tokens.ts`.
-5. Generate and validate:
+3. Adjust the native picker (and, for UI tokens, the OKLCH controls).
+4. Select **Apply locally** to update `tokens/design-tokens.ts` and regenerate the runtime files, or copy the source line for a manual edit.
+5. For a 3D scene color, reload the main site in a new tab so the legacy WebGL module is recreated.
+6. Generate and validate:
 
    ```bash
    npm run tokens:generate
@@ -34,7 +35,7 @@ They are intentionally not committed and are overwritten by every generator run.
    npm run build
    ```
 
-6. Commit **only the source-token change** (plus any intentional component use changes). Generated files are ignored.
+7. Commit **only the source-token change** (plus any intentional component use changes). Generated files are ignored.
 
 ## How values reach the application
 

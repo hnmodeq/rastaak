@@ -146,6 +146,8 @@ export function TokenStudio({
   const [mode, setMode] = useState<StudioMode>('ui');
   const [selectedName, setSelectedName] = useState(uiEntries[0]?.[0] ?? '');
   const [copied, setCopied] = useState(false);
+  const [applyStatus, setApplyStatus] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
 
   const activeEntries = mode === 'ui' ? uiEntries : sceneEntries;
   const firstActiveName = activeEntries[0]?.[0] ?? '';
@@ -174,6 +176,7 @@ export function TokenStudio({
     setMode(nextMode);
     setSelectedName(nextEntries[0]?.[0] ?? '');
     setCopied(false);
+    setApplyStatus(null);
   };
 
   const updateUiToken = (nextColor: Oklch) => {
@@ -188,12 +191,43 @@ export function TokenStudio({
     setUiDraft(sourceUiValues);
     setSceneDraft(sourceSceneValues);
     setCopied(false);
+    setApplyStatus(null);
   };
 
   const copySelected = async () => {
     await navigator.clipboard.writeText(sourceLine);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
+  };
+
+  const applySelected = async () => {
+    setIsApplying(true);
+    setApplyStatus(null);
+
+    try {
+      const response = await fetch('/api/token-studio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collection: mode === 'ui' ? 'colors' : 'scene',
+          name: activeSelectedName,
+          value: mode === 'ui' ? selectedUiValue : sceneSourceValue(selectedSceneValue),
+        }),
+      });
+      const result = await response.json() as { message?: string; error?: string };
+
+      if (!response.ok) throw new Error(result.error ?? 'Unable to apply the token change.');
+
+      setApplyStatus(
+        mode === 'scene'
+          ? 'Saved and regenerated. Reload the main site in a new tab to recreate the WebGL scene.'
+          : 'Saved and regenerated. Reload the page to see the updated UI token.',
+      );
+    } catch (error) {
+      setApplyStatus(error instanceof Error ? error.message : 'Unable to apply the token change.');
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   return (
@@ -325,9 +359,15 @@ export function TokenStudio({
             <div className={styles.output}>
               <p>{mode === 'ui' ? 'UI token source line' : '3D scene source line'}</p>
               <code>{sourceLine}</code>
-              <button type="button" className={styles.copy} onClick={copySelected}>
-                {copied ? 'Copied' : 'Copy token line'}
-              </button>
+              <div className={styles.outputActions}>
+                <button type="button" className={styles.copy} onClick={copySelected}>
+                  {copied ? 'Copied' : 'Copy token line'}
+                </button>
+                <button type="button" className={styles.apply} onClick={applySelected} disabled={isApplying}>
+                  {isApplying ? 'Applying…' : 'Apply locally'}
+                </button>
+              </div>
+              {applyStatus && <p className={styles.applyStatus}>{applyStatus}</p>}
             </div>
           </section>
         )}

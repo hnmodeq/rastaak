@@ -412,3 +412,33 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+.outputActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.apply {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--color-content-light);
+  background: var(--color-brand-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.apply:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.output .applyStatus {
+  color: var(--color-content-muted);
+  line-height: 1.4;
+  text-transform: none;
+}
