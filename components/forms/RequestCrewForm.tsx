@@ -191,7 +191,7 @@ export const RequestCrewForm: React.FC = () => {
       {/* Disclaimer */}
       <div className="text-xs text-content-muted pt-2 space-y-1 leading-relaxed">
         <p>
-          By submitting, you agree that Vectr collects the information in this form to respond to your staffing inquiry. We do not sell or share it for advertising. See our{' '}
+          By submitting, you agree that Rastaak collects the information in this form to respond to your staffing inquiry. We do not sell or share it for advertising. See our{' '}
           <Link href="/privacy" className="underline hover:text-content-dark">
             Privacy Policy
           </Link>

@@ -14,7 +14,7 @@ export const MissionContent: React.FC = () => {
           <div className="sub-hero__content">
             <div className="sub-hero__body">
               <p className="sub-hero__text">
-                Traditional staffing is slow, manual, and bloated with layers of middleman margins. Vectr replaces legacy friction with automated, instant workforce mobilization.
+                Traditional staffing is slow, manual, and bloated with layers of middleman margins. Rastaak replaces legacy friction with automated, instant workforce mobilization.
               </p>
             </div>
           </div>

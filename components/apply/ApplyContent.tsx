@@ -18,7 +18,7 @@ export const ApplyContent: React.FC = () => {
               </p>
               <div className="flx sub-hero__cta">
                 <button type="button" className="pill-btn pill-btn--dark" data-apply-trigger="true">
-                  <span className="pill-btn-span">Apply Now to Vectr</span>
+                  <span className="pill-btn-span">Apply Now to Rastaak</span>
                 </button>
               </div>
             </div>

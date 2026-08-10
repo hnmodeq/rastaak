@@ -44,7 +44,7 @@ export const MobileNav: React.FC = () => {
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-edge-light">
                 <Link href="/" onClick={handleLinkClick}>
-                  <Logo color="#050419" className="h-4 w-auto" />
+                  <Logo variant="dark" fontSize="text-2xl" />
                 </Link>
                 <button
                   type="button"

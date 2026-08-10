@@ -6,14 +6,14 @@ import { Loader } from '@/components/layout/Loader';
 import { ClientScripts } from '@/components/layout/ClientScripts';
 
 export const metadata: Metadata = {
-  title: 'Vectr | The New Standard in Staffing',
+  title: 'Rastaak | The New Standard in Staffing',
   description: 'AI driven precision staffing for critical outages in high-consequence environments.',
   icons: {
     icon: '/favicon.svg',
     apple: '/icons/apple-touch-icon.png',
   },
   openGraph: {
-    title: 'Vectr | AI Driven Precision Staffing',
+    title: 'Rastaak | AI Driven Precision Staffing',
     description: 'We mobilize verified industrial crews to protect your schedule and your bottom line.',
     images: ['/share/ogp.png'],
   },

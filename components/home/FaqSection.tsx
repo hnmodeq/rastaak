@@ -26,9 +26,9 @@ const faqs: FaqItem[] = [
       'We provide 24/7 active coordination to match the 24/7 nature of an outage. Our coverage spans the full range of outage craft: from general laborers and painters to specialized repairs and schedulers. More importantly, we manage the "last mile" of arrival, monitoring deployments in real-time to ensure your night and day shifts remain fully manned, even when field conditions shift.',
   },
   {
-    question: 'How does Vectr differ from traditional staffing vendors?',
+    question: 'How does Rastaak differ from traditional staffing vendors?',
     answer:
-      "Traditional vendors are reactive; Vectr is an operational engine. While legacy agencies rely on manual resumes and 'available' warm bodies, we use intelligent workflows and expert curation to deliver field-validated precision. We don't just find people who are looking for work; we deploy proven crews that are engineered for the high-tempo grind of a critical path environment.",
+      "Traditional vendors are reactive; Rastaak is an operational engine. While legacy agencies rely on manual resumes and 'available' warm bodies, we use intelligent workflows and expert curation to deliver field-validated precision. We don't just find people who are looking for work; we deploy proven crews that are engineered for the high-tempo grind of a critical path environment.",
   },
 ];
 
