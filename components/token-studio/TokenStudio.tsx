@@ -118,9 +118,17 @@ const formatOklch = ({ lightness, chroma, hue, alpha }: Oklch) => {
   return alpha < 1 ? `${base} / ${alpha.toFixed(2)})` : `${base})`;
 };
 
-const sceneNumberToHex = (value: number) => `#${value.toString(16).padStart(6, '0')}`;
+const sceneNumberToHex = (value: number | undefined) => {
+  const safeValue = value ?? designTokens.scene.canvasBackground;
+  return `#${safeValue.toString(16).padStart(6, '0')}`;
+};
+
 const hexToSceneNumber = (value: string) => Number.parseInt(value.slice(1), 16);
-const sceneSourceValue = (value: number) => `0x${value.toString(16).padStart(6, '0')}`;
+
+const sceneSourceValue = (value: number | undefined) => {
+  const safeValue = value ?? designTokens.scene.canvasBackground;
+  return `0x${safeValue.toString(16).padStart(6, '0')}`;
+};
 
 export function TokenStudio({
   colorTokens = designTokens.colors,
@@ -140,14 +148,19 @@ export function TokenStudio({
   const [copied, setCopied] = useState(false);
 
   const activeEntries = mode === 'ui' ? uiEntries : sceneEntries;
-  const selectedUiValue = uiDraft[selectedName];
-  const selectedSceneValue = sceneDraft[selectedName];
+  const firstActiveName = activeEntries[0]?.[0] ?? '';
+  const hasSelectedToken = mode === 'ui'
+    ? selectedName in uiDraft
+    : selectedName in sceneDraft;
+  const activeSelectedName = hasSelectedToken ? selectedName : firstActiveName;
+  const selectedUiValue = uiDraft[activeSelectedName];
+  const selectedSceneValue = sceneDraft[activeSelectedName];
   const selectedValue = mode === 'ui' ? selectedUiValue : sceneNumberToHex(selectedSceneValue);
   const selectedColor = mode === 'ui' ? parseOklch(selectedUiValue) : null;
   const selectedHex = selectedColor ? oklchToHex(selectedColor) : selectedValue;
   const sourceLine = mode === 'ui'
-    ? `    ${selectedName}: '${selectedUiValue}',`
-    : `    ${selectedName}: ${sceneSourceValue(selectedSceneValue)},`;
+    ? `    ${activeSelectedName}: '${selectedUiValue}',`
+    : `    ${activeSelectedName}: ${sceneSourceValue(selectedSceneValue)},`;
 
   const groupedTokens = activeEntries.reduce<Record<string, string[]>>((groups, [name]) => {
     const group = mode === 'ui' ? tokenGroup(name) : sceneGroup(name);
@@ -164,11 +177,11 @@ export function TokenStudio({
   };
 
   const updateUiToken = (nextColor: Oklch) => {
-    setUiDraft((current) => ({ ...current, [selectedName]: formatOklch(nextColor) }));
+    setUiDraft((current) => ({ ...current, [activeSelectedName]: formatOklch(nextColor) }));
   };
 
   const updateSceneToken = (hex: string) => {
-    setSceneDraft((current) => ({ ...current, [selectedName]: hexToSceneNumber(hex) }));
+    setSceneDraft((current) => ({ ...current, [activeSelectedName]: hexToSceneNumber(hex) }));
   };
 
   const resetDrafts = () => {
@@ -211,7 +224,7 @@ export function TokenStudio({
               role="tab"
               aria-selected={mode === 'scene'}
               className={mode === 'scene' ? styles.activeTab : ''}
-              onClick={() => setMode('scene')}
+              onClick={() => selectMode('scene')}
             >
               3D scene
             </button>
@@ -224,7 +237,7 @@ export function TokenStudio({
                 <button
                   type="button"
                   key={name}
-                  className={`${styles.tokenButton} ${name === selectedName ? styles.isSelected : ''}`}
+                  className={`${styles.tokenButton} ${name === activeSelectedName ? styles.isSelected : ''}`}
                   onClick={() => setSelectedName(name)}
                 >
                   <span className={styles.swatch} style={{ backgroundColor: mode === 'ui' ? uiDraft[name] : sceneNumberToHex(sceneDraft[name]) }} />
@@ -240,7 +253,7 @@ export function TokenStudio({
             <div className={styles.editorHeading}>
               <div>
                 <p className={styles.eyebrow}>{mode === 'ui' ? 'Editing UI token' : 'Editing 3D scene token'}</p>
-                <h2>{mode === 'ui' ? selectedName : sceneLabel(selectedName)}</h2>
+                <h2>{mode === 'ui' ? activeSelectedName : sceneLabel(activeSelectedName)}</h2>
               </div>
               <button type="button" className={styles.reset} onClick={resetDrafts}>
                 Reset all drafts
@@ -325,7 +338,7 @@ export function TokenStudio({
             <div className={styles.contextCard}>
               <span className={styles.contextMark} style={{ backgroundColor: selectedValue }} />
               <div>
-                <strong>{mode === 'ui' ? 'Rastaak UI token' : sceneLabel(selectedName)}</strong>
+                <strong>{mode === 'ui' ? 'Rastaak UI token' : sceneLabel(activeSelectedName)}</strong>
                 <p>
                   {mode === 'ui'
                     ? 'Token-driven colors keep components and CSS aligned.'
