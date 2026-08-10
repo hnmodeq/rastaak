@@ -56,14 +56,6 @@ const aliases = {
   '--color-state-error-surface': 'errorSurface',
   '--color-state-warning': 'warning',
 
-  '--color-scene-wireframe-main': 'sceneWireframeMain',
-  '--color-scene-wireframe-floor': 'sceneWireframeFloor',
-  '--color-scene-laser-red': 'sceneLaserRed',
-  '--color-scene-laser-blue': 'sceneLaserBlue',
-  '--color-scene-pulse': 'scenePulse',
-  '--color-scene-key-light': 'sceneKeyLight',
-  '--color-scene-grid-secondary': 'sceneGridSecondary',
-
   '--color-overlay-dark-10': 'overlayDark10',
   '--color-overlay-dark-20': 'overlayDark20',
   '--color-overlay-dark-30': 'overlayDark30',

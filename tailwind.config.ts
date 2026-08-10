@@ -62,15 +62,6 @@ const config: Config = {
           'surface-70': tokens.colors.overlaySurface70,
           scrim: tokens.colors.overlayScrim,
         },
-        scene: {
-          wireframe: tokens.colors.sceneWireframeMain,
-          floor: tokens.colors.sceneWireframeFloor,
-          'laser-red': tokens.colors.sceneLaserRed,
-          'laser-blue': tokens.colors.sceneLaserBlue,
-          pulse: tokens.colors.scenePulse,
-          'key-light': tokens.colors.sceneKeyLight,
-          'grid-secondary': tokens.colors.sceneGridSecondary,
-        },
       },
       fontFamily: {
         ui: ['var(--font-roboto)', 'sans-serif'],

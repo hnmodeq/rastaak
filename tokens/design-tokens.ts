@@ -43,14 +43,6 @@ export const tokens = {
     errorSurface: 'oklch(97.05% 0.0129 17.38)',
     warning: 'oklch(76.86% 0.1647 70.08)',
 
-    sceneWireframeMain: 'oklch(84.32% 0.0745 249.94)',
-    sceneWireframeFloor: 'oklch(77.88% 0.0735 250.65)',
-    sceneLaserRed: 'oklch(67.73% 0.2129 16.81)',
-    sceneLaserBlue: 'oklch(65.64% 0.183 250.17)',
-    scenePulse: 'oklch(80.11% 0.1264 229.37)',
-    sceneKeyLight: 'oklch(64.48% 0.1893 263.59)',
-    sceneGridSecondary: 'oklch(20.92% 0.0769 278.5)',
-
     overlayDark10: 'oklch(12.78% 0.0477 280.42 / 0.1)',
     overlayDark20: 'oklch(12.78% 0.0477 280.42 / 0.2)',
     overlayDark30: 'oklch(12.78% 0.0477 280.42 / 0.3)',
