@@ -43,7 +43,7 @@ export const Footer: React.FC = () => {
           <Link href="/privacy" className="footer__privacy">Privacy Policy</Link>
           <Link href="/terms" className="footer__privacy">ToS</Link>
           <a href="https://utsubo.com" target="_blank" rel="noopener noreferrer" className="footer__credit">
-            Made by Bumim
+            Made by Utsubo
           </a>
         </div>
       </div>
