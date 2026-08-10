@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import { ChevronDown } from '../ui/Icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MissionItem {
@@ -63,12 +63,7 @@ export const MissionAccordion: React.FC = () => {
                   isOpen ? 'rotate-180' : ''
                 }`}
               >
-                <Image
-                  src="/icons/chevron-down.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                />
+                <ChevronDown width={20} height={20} />
               </span>
             </button>
 

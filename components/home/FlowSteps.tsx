@@ -48,7 +48,7 @@ export const FlowSteps: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-100px' }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col md:flex-row md:items-start justify-between gap-8 p-8 md:p-12 rounded-3xl bg-surface-light/80 backdrop-blur-xl border border-white/60 shadow-glass"
+            className="flex flex-col md:flex-row md:items-start justify-between gap-8 p-8 md:p-12 rounded-3xl bg-surface-light/80 backdrop-blur-xl border border-edge-inverse-strong shadow-glass"
           >
             {/* Step Number & Title */}
             <div className="md:w-1/3">

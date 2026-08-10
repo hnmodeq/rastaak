@@ -7,9 +7,9 @@ export const Loader: React.FC = () => {
       <svg width="96" height="96" viewBox="0 0 96 96" fill="none" className="loader__logo" overflow="visible">
         <defs>
           <mask id="arrow-mask">
-            <path className="arrow-mask-line" d="M14.0002 13.9917L47.0002 46.9917" stroke="white" strokeWidth="16.1" />
-            <path className="arrow-mask-line" d="M14.0002 81.9917L47.0002 48.9917" stroke="white" strokeWidth="16.1" />
-            <path className="arrow-mask-line" d="M0 47.9917H56" stroke="white" strokeWidth="16.1" />
+            <path className="arrow-mask-line" d="M14.0002 13.9917L47.0002 46.9917" stroke={tokens.colors.textLight} strokeWidth="16.1" />
+            <path className="arrow-mask-line" d="M14.0002 81.9917L47.0002 48.9917" stroke={tokens.colors.textLight} strokeWidth="16.1" />
+            <path className="arrow-mask-line" d="M0 47.9917H56" stroke={tokens.colors.textLight} strokeWidth="16.1" />
           </mask>
         </defs>
         <g id="block_full" fill={tokens.colors.primary}>
@@ -27,7 +27,7 @@ export const Loader: React.FC = () => {
       <svg className="loader__ellipse loader__ellipse--outer" viewBox="0 0 1500 800">
         <defs>
           <mask id="mask-outer">
-            <path d="M 750 1 A 749 399 0 0 1 750 799 A 749 399 0 0 1 750 1" fill="none" stroke="white" strokeWidth="4" pathLength="3700" className="loader__draw loader__draw--outer" />
+            <path d="M 750 1 A 749 399 0 0 1 750 799 A 749 399 0 0 1 750 1" fill="none" stroke={tokens.colors.textLight} strokeWidth="4" pathLength="3700" className="loader__draw loader__draw--outer" />
           </mask>
         </defs>
         <ellipse cx="750" cy="400" rx="749" ry="399" mask="url(#mask-outer)" />
@@ -35,7 +35,7 @@ export const Loader: React.FC = () => {
       <svg className="loader__ellipse loader__ellipse--inner" viewBox="0 0 800 800">
         <defs>
           <mask id="mask-inner">
-            <path d="M 400 1 A 399 399 0 0 1 400 799 A 399 399 0 0 1 400 1" fill="none" stroke="white" strokeWidth="4" pathLength="2520" className="loader__draw loader__draw--inner" />
+            <path d="M 400 1 A 399 399 0 0 1 400 799 A 399 399 0 0 1 400 1" fill="none" stroke={tokens.colors.textLight} strokeWidth="4" pathLength="2520" className="loader__draw loader__draw--inner" />
           </mask>
         </defs>
         <ellipse cx="400" cy="400" rx="399" ry="399" mask="url(#mask-inner)" />

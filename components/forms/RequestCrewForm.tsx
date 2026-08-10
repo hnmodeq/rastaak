@@ -73,7 +73,7 @@ export const RequestCrewForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="p-8 sm:p-12 rounded-3xl bg-surface-light border border-edge-light shadow-xl space-y-6">
       {errorMessage && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium">
+        <div className="p-4 bg-state-error-surface text-state-error rounded-xl text-sm font-medium">
           {errorMessage}
         </div>
       )}

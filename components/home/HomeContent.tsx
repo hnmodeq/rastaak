@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { ChevronDown, FeatureIcon } from '../ui/Icons';
 
 export const HomeContent: React.FC = () => {
   return (
@@ -147,7 +148,7 @@ export const HomeContent: React.FC = () => {
               <article className="feature-item">
                 <div className="feature-item__content">
                   <div className="feature-item__icon">
-                    <img src="/icons/features/rapid-activation.svg" alt="Rapid Activation icon" loading="lazy" decoding="async" width="96" height="96" />
+                    <FeatureIcon name="rapid" label="Rapid Activation" width={96} height={96} />
                   </div>
                   <div className="feature-item__text">
                     <h3 className="feature-item__title">Rapid Activation</h3>
@@ -161,7 +162,7 @@ export const HomeContent: React.FC = () => {
               <article className="feature-item">
                 <div className="feature-item__content">
                   <div className="feature-item__icon">
-                    <img src="/icons/features/rigorous-selection.svg" alt="Rigorous Selection icon" loading="lazy" decoding="async" width="96" height="96" />
+                    <FeatureIcon name="selection" label="Rigorous Selection" width={96} height={96} />
                   </div>
                   <div className="feature-item__text">
                     <h3 className="feature-item__title">Rigorous Selection</h3>
@@ -175,7 +176,7 @@ export const HomeContent: React.FC = () => {
               <article className="feature-item">
                 <div className="feature-item__content">
                   <div className="feature-item__icon">
-                    <img src="/icons/features/verified.svg" alt="100% Verified Before Arrival icon" loading="lazy" decoding="async" width="96" height="96" />
+                    <FeatureIcon name="verified" label="Verified Before Arrival" width={96} height={96} />
                   </div>
                   <div className="feature-item__text">
                     <h3 className="feature-item__title">100% Verified Before Arrival</h3>
@@ -189,7 +190,7 @@ export const HomeContent: React.FC = () => {
               <article className="feature-item">
                 <div className="feature-item__content">
                   <div className="feature-item__icon">
-                    <img src="/icons/features/controlled-outcomes.svg" alt="Controlled Outcomes icon" loading="lazy" decoding="async" width="96" height="96" />
+                    <FeatureIcon name="outcomes" label="Controlled Outcomes" width={96} height={96} />
                   </div>
                   <div className="feature-item__text">
                     <h3 className="feature-item__title">Controlled Outcomes</h3>
@@ -241,7 +242,7 @@ export const HomeContent: React.FC = () => {
                 <button className="faq-item__header" type="button" aria-expanded="true">
                   <span className="faq-item__question">How fast can crews be mobilized?</span>
                   <span className="faq-item__icon">
-                    <img src="/icons/chevron-down.svg" alt="" loading="lazy" decoding="async" />
+                    <ChevronDown width={40} height={24} />
                   </span>
                 </button>
                 <div className="faq-item__content">
@@ -255,7 +256,7 @@ export const HomeContent: React.FC = () => {
                 <button className="faq-item__header" type="button" aria-expanded="false">
                   <span className="faq-item__question">How do you handle compliance &amp; background checks?</span>
                   <span className="faq-item__icon">
-                    <img src="/icons/chevron-down.svg" alt="" loading="lazy" decoding="async" />
+                    <ChevronDown width={40} height={24} />
                   </span>
                 </button>
                 <div className="faq-item__content">
@@ -269,7 +270,7 @@ export const HomeContent: React.FC = () => {
                 <button className="faq-item__header" type="button" aria-expanded="false">
                   <span className="faq-item__question">What is the coverage during outages?</span>
                   <span className="faq-item__icon">
-                    <img src="/icons/chevron-down.svg" alt="" loading="lazy" decoding="async" />
+                    <ChevronDown width={40} height={24} />
                   </span>
                 </button>
                 <div className="faq-item__content">
@@ -283,7 +284,7 @@ export const HomeContent: React.FC = () => {
                 <button className="faq-item__header" type="button" aria-expanded="false">
                   <span className="faq-item__question">How does Rastaak differ from traditional staffing vendors?</span>
                   <span className="faq-item__icon">
-                    <img src="/icons/chevron-down.svg" alt="" loading="lazy" decoding="async" />
+                    <ChevronDown width={40} height={24} />
                   </span>
                 </button>
                 <div className="faq-item__content">

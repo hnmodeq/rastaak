@@ -171,7 +171,7 @@ export const ApplyModal: React.FC = () => {
                 </div>
 
                 {errorMessage && (
-                  <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium">
+                  <div className="mb-4 p-3 bg-state-error-surface text-state-error rounded-xl text-sm font-medium">
                     {errorMessage}
                   </div>
                 )}

@@ -1,7 +1,8 @@
 /**
- * Rastaak Design Token System (Exhaustive OKLCH Edition)
- * Centralized design tokens for colors, typography, spacing, shadows, and animation curves.
- * Every single color across the entire codebase is mapped to the perceptual OKLCH color space.
+ * Rastaak design-token source of truth.
+ *
+ * Raw color values belong only in this file. Run `npm run tokens:generate`
+ * to create the CSS custom properties and the legacy WebGL scene-token module.
  */
 
 export const tokens = {
@@ -12,54 +13,81 @@ export const tokens = {
     primaryGlow: 'oklch(30.52% 0.154 279.05 / 0.35)',
     primaryHoverGlow: 'oklch(30.52% 0.154 279.05 / 0.45)',
 
-    bgLight: 'oklch(99.11% 0.0 89.88)',     
-    bgHero: 'oklch(99.11% 0.0 89.88)',       
-    bgAlt: 'oklch(99.11% 0.0 89.88)',  
-    bgMuted: 'oklch(99.11% 0.0 89.88)',          
-    bgDark: 'oklch(12.78% 0.0477 280.42)',         
-    bgDarkElevated: 'oklch(18.24% 0.0517 281.71)', 
-    bgCardDark: 'oklch(19.45% 0.0492 282.62)',    
+    bgLight: 'oklch(99.11% 0 89.88)',
+    bgHero: 'oklch(99.11% 0 89.88)',
+    bgAlt: 'oklch(92.24% 0.0202 233.86)',
+    bgMuted: 'oklch(96.34% 0.0053 197.07)',
+    bgDark: 'oklch(12.78% 0.0477 280.42)',
+    bgDarkElevated: 'oklch(18.24% 0.0517 281.71)',
+    bgCardDark: 'oklch(19.45% 0.0492 282.62)',
+    bgTransitionHome: 'oklch(90% 0.0228 233.38)',
 
-    textDark: 'oklch(12.78% 0.0477 280.42)',      
-    textMuted: 'oklch(46.28% 0.0225 288.76)',     
-    textDisabled: 'oklch(64.3% 0.0133 286.02)',     
-    textSubtle: 'oklch(76.33% 0.0099 292.73)', 
-    textLight: 'oklch(99.11% 0.0 89.88)',       
-    textGlass: 'oklch(99.11% 0.0 89.88 / 0.85)',
-    textSemiOpaque: 'oklch(99.11% 0.0 89.88 / 0.70)',
+    textDark: 'oklch(12.78% 0.0477 280.42)',
+    textMuted: 'oklch(46.28% 0.0225 288.76)',
+    textDisabled: 'oklch(64.3% 0.0133 286.02)',
+    textSubtle: 'oklch(76.33% 0.0099 292.73)',
+    textLight: 'oklch(99.11% 0 89.88)',
+    textGlass: 'oklch(99.11% 0 89.88 / 0.85)',
+    textSemiOpaque: 'oklch(99.11% 0 89.88 / 0.7)',
 
-    borderLight: 'oklch(92.55% 0.0027 286.35)',   
-    borderNeutral: 'oklch(88.53% 0.0 89.88)',      
-    borderMuted: 'oklch(85.91% 0.0068 286.25)',  
-    borderDark: 'oklch(34.11% 0.0296 287.41)', 
-    borderDarkSubtle: 'oklch(100.0% 0.0 89.88 / 0.12)',
+    borderLight: 'oklch(92.55% 0.0027 286.35)',
+    borderNeutral: 'oklch(88.53% 0 89.88)',
+    borderMuted: 'oklch(85.91% 0.0068 286.25)',
+    borderDark: 'oklch(34.11% 0.0296 287.41)',
+    borderDarkSubtle: 'oklch(100% 0 89.88 / 0.12)',
+    borderDecorative: 'oklch(88.53% 0 89.88)',
+    borderInverseStrong: 'oklch(100% 0 89.88 / 0.6)',
 
-    success: 'oklch(69.59% 0.1491 162.48)',   
-    error: 'oklch(63.68% 0.2078 25.33)',           
-    warning: 'oklch(76.86% 0.1647 70.08)',    
+    success: 'oklch(69.59% 0.1491 162.48)',
+    error: 'oklch(63.68% 0.2078 25.33)',
+    errorSurface: 'oklch(97.05% 0.0129 17.38)',
+    warning: 'oklch(76.86% 0.1647 70.08)',
 
-    sceneWireframeMain: 'oklch(99.11% 0.0 89.88)',
-    sceneWireframeFloor: 'oklch(99.11% 0.0 89.88)', 
-    sceneLaserRed: 'oklch(20.92% 0.0769 278.5)',     
-    sceneLaserBlue: 'oklch(20.92% 0.0769 278.5)',     
-    scenePulse: 'oklch(99.11% 0.0 89.88)',        
-    sceneKeyLight: 'oklch(699.11% 0.0 89.88)',   
-    sceneGridSecondary: 'oklch(99.11% 0.0 89.88)',  
+    sceneWireframeMain: 'oklch(84.32% 0.0745 249.94)',
+    sceneWireframeFloor: 'oklch(77.88% 0.0735 250.65)',
+    sceneLaserRed: 'oklch(67.73% 0.2129 16.81)',
+    sceneLaserBlue: 'oklch(65.64% 0.183 250.17)',
+    scenePulse: 'oklch(80.11% 0.1264 229.37)',
+    sceneKeyLight: 'oklch(64.48% 0.1893 263.59)',
+    sceneGridSecondary: 'oklch(20.92% 0.0769 278.5)',
 
-    overlayDark10: 'oklch(12.78% 0.0477 280.42 / 0.10)', // #0504191A
-    overlayDark20: 'oklch(12.78% 0.0477 280.42 / 0.20)', // #05041933
-    overlayDark30: 'oklch(12.78% 0.0477 280.42 / 0.30)', // #0504194D
-    overlayGlass15: 'oklch(99.11% 0.0 89.88 / 0.15)',    // #FCFCFC26
-    overlayGlass10: 'oklch(99.11% 0.0 89.88 / 0.10)',    // rgba(252,252,252,0.1)
+    overlayDark10: 'oklch(12.78% 0.0477 280.42 / 0.1)',
+    overlayDark20: 'oklch(12.78% 0.0477 280.42 / 0.2)',
+    overlayDark30: 'oklch(12.78% 0.0477 280.42 / 0.3)',
+    overlayBrandStrong: 'oklch(30.52% 0.154 279.05 / 0.9)',
+    overlayGlass10: 'oklch(99.11% 0 89.88 / 0.1)',
+    overlayGlass15: 'oklch(99.11% 0 89.88 / 0.15)',
+    overlayGlass20: 'oklch(99.11% 0 89.88 / 0.2)',
+    overlaySurface70: 'oklch(99.11% 0 89.88 / 0.7)',
+    overlayScrim: 'oklch(0% 0 0)',
+    transparent: 'transparent',
 
-    // 🛠️ Debug / Performance Dashboard Palette
-    debugTrace: 'oklch(57.07% 0.2087 21.14)',            // #D7263D
-    debugAlert: 'oklch(65.42% 0.2321 28.66)',            // #FF3B30
-    debugWarning: 'oklch(78.24% 0.1711 67.22)',          // #FF9F0A
-    debugHighlight: 'oklch(93.45% 0.2017 108.22)',       // #F7F200
-    debugMeterGreen: 'oklch(88.15% 0.275 138.49 / 0.60)',// rgba(102, 255, 0, 0.6)
-    debugPanelBg: 'oklch(23.5% 0.0 89.88 / 0.85)',       // rgba(30, 30, 30, 0.85)
-    debugInnerBg: 'oklch(19.13% 0.0 89.88 / 0.70)',      // rgba(20, 20, 20, 0.70)
+    debugTrace: 'oklch(57.07% 0.2087 21.14)',
+    debugAlert: 'oklch(65.42% 0.2321 28.66)',
+    debugAlertTransparent: 'oklch(65.42% 0.2321 28.66 / 0)',
+    debugWarning: 'oklch(78.24% 0.1711 67.22)',
+    debugHighlight: 'oklch(93.45% 0.2017 108.22)',
+    debugMeterGreen: 'oklch(88.15% 0.275 138.49 / 0.6)',
+    debugPanelBg: 'oklch(23.5% 0 89.88 / 0.85)',
+    debugInnerBg: 'oklch(19.13% 0 89.88 / 0.7)',
+    debugPaused: 'oklch(14.85% 0 0)',
+  },
+
+  /** Values consumed by Three.js / WebGL. Keep these numeric, not CSS strings. */
+  scene: {
+    canvasBackground: 0x050419,
+    ambient: 0x261779,
+    hemisphereGround: 0x050419,
+    keyLight: 0x4f86ff,
+    fillLight: 0x261779,
+    gridPrimary: 0x261779,
+    gridSecondary: 0x12113a,
+    wireframeMain: 0xa7d0fb,
+    wireframeFloor: 0x94bbe5,
+    laserRed: 0xff4d67,
+    laserBlue: 0x0e94fb,
+    pulse: 0x57cdff,
+    buildingLogo: 0x261779,
   },
 
   fonts: {

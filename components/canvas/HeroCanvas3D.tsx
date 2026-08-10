@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { tokens } from '@/tokens/design-tokens';
 
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,9 +18,9 @@ export const HeroCanvas3D: React.FC = () => {
     let isDisposed = false;
     let animationFrameId: number;
 
-    // Scene setup using valid Three.js colors matching tokens
+    // Scene setup uses the Three.js-ready values from the shared token system.
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050419);
+    scene.background = new THREE.Color(tokens.scene.canvasBackground);
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
@@ -40,23 +41,22 @@ export const HeroCanvas3D: React.FC = () => {
     containerRef.current.innerHTML = '';
     containerRef.current.appendChild(renderer.domElement);
 
-    // Lights matching canonical blue (#261779) and keylights
-    const ambientLight = new THREE.AmbientLight(0x261779, 1.5);
+    const ambientLight = new THREE.AmbientLight(tokens.scene.ambient, 1.5);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0x261779, 0x050419, 2);
+    const hemiLight = new THREE.HemisphereLight(tokens.scene.ambient, tokens.scene.hemisphereGround, 2);
     scene.add(hemiLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x4f86ff, 3);
+    const dirLight1 = new THREE.DirectionalLight(tokens.scene.keyLight, 3);
     dirLight1.position.set(20, 40, 20);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x261779, 2);
+    const dirLight2 = new THREE.DirectionalLight(tokens.scene.fillLight, 2);
     dirLight2.position.set(-20, -10, -20);
     scene.add(dirLight2);
 
     // Grid Floor
-    const gridHelper = new THREE.GridHelper(120, 60, 0x261779, 0x12113a);
+    const gridHelper = new THREE.GridHelper(120, 60, tokens.scene.gridPrimary, tokens.scene.gridSecondary);
     gridHelper.position.y = -2;
     scene.add(gridHelper);
 
