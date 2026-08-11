@@ -28,7 +28,7 @@ The **3D scene** tab deliberately follows the supplied reference-image names. Ev
 | `square-active.png` | `squareActiveFill`, `squareActiveGlow` |
 | `squares-deactive.png` | `squaresDeactiveFill` |
 
-The homepage backdrop remains the UI token `colors.bgHero`, shown as **Homepage 3D backdrop** in the UI collection.
+The homepage backdrop remains the UI token `colors.bgHero`, shown as **Homepage 3D backdrop** in the UI collection. Logo fill tokens are lit material tints—not flat screen overlays—so their geometry, ambient occlusion, normal shading, and depth remain visible for both white and colored fills.
 
 ## Generated files
 
