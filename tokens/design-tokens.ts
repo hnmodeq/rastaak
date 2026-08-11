@@ -70,8 +70,29 @@ export const tokens = {
     debugPaused: 'oklch(14.85% 0 0)',
   },
 
-  /** Values consumed by Three.js / WebGL. Keep these numeric, not CSS strings. */
+  /**
+   * Active homepage WebGL palette. Every item is bound to a visible legacy
+   * renderer element and is editable in the Token Studio 3D scene tab.
+   */
   scene: {
+    modelBase: 0xffffff,
+    floorBase: 0xffffff,
+    groundGridGlow: 0xbbc9ff,
+    groundPulseDots: 0xbbc9ff,
+    groundPulseDotsGlow: 0xbbc9ff,
+    activationSquare: 0xffffff,
+    endSequenceSquares: 0xffffff,
+    endSequenceSquaresGlow: 0xbbc9ff,
+    endSequenceLogo: 0x261779,
+    laserRed: 0xb70000,
+    laserBlue: 0x1a1052,
+  },
+
+  /**
+   * Not mounted on the homepage. These support the optional React Three.js
+   * renderer and intentionally stay out of the Token Studio live palette.
+   */
+  experimentalScene: {
     canvasBackground: 0x261779,
     ambient: 0xffffff,
     hemisphereGround: 0x261779,
@@ -79,12 +100,6 @@ export const tokens = {
     fillLight: 0x261779,
     gridPrimary: 0xffffff,
     gridSecondary: 0xffffff,
-    wireframeMain: 0xffffff,
-    wireframeFloor: 0xffffff,
-    laserRed: 0xb70000,
-    laserBlue: 0x1a1052,
-    pulse: 0xbbc9ff,
-    buildingLogo: 0x261779,
   },
 
   fonts: {

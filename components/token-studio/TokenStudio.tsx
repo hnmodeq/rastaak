@@ -32,29 +32,36 @@ const tokenGroup = (name: string) => {
 };
 
 const sceneGroup = (name: string) => {
-  if (['canvasBackground', 'hemisphereGround'].includes(name)) return 'Environment';
-  if (['ambient', 'keyLight', 'fillLight'].includes(name)) return 'Lighting and glow';
-  if (name.startsWith('grid') || name.startsWith('wireframe')) return 'Grid and lines';
-  if (name.startsWith('laser') || name === 'pulse') return 'Lasers and effects';
-  if (name === 'buildingLogo') return 'Branding';
+  if (['modelBase', 'floorBase'].includes(name)) return 'Scene foundations';
+  if (name === 'groundGridGlow') return 'Ground grid';
+  if (['groundPulseDots', 'groundPulseDotsGlow'].includes(name)) return 'Ground pulse dots';
+  if (name === 'activationSquare') return 'Activation square';
+  if (['endSequenceSquares', 'endSequenceSquaresGlow'].includes(name)) return 'End-story squares';
+  if (name === 'endSequenceLogo') return 'End-story logo';
+  if (name.startsWith('laser')) return 'Lasers';
   return 'Other';
+};
+
+const uiLabel = (name: string) => {
+  const labels: Record<string, string> = {
+    bgHero: 'Homepage 3D backdrop',
+  };
+  return labels[name] ?? name;
 };
 
 const sceneLabel = (name: string) => {
   const labels: Record<string, string> = {
-    canvasBackground: 'Canvas background',
-    ambient: 'Ambient light',
-    hemisphereGround: 'Hemisphere ground',
-    keyLight: 'Key light',
-    fillLight: 'Fill light',
-    gridPrimary: 'Grid primary line',
-    gridSecondary: 'Grid secondary line',
-    wireframeMain: 'Wireframe main',
-    wireframeFloor: 'Wireframe floor',
+    modelBase: 'Industrial model base',
+    floorBase: 'Floor base',
+    groundGridGlow: 'Ground grid glow',
+    groundPulseDots: 'Ground pulse dots',
+    groundPulseDotsGlow: 'Ground pulse dots glow',
+    activationSquare: 'Activation square fill',
+    endSequenceSquares: 'End-story squares fill',
+    endSequenceSquaresGlow: 'End-story squares glow',
+    endSequenceLogo: 'End-story logo',
     laserRed: 'Red laser',
     laserBlue: 'Blue laser',
-    pulse: 'Pulse / glow',
-    buildingLogo: 'Building logo',
   };
   return labels[name] ?? name;
 };
@@ -119,14 +126,14 @@ const formatOklch = ({ lightness, chroma, hue, alpha }: Oklch) => {
 };
 
 const sceneNumberToHex = (value: number | undefined) => {
-  const safeValue = value ?? designTokens.scene.canvasBackground;
+  const safeValue = value ?? designTokens.scene.modelBase;
   return `#${safeValue.toString(16).padStart(6, '0')}`;
 };
 
 const hexToSceneNumber = (value: string) => Number.parseInt(value.slice(1), 16);
 
 const sceneSourceValue = (value: number | undefined) => {
-  const safeValue = value ?? designTokens.scene.canvasBackground;
+  const safeValue = value ?? designTokens.scene.modelBase;
   return `0x${safeValue.toString(16).padStart(6, '0')}`;
 };
 
@@ -275,7 +282,7 @@ export function TokenStudio({
                   onClick={() => setSelectedName(name)}
                 >
                   <span className={styles.swatch} style={{ backgroundColor: mode === 'ui' ? uiDraft[name] : sceneNumberToHex(sceneDraft[name]) }} />
-                  <span>{mode === 'ui' ? name : sceneLabel(name)}</span>
+                  <span>{mode === 'ui' ? uiLabel(name) : sceneLabel(name)}</span>
                 </button>
               ))}
             </section>
@@ -287,7 +294,7 @@ export function TokenStudio({
             <div className={styles.editorHeading}>
               <div>
                 <p className={styles.eyebrow}>{mode === 'ui' ? 'Editing UI token' : 'Editing 3D scene token'}</p>
-                <h2>{mode === 'ui' ? activeSelectedName : sceneLabel(activeSelectedName)}</h2>
+                <h2>{mode === 'ui' ? uiLabel(activeSelectedName) : sceneLabel(activeSelectedName)}</h2>
               </div>
               <button type="button" className={styles.reset} onClick={resetDrafts}>
                 Reset all drafts

@@ -20,7 +20,7 @@ export const HeroCanvas3D: React.FC = () => {
 
     // Scene setup uses the Three.js-ready values from the shared token system.
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(tokens.scene.canvasBackground);
+    scene.background = new THREE.Color(tokens.experimentalScene.canvasBackground);
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
@@ -41,22 +41,22 @@ export const HeroCanvas3D: React.FC = () => {
     containerRef.current.innerHTML = '';
     containerRef.current.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(tokens.scene.ambient, 1.5);
+    const ambientLight = new THREE.AmbientLight(tokens.experimentalScene.ambient, 1.5);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(tokens.scene.ambient, tokens.scene.hemisphereGround, 2);
+    const hemiLight = new THREE.HemisphereLight(tokens.experimentalScene.ambient, tokens.experimentalScene.hemisphereGround, 2);
     scene.add(hemiLight);
 
-    const dirLight1 = new THREE.DirectionalLight(tokens.scene.keyLight, 3);
+    const dirLight1 = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, 3);
     dirLight1.position.set(20, 40, 20);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(tokens.scene.fillLight, 2);
+    const dirLight2 = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, 2);
     dirLight2.position.set(-20, -10, -20);
     scene.add(dirLight2);
 
     // Grid Floor
-    const gridHelper = new THREE.GridHelper(120, 60, tokens.scene.gridPrimary, tokens.scene.gridSecondary);
+    const gridHelper = new THREE.GridHelper(120, 60, tokens.experimentalScene.gridPrimary, tokens.experimentalScene.gridSecondary);
     gridHelper.position.y = -2;
     scene.add(gridHelper);
 

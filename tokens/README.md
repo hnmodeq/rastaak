@@ -7,9 +7,10 @@
 | Need to change | Edit this source field | Consumer |
 | --- | --- | --- |
 | UI colors, surfaces, text, borders, state, overlays | `tokens.colors.*` | CSS custom properties, Tailwind utilities, React inline styles |
-| WebGL / Three.js colors | `tokens.scene.*` | `HeroCanvas3D`, the legacy WebGL renderer, and its worker |
+| Active homepage WebGL colors | `tokens.scene.*` | Legacy WebGL renderer and its worker |
+| Optional React Three.js renderer | `tokens.experimentalScene.*` | `HeroCanvas3D` only; this renderer is not mounted on the homepage |
 
-The scene values are numeric because Three.js consumes numeric color representations. Do not add a matching CSS `scene*` token unless a CSS component genuinely needs the same semantic role.
+`scene` contains only active homepage elements and is the 3D palette shown in Token Studio. Its values are numeric because Three.js consumes numeric color representations. `experimentalScene` stays outside the Studio because changing it does not affect the visible homepage.
 
 ## Generated files
 
