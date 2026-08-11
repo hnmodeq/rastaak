@@ -71,24 +71,45 @@ export const tokens = {
   },
 
   /**
-   * Active homepage WebGL palette. Every item is bound to a visible legacy
-   * renderer element and is editable in the Token Studio 3D scene tab.
+   * Active homepage WebGL palette.
+   *
+   * Each group maps to one of the reference images in /uploads and to a
+   * dedicated renderer binding. Fill and glow never share a token.
    */
   scene: {
-    modelBase: 0xffffff,
-    floorBase: 0xffffff,
-    groundGridGlow: 0xbbc9ff,
-    groundPulseDots: 0xbbc9ff,
-    groundPulseDotsGlow: 0xbbc9ff,
-    activationSquare: 0xffffff,
-    // The white square pattern shown at the end of the homepage.
-    endSequenceLogoFill: 0xffffff,
-    endSequenceLogoGlow: 0xbbc9ff,
-    // The smaller logo mark baked into the industrial model.
-    buildingMarkFill: 0x261779,
-    buildingMarkGlow: 0x000000,
-    laserRed: 0xb70000,
-    laserBlue: 0x1a1052,
+    // elements.png
+    elementsFill: 0xffffff,
+
+    // building-logo.png
+    buildingLogoFill: 0x261779,
+    buildingLogoGlow: 0x000000,
+
+    // glowing-dots.png
+    glowingDotsFill: 0xbbc9ff,
+    glowingDotsGlow: 0xbbc9ff,
+
+    // laser-1.png
+    laser1Fill: 0xb70000,
+    laser1Glow: 0xb70000,
+
+    // laser-2.png
+    laser2Fill: 0x1a1052,
+    laser2Glow: 0x1a1052,
+
+    // logo-active.png
+    logoActiveFill: 0xffffff,
+    logoActiveGlow: 0xbbc9ff,
+
+    // logo-deactive.png
+    logoDeactiveFill: 0xffffff,
+    logoDeactiveGlow: 0x000000,
+
+    // square-active.png
+    squareActiveFill: 0xbbc9ff,
+    squareActiveGlow: 0xbbc9ff,
+
+    // squares-deactive.png
+    squaresDeactiveFill: 0xffffff,
   },
 
   /**

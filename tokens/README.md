@@ -10,7 +10,25 @@
 | Active homepage WebGL colors | `tokens.scene.*` | Legacy WebGL renderer and its worker; separate fill and glow controls for end-story elements |
 | Optional React Three.js renderer | `tokens.experimentalScene.*` | `HeroCanvas3D` only; this renderer is not mounted on the homepage |
 
-`scene` contains only active homepage elements and is the 3D palette shown in Token Studio. `endSequenceLogoFill` and `endSequenceLogoGlow` control the large square logo pattern at the end of the homepage; `buildingMarkFill` and `buildingMarkGlow` control the smaller mark baked into the industrial model. Its values are numeric because Three.js consumes numeric color representations. `experimentalScene` stays outside the Studio because changing it does not affect the visible homepage.
+`scene` contains only active homepage elements and is the 3D palette shown in Token Studio. Its values are numeric because Three.js consumes numeric color representations. `experimentalScene` stays outside the Studio because changing it does not affect the visible homepage.
+
+## Active homepage scene palette
+
+The **3D scene** tab deliberately follows the supplied reference-image names. Every fill and every glow is a separate source token and renderer binding.
+
+| Reference image | Token controls |
+| --- | --- |
+| `elements.png` | `elementsFill` |
+| `building-logo.png` | `buildingLogoFill`, `buildingLogoGlow` |
+| `glowing-dots.png` | `glowingDotsFill`, `glowingDotsGlow` |
+| `laser-1.png` | `laser1Fill`, `laser1Glow` |
+| `laser-2.png` | `laser2Fill`, `laser2Glow` |
+| `logo-active.png` | `logoActiveFill`, `logoActiveGlow` |
+| `logo-deactive.png` | `logoDeactiveFill`, `logoDeactiveGlow` |
+| `square-active.png` | `squareActiveFill`, `squareActiveGlow` |
+| `squares-deactive.png` | `squaresDeactiveFill` |
+
+The homepage backdrop remains the UI token `colors.bgHero`, shown as **Homepage 3D backdrop** in the UI collection.
 
 ## Generated files
 

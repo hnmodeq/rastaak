@@ -32,13 +32,15 @@ const tokenGroup = (name: string) => {
 };
 
 const sceneGroup = (name: string) => {
-  if (['modelBase', 'floorBase'].includes(name)) return 'Scene foundations';
-  if (name === 'groundGridGlow') return 'Ground grid';
-  if (['groundPulseDots', 'groundPulseDotsGlow'].includes(name)) return 'Ground pulse dots';
-  if (name === 'activationSquare') return 'Activation square';
-  if (['endSequenceLogoFill', 'endSequenceLogoGlow'].includes(name)) return 'End-story square logo';
-  if (['buildingMarkFill', 'buildingMarkGlow'].includes(name)) return 'Industrial building mark';
-  if (name.startsWith('laser')) return 'Lasers';
+  if (name === 'elementsFill') return 'Elements';
+  if (name.startsWith('buildingLogo')) return 'Building logo';
+  if (name.startsWith('glowingDots')) return 'Glowing dots';
+  if (name.startsWith('laser1')) return 'Laser 1';
+  if (name.startsWith('laser2')) return 'Laser 2';
+  if (name.startsWith('logoActive')) return 'Logo active';
+  if (name.startsWith('logoDeactive')) return 'Logo deactive';
+  if (name.startsWith('squareActive')) return 'Square active';
+  if (name.startsWith('squaresDeactive')) return 'Squares deactive';
   return 'Other';
 };
 
@@ -51,18 +53,22 @@ const uiLabel = (name: string) => {
 
 const sceneLabel = (name: string) => {
   const labels: Record<string, string> = {
-    modelBase: 'Industrial model base',
-    floorBase: 'Floor base',
-    groundGridGlow: 'Ground grid glow',
-    groundPulseDots: 'Ground pulse dots',
-    groundPulseDotsGlow: 'Ground pulse dots glow',
-    activationSquare: 'Activation square fill',
-    endSequenceLogoFill: 'End-story square logo fill',
-    endSequenceLogoGlow: 'End-story square logo glow',
-    buildingMarkFill: 'Industrial building mark fill',
-    buildingMarkGlow: 'Industrial building mark glow',
-    laserRed: 'Red laser',
-    laserBlue: 'Blue laser',
+    elementsFill: 'Elements fill',
+    buildingLogoFill: 'Building logo fill',
+    buildingLogoGlow: 'Building logo glow',
+    glowingDotsFill: 'Glowing dots fill',
+    glowingDotsGlow: 'Glowing dots glow',
+    laser1Fill: 'Laser 1 fill',
+    laser1Glow: 'Laser 1 glow',
+    laser2Fill: 'Laser 2 fill',
+    laser2Glow: 'Laser 2 glow',
+    logoActiveFill: 'Logo active fill',
+    logoActiveGlow: 'Logo active glow',
+    logoDeactiveFill: 'Logo deactive fill',
+    logoDeactiveGlow: 'Logo deactive glow',
+    squareActiveFill: 'Square active fill',
+    squareActiveGlow: 'Square active glow',
+    squaresDeactiveFill: 'Squares deactive fill',
   };
   return labels[name] ?? name;
 };
@@ -127,14 +133,14 @@ const formatOklch = ({ lightness, chroma, hue, alpha }: Oklch) => {
 };
 
 const sceneNumberToHex = (value: number | undefined) => {
-  const safeValue = value ?? designTokens.scene.modelBase;
+  const safeValue = value ?? designTokens.scene.elementsFill;
   return `#${safeValue.toString(16).padStart(6, '0')}`;
 };
 
 const hexToSceneNumber = (value: string) => Number.parseInt(value.slice(1), 16);
 
 const sceneSourceValue = (value: number | undefined) => {
-  const safeValue = value ?? designTokens.scene.modelBase;
+  const safeValue = value ?? designTokens.scene.elementsFill;
   return `0x${safeValue.toString(16).padStart(6, '0')}`;
 };
 
