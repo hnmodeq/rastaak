@@ -10,7 +10,7 @@
 | Active homepage WebGL colors | `tokens.scene.*` | Legacy WebGL renderer and its worker; separate fill and glow controls for end-story elements |
 | Optional React Three.js renderer | `tokens.experimentalScene.*` | `HeroCanvas3D` only; this renderer is not mounted on the homepage |
 
-`scene` contains only active homepage elements and is the 3D palette shown in Token Studio. Its values are numeric because Three.js consumes numeric color representations. `experimentalScene` stays outside the Studio because changing it does not affect the visible homepage.
+`scene` contains only active homepage elements and is the 3D palette shown in Token Studio. `endSequenceLogoFill` and `endSequenceLogoGlow` control the large square logo pattern at the end of the homepage; `buildingMarkFill` and `buildingMarkGlow` control the smaller mark baked into the industrial model. Its values are numeric because Three.js consumes numeric color representations. `experimentalScene` stays outside the Studio because changing it does not affect the visible homepage.
 
 ## Generated files
 

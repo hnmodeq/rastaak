@@ -81,10 +81,12 @@ export const tokens = {
     groundPulseDots: 0xbbc9ff,
     groundPulseDotsGlow: 0xbbc9ff,
     activationSquare: 0xffffff,
-    endSequenceSquares: 0xffffff,
-    endSequenceSquaresGlow: 0xbbc9ff,
-    endSequenceLogoFill: 0x261779,
-    endSequenceLogoGlow: 0x000000,
+    // The white square pattern shown at the end of the homepage.
+    endSequenceLogoFill: 0xffffff,
+    endSequenceLogoGlow: 0xbbc9ff,
+    // The smaller logo mark baked into the industrial model.
+    buildingMarkFill: 0x261779,
+    buildingMarkGlow: 0x000000,
     laserRed: 0xb70000,
     laserBlue: 0x1a1052,
   },

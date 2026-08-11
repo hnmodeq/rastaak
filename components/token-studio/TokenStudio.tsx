@@ -36,8 +36,8 @@ const sceneGroup = (name: string) => {
   if (name === 'groundGridGlow') return 'Ground grid';
   if (['groundPulseDots', 'groundPulseDotsGlow'].includes(name)) return 'Ground pulse dots';
   if (name === 'activationSquare') return 'Activation square';
-  if (['endSequenceSquares', 'endSequenceSquaresGlow'].includes(name)) return 'End-story squares';
-  if (['endSequenceLogoFill', 'endSequenceLogoGlow'].includes(name)) return 'End-story logo';
+  if (['endSequenceLogoFill', 'endSequenceLogoGlow'].includes(name)) return 'End-story square logo';
+  if (['buildingMarkFill', 'buildingMarkGlow'].includes(name)) return 'Industrial building mark';
   if (name.startsWith('laser')) return 'Lasers';
   return 'Other';
 };
@@ -57,10 +57,10 @@ const sceneLabel = (name: string) => {
     groundPulseDots: 'Ground pulse dots',
     groundPulseDotsGlow: 'Ground pulse dots glow',
     activationSquare: 'Activation square fill',
-    endSequenceSquares: 'End-story squares fill',
-    endSequenceSquaresGlow: 'End-story squares glow',
-    endSequenceLogoFill: 'End-story logo fill',
-    endSequenceLogoGlow: 'End-story logo glow',
+    endSequenceLogoFill: 'End-story square logo fill',
+    endSequenceLogoGlow: 'End-story square logo glow',
+    buildingMarkFill: 'Industrial building mark fill',
+    buildingMarkGlow: 'Industrial building mark glow',
     laserRed: 'Red laser',
     laserBlue: 'Blue laser',
   };
