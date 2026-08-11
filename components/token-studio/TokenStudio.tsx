@@ -37,7 +37,7 @@ const sceneGroup = (name: string) => {
   if (['groundPulseDots', 'groundPulseDotsGlow'].includes(name)) return 'Ground pulse dots';
   if (name === 'activationSquare') return 'Activation square';
   if (['endSequenceSquares', 'endSequenceSquaresGlow'].includes(name)) return 'End-story squares';
-  if (name === 'endSequenceLogo') return 'End-story logo';
+  if (['endSequenceLogoFill', 'endSequenceLogoGlow'].includes(name)) return 'End-story logo';
   if (name.startsWith('laser')) return 'Lasers';
   return 'Other';
 };
@@ -59,7 +59,8 @@ const sceneLabel = (name: string) => {
     activationSquare: 'Activation square fill',
     endSequenceSquares: 'End-story squares fill',
     endSequenceSquaresGlow: 'End-story squares glow',
-    endSequenceLogo: 'End-story logo',
+    endSequenceLogoFill: 'End-story logo fill',
+    endSequenceLogoGlow: 'End-story logo glow',
     laserRed: 'Red laser',
     laserBlue: 'Blue laser',
   };
