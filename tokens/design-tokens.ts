@@ -130,6 +130,63 @@ export const tokens = {
     gridSecondary: 0x12113a,
   },
 
+  /**
+   * Data storage A→B scene palette.
+   *
+   * Drives the HeroCanvas3D scene across the 5-phase journey:
+   *   1. Data Crisis   -> chaosAlarm
+   *   2. Assessment    -> scannerBeam
+   *   3. Recommend     -> cardAccent (QNAP default)
+   *   4. Deploy        -> statusLED
+   *   5. Support       -> dataStream
+   *
+   * Switch `cardAccent` to `cardAccentDell` or `cardAccentHpe` to re-skin
+   * the recommend phase for a different vendor without touching component code.
+   */
+  dataStorageScene: {
+    // Common
+    rackFrame: 0x1a1d2e,
+    rackPanel: 0x2a2e44,
+    rackEdge: 0x57cdff,
+    cableActive: 0x57cdff,
+    cableIdle: 0x3a4060,
+
+    // Phase 1: Data Crisis
+    chaosAlarm: 0xff4d67,
+    chaosParticle: 0xff7a8c,
+    chaosBackground: 0x0a0410,
+
+    // Phase 2: Assessment
+    scannerBeam: 0x57cdff,
+    scannerCore: 0xffffff,
+    hologramFill: 0x4f86ff,
+    hologramEdge: 0xa7d0fb,
+
+    // Phase 3: Recommend (vendor cards)
+    cardBase: 0x1e2240,
+    cardAccent: 0x00b8d4,        // QNAP cyan/teal (default)
+    cardAccentDell: 0x0076ce,    // Dell blue
+    cardAccentHpe: 0x01a982,     // HPE green
+    cardText: 0xe6f1ff,
+
+    // Phase 4: Deploy
+    statusLED: 0x69f29c,         // green
+    statusLEDpending: 0xffb454,  // amber
+    insertSlotEmpty: 0x14162a,
+    insertSlotFilled: 0x2a2e44,
+
+    // Phase 5: Support
+    dataStream: 0x57cdff,
+    shieldRing: 0x69f29c,
+    remoteHand: 0xa7d0fb,
+    metricPanel: 0x0f1226,
+    metricText: 0x57cdff,
+
+    // Lighting (tweaks the experimentalScene palette for warm/cool phases)
+    keyLightWarm: 0xff8a6b,      // phase 1 (warm/red)
+    fillLightCool: 0x4f86ff,     // phase 5 (cool/blue)
+  },
+
   fonts: {
     ui: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     body: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

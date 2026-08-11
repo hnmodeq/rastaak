@@ -1,0 +1,1992 @@
+From d69f9b0a9b8480263d63dc803b72e9992f56c6b9 Mon Sep 17 00:00:00 2001
+From: Rastaak Dev <dev@rastaak.local>
+Date: Tue, 11 Aug 2026 12:46:39 +0000
+Subject: [PATCH 1/2] =?UTF-8?q?feat:=20replace=20nuclear=20hero=20scene=20?=
+ =?UTF-8?q?with=205-phase=20data-storage=20A=E2=86=92B=20story?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Refactor HeroCanvas3D into 5 phase-driven groups, each a self-contained
+THREE.Group with its own update(delta, elapsed, weight) function:
+
+  1. chaosGroup        — Data Crisis: tumbling particles, broken cables,
+                          pulsing red warning lights, tilted broken rack
+  2. assessmentGroup   — Assessment: holographic wireframe blueprint,
+                          vertical scanner beam (custom GLSL sweep shader)
+  3. recommendGroup    — Recommend: 3 floating vendor cards (QNAP/Dell/HPE)
+                          with canvas-rendered labels, orbital animation
+  4. deployGroup       — Deploy: data_center_rack.glb + 6 storage units
+                          sliding in with stagger, cables plugging in,
+                          LEDs going amber → green
+  5. supportGroup      — Support: network_server_rack.glb + animated data
+                          streams (GLSL flow shader), 4 holographic metric
+                          panels, floating remote-hand glyph, counter-
+                          rotating shield rings
+
+Scroll progress (0→1) drives a Gaussian-falloff phaseProgress() that
+returns per-phase weights; the camera travels X: -30 → +30 with a
+gentle push-in mid-path. Lighting is dynamic: warm/red at phase 1,
+cool/blue at phase 5. All animations are weight-gated so they only
+play when the user is near that phase.
+
+Adds dataStorageScene token group (rack frame/panel/edge, QNAP/Dell/HPE
+vendor accents, status LED colors, data stream color, warm/cool key
+lights) so the scene is fully themeable from design-tokens.ts.
+---
+ components/canvas/HeroCanvas3D.tsx         | 247 ++++++++++-----
+ components/canvas/scene/assessmentGroup.ts | 180 +++++++++++
+ components/canvas/scene/chaosGroup.ts      | 240 +++++++++++++++
+ components/canvas/scene/deployGroup.ts     | 235 ++++++++++++++
+ components/canvas/scene/recommendGroup.ts  | 204 +++++++++++++
+ components/canvas/scene/scrollPath.ts      |  65 ++++
+ components/canvas/scene/supportGroup.ts    | 338 +++++++++++++++++++++
+ tokens/design-tokens.ts                    |  57 ++++
+ 8 files changed, 1493 insertions(+), 73 deletions(-)
+ create mode 100644 components/canvas/scene/assessmentGroup.ts
+ create mode 100644 components/canvas/scene/chaosGroup.ts
+ create mode 100644 components/canvas/scene/deployGroup.ts
+ create mode 100644 components/canvas/scene/recommendGroup.ts
+ create mode 100644 components/canvas/scene/scrollPath.ts
+ create mode 100644 components/canvas/scene/supportGroup.ts
+
+diff --git a/components/canvas/HeroCanvas3D.tsx b/components/canvas/HeroCanvas3D.tsx
+index 88765c6..fc370e0 100644
+--- a/components/canvas/HeroCanvas3D.tsx
++++ b/components/canvas/HeroCanvas3D.tsx
+@@ -7,7 +7,27 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+ // @ts-ignore
+ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+ import { tokens } from '@/tokens/design-tokens';
+-
++import { createChaosGroup } from './scene/chaosGroup';
++import { createAssessmentGroup } from './scene/assessmentGroup';
++import { createRecommendGroup } from './scene/recommendGroup';
++import { createDeployGroup } from './scene/deployGroup';
++import { createSupportGroup } from './scene/supportGroup';
++import { createScrollPath, phaseProgress, Phase } from './scene/scrollPath';
++
++/**
++ * HeroCanvas3D
++ *
++ * A 5-phase A→B story for a data-storage seller:
++ *   1. Data Crisis   (chaos)
++ *   2. Assessment    (scanner / hologram)
++ *   3. Recommend     (vendor cards: QNAP, Dell, HPE)
++ *   4. Deploy        (server rack GLB + sliding units)
++ *   5. Support       (operational rack + data streams + remote-hand glyph)
++ *
++ * The camera travels along the X axis driven by page scroll. Each phase
++ * is a separate THREE.Group with its own update() function so the active
++ * group can animate while the others rest.
++ */
+ export const HeroCanvas3D: React.FC = () => {
+   const containerRef = useRef<HTMLDivElement>(null);
+   const [isLoaded, setIsLoaded] = useState(false);
+@@ -18,132 +38,181 @@ export const HeroCanvas3D: React.FC = () => {
+     let isDisposed = false;
+     let animationFrameId: number;
+ 
+-    // Scene setup uses the Three.js-ready values from the shared token system.
++    // ─────────────────────────────────────────────────────────────────────
++    //  Renderer / scene / camera
++    // ─────────────────────────────────────────────────────────────────────
+     const scene = new THREE.Scene();
+     scene.background = new THREE.Color(tokens.experimentalScene.canvasBackground);
++    scene.fog = new THREE.Fog(tokens.experimentalScene.canvasBackground, 30, 120);
+ 
+-    // Camera setup
+     const camera = new THREE.PerspectiveCamera(
+       45,
+       window.innerWidth / window.innerHeight,
+       0.1,
+       1000
+     );
+-    camera.position.set(0, 8, 32);
++    camera.position.set(0, 6, 28);
++    camera.lookAt(0, 2, 0);
+ 
+-    // Renderer setup
+     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+     renderer.setSize(window.innerWidth, window.innerHeight);
+     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+-    renderer.toneMappingExposure = 1.2;
++    renderer.toneMappingExposure = 1.15;
+ 
+     containerRef.current.innerHTML = '';
+     containerRef.current.appendChild(renderer.domElement);
+ 
+-    const ambientLight = new THREE.AmbientLight(tokens.experimentalScene.ambient, 1.5);
+-    scene.add(ambientLight);
++    // ─────────────────────────────────────────────────────────────────────
++    //  Lighting (carried from existing scene, slightly brightened)
++    // ─────────────────────────────────────────────────────────────────────
++    const ambient = new THREE.AmbientLight(tokens.experimentalScene.ambient, 1.4);
++    scene.add(ambient);
++
++    const hemi = new THREE.HemisphereLight(
++      tokens.experimentalScene.ambient,
++      tokens.experimentalScene.hemisphereGround,
++      2
++    );
++    scene.add(hemi);
++
++    const keyLight = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, 2.5);
++    keyLight.position.set(20, 40, 20);
++    scene.add(keyLight);
++
++    const fillLight = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, 1.5);
++    fillLight.position.set(-20, -10, -20);
++    scene.add(fillLight);
++
++    // Warm key light, only used in phase 1 (Data Crisis). Starts off.
++    const warmKey = new THREE.PointLight(tokens.dataStorageScene.keyLightWarm, 0, 30, 2);
++    warmKey.position.set(-30, 6, 8);
++    scene.add(warmKey);
++
++    // Cool fill light, ramps up in phase 5 (Support).
++    const coolFill = new THREE.PointLight(tokens.dataStorageScene.fillLightCool, 0, 30, 2);
++    coolFill.position.set(30, 6, 8);
++    scene.add(coolFill);
++
++    // ─────────────────────────────────────────────────────────────────────
++    //  Floor grid
++    // ─────────────────────────────────────────────────────────────────────
++    const grid = new THREE.GridHelper(
++      200,
++      100,
++      tokens.experimentalScene.gridPrimary,
++      tokens.experimentalScene.gridSecondary
++    );
++    grid.position.y = -2;
++    scene.add(grid);
+ 
+-    const hemiLight = new THREE.HemisphereLight(tokens.experimentalScene.ambient, tokens.experimentalScene.hemisphereGround, 2);
+-    scene.add(hemiLight);
++    // ─────────────────────────────────────────────────────────────────────
++    //  Phase groups (each is a self-contained THREE.Group with update())
++    // ─────────────────────────────────────────────────────────────────────
++    const path = createScrollPath(); // contains per-phase anchors
+ 
+-    const dirLight1 = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, 3);
+-    dirLight1.position.set(20, 40, 20);
+-    scene.add(dirLight1);
++    const chaos = createChaosGroup({ x: path[Phase.Chaos].x });
++    scene.add(chaos.group);
+ 
+-    const dirLight2 = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, 2);
+-    dirLight2.position.set(-20, -10, -20);
+-    scene.add(dirLight2);
++    const assessment = createAssessmentGroup({ x: path[Phase.Assessment].x });
++    scene.add(assessment.group);
+ 
+-    // Grid Floor
+-    const gridHelper = new THREE.GridHelper(120, 60, tokens.experimentalScene.gridPrimary, tokens.experimentalScene.gridSecondary);
+-    gridHelper.position.y = -2;
+-    scene.add(gridHelper);
++    const recommend = createRecommendGroup({ x: path[Phase.Recommend].x });
++    scene.add(recommend.group);
+ 
+-    // Draco & GLTF Loaders
++    // deploy + support depend on the loaded server-rack GLB, so we mount
++    // them inside the loader callback below.
++
++    let support: ReturnType<typeof createSupportGroup> | null = null;
++    let deploy: ReturnType<typeof createDeployGroup> | null = null;
++
++    // ─────────────────────────────────────────────────────────────────────
++    //  GLB loaders
++    // ─────────────────────────────────────────────────────────────────────
+     const dracoLoader = new DRACOLoader();
+     dracoLoader.setDecoderPath('/draco/');
+ 
+     const gltfLoader = new GLTFLoader();
+     gltfLoader.setDRACOLoader(dracoLoader);
+ 
+-    const turbines: THREE.Object3D[] = [];
+-    let modelGroup = new THREE.Group();
+-    scene.add(modelGroup);
+-
+-    // Load main facility model
+-    const isMobile = window.innerWidth <= 820;
+-    const modelUrl = isMobile
+-      ? '/glb/nuclear_staffing_noHumans_mobile.glb'
+-      : '/glb/nuclear_staffing_noHumans.glb';
+-
+     gltfLoader.load(
+-      modelUrl,
++      '/glb/servers/data_center_rack.glb',
+       (gltf: any) => {
+         if (isDisposed) return;
+-        const root = gltf.scene;
+-
+-        root.traverse((child: any) => {
++        const rack = gltf.scene;
++        rack.traverse((child: any) => {
+           if (child.isMesh) {
+-            child.material.wireframe = false;
+             child.castShadow = true;
+             child.receiveShadow = true;
+-
+-            if (child.name.toLowerCase().includes('turbine') || child.name.toLowerCase().includes('rotor')) {
+-              turbines.push(child);
+-            }
+           }
+         });
+-
+-        root.position.set(0, -2, 0);
+-        modelGroup.add(root);
++        deploy = createDeployGroup({
++          x: path[Phase.Deploy].x,
++          rackTemplate: rack,
++        });
++        scene.add(deploy.group);
+         setIsLoaded(true);
+       },
+       undefined,
+-      (error: any) => {
+-        console.warn('Hero 3D model fallback:', error);
++      (err: any) => {
++        console.warn('data_center_rack.glb failed:', err);
++        // Fall back: still create an empty deploy group with placeholder geometry
++        deploy = createDeployGroup({ x: path[Phase.Deploy].x, rackTemplate: null });
++        scene.add(deploy.group);
+         setIsLoaded(true);
+       }
+     );
+ 
+-    // Load workers
+     gltfLoader.load(
+-      '/glb/workers.glb',
++      '/glb/servers/network_server_rack.glb',
+       (gltf: any) => {
+         if (isDisposed) return;
+-        const workers = gltf.scene;
+-        workers.position.set(0, -2, 0);
+-        workers.scale.set(1.1, 1.1, 1.1);
+-        modelGroup.add(workers);
++        const rack = gltf.scene;
++        rack.traverse((child: any) => {
++          if (child.isMesh) {
++            child.castShadow = true;
++            child.receiveShadow = true;
++          }
++        });
++        support = createSupportGroup({
++          x: path[Phase.Support].x,
++          rackTemplate: rack,
++        });
++        scene.add(support.group);
+       },
+       undefined,
+       (err: any) => {
+-        console.warn('Hero workers fallback:', err);
++        console.warn('network_server_rack.glb failed:', err);
++        support = createSupportGroup({ x: path[Phase.Support].x, rackTemplate: null });
++        scene.add(support.group);
+       }
+     );
+ 
+-    // Scroll-based camera interpolation
++    // ─────────────────────────────────────────────────────────────────────
++    //  Scroll → phase progress
++    // ─────────────────────────────────────────────────────────────────────
+     let targetScrollProgress = 0;
+     let currentScrollProgress = 0;
+ 
+     const handleScroll = () => {
+-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
++      const maxScroll =
++        document.documentElement.scrollHeight - window.innerHeight;
+       targetScrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+     };
+-
++    handleScroll();
+     window.addEventListener('scroll', handleScroll, { passive: true });
+ 
+-    // Resize handler
+     const handleResize = () => {
+       if (!containerRef.current) return;
+       camera.aspect = window.innerWidth / window.innerHeight;
+       camera.updateProjectionMatrix();
+       renderer.setSize(window.innerWidth, window.innerHeight);
+     };
+-
+     window.addEventListener('resize', handleResize);
+ 
+-    // Render loop
++    // ─────────────────────────────────────────────────────────────────────
++    //  Render loop
++    // ─────────────────────────────────────────────────────────────────────
+     const clock = new THREE.Clock();
+ 
+     const animate = () => {
+@@ -151,21 +220,41 @@ export const HeroCanvas3D: React.FC = () => {
+       const delta = clock.getDelta();
+       const elapsed = clock.getElapsedTime();
+ 
+-      currentScrollProgress += (targetScrollProgress - currentScrollProgress) * 0.05;
+-
+-      turbines.forEach((t) => {
+-        t.rotation.z += delta * 2.5;
+-      });
+-
+-      const radius = 30 - currentScrollProgress * 12;
+-      const angle = currentScrollProgress * Math.PI * 0.8 - 0.2;
+-
+-      camera.position.x = Math.sin(angle) * radius;
+-      camera.position.z = Math.cos(angle) * radius;
+-      camera.position.y = 8 + Math.sin(elapsed * 0.5) * 0.3 - currentScrollProgress * 3;
+-      camera.lookAt(0, 2 - currentScrollProgress * 1.5, 0);
+-
+-      modelGroup.rotation.y = Math.sin(elapsed * 0.2) * 0.05;
++      // Smooth-scroll lerp
++      currentScrollProgress +=
++        (targetScrollProgress - currentScrollProgress) * 0.06;
++
++      // Phase 0..4
++      const phase = phaseProgress(currentScrollProgress);
++      const { active, distances } = phase;
++
++      // Per-group update (animations only fire when the group is "near" the camera)
++      chaos.update(delta, elapsed, distances[Phase.Chaos]);
++      assessment.update(delta, elapsed, distances[Phase.Assessment]);
++      recommend.update(delta, elapsed, distances[Phase.Recommend]);
++      deploy?.update(delta, elapsed, distances[Phase.Deploy]);
++      support?.update(delta, elapsed, distances[Phase.Support]);
++
++      // Camera: travel along the X axis from -30 to +30 with a slight arc
++      const xT = currentScrollProgress;
++      const camX = THREE.MathUtils.lerp(-30, 30, xT);
++      const camZ = 28 - Math.sin(xT * Math.PI) * 4; // gentle push-in mid-path
++      const camY = 6 + Math.sin(elapsed * 0.4) * 0.25 - xT * 1.5;
++
++      camera.position.set(camX, camY, camZ);
++
++      // Look at the active phase anchor
++      const activeAnchor = path[active];
++      camera.lookAt(activeAnchor.x, activeAnchor.lookY, 0);
++
++      // Dynamic lighting: warm during crisis, cool during support
++      warmKey.intensity = distances[Phase.Chaos] * 4.0;
++      coolFill.intensity = distances[Phase.Support] * 4.0;
++      keyLight.color.lerpColors(
++        new THREE.Color(tokens.dataStorageScene.keyLightWarm),
++        new THREE.Color(tokens.experimentalScene.keyLight),
++        xT
++      );
+ 
+       renderer.render(scene, camera);
+       animationFrameId = requestAnimationFrame(animate);
+@@ -173,13 +262,25 @@ export const HeroCanvas3D: React.FC = () => {
+ 
+     animate();
+ 
++    // ─────────────────────────────────────────────────────────────────────
++    //  Cleanup
++    // ─────────────────────────────────────────────────────────────────────
+     return () => {
+       isDisposed = true;
+       cancelAnimationFrame(animationFrameId);
+       window.removeEventListener('scroll', handleScroll);
+       window.removeEventListener('resize', handleResize);
++
++      // Dispose all groups
++      chaos.dispose();
++      assessment.dispose();
++      recommend.dispose();
++      deploy?.dispose();
++      support?.dispose();
++
+       dracoLoader.dispose();
+       renderer.dispose();
++
+       if (containerRef.current) {
+         containerRef.current.innerHTML = '';
+       }
+diff --git a/components/canvas/scene/assessmentGroup.ts b/components/canvas/scene/assessmentGroup.ts
+new file mode 100644
+index 0000000..8359eeb
+--- /dev/null
++++ b/components/canvas/scene/assessmentGroup.ts
+@@ -0,0 +1,180 @@
++/**
++ * assessmentGroup.ts — Phase 2: "Assessment"
++ *
++ * - A vertical scanner beam (a downward-pointing cone with a glow material)
++ * - A holographic blueprint (a thin wireframe box + a rotating ring)
++ * - A "data point cloud" (sparse particles) that gets organized by the beam
++ *
++ * The beam rotates around the Y axis and a sweep shader highlights parts of
++ * the blueprint it passes over.
++ */
++
++import * as THREE from 'three';
++import { tokens } from '@/tokens/design-tokens';
++
++export interface AssessmentGroup {
++  group: THREE.Group;
++  update: (delta: number, elapsed: number, weight: number) => void;
++  dispose: () => void;
++}
++
++export function createAssessmentGroup(opts: { x: number }): AssessmentGroup {
++  const root = new THREE.Group();
++  root.position.set(opts.x, 0, 0);
++  root.name = 'assessmentGroup';
++
++  const t = tokens.dataStorageScene;
++  const beamColor = new THREE.Color(t.scannerBeam);
++  const coreColor = new THREE.Color(t.scannerCore);
++
++  // ─── Holographic blueprint: a wireframe box ──────────────────────────
++  const blueprint = new THREE.Group();
++  blueprint.name = 'blueprint';
++  const bpGeo = new THREE.BoxGeometry(3.5, 4, 2.5);
++  const bpEdges = new THREE.EdgesGeometry(bpGeo);
++  const bpMat = new THREE.LineBasicMaterial({
++    color: t.hologramEdge,
++    transparent: true,
++    opacity: 0.7,
++  });
++  const bpLines = new THREE.LineSegments(bpEdges, bpMat);
++  blueprint.add(bpLines);
++
++  // Inner translucent fill
++  const bpFill = new THREE.Mesh(
++    bpGeo,
++    new THREE.MeshBasicMaterial({
++      color: t.hologramFill,
++      transparent: true,
++      opacity: 0.08,
++      side: THREE.DoubleSide,
++    })
++  );
++  blueprint.add(bpFill);
++
++  // Rotating "data ring" around the blueprint
++  const ringGeo = new THREE.TorusGeometry(2.6, 0.04, 8, 64);
++  const ringMat = new THREE.MeshBasicMaterial({
++    color: t.hologramEdge,
++    transparent: true,
++    opacity: 0.6,
++  });
++  const ring1 = new THREE.Mesh(ringGeo, ringMat);
++  ring1.rotation.x = Math.PI / 2;
++  blueprint.add(ring1);
++
++  const ring2 = new THREE.Mesh(ringGeo, ringMat.clone());
++  ring2.rotation.x = Math.PI / 4;
++  ring2.rotation.y = Math.PI / 4;
++  blueprint.add(ring2);
++
++  // Small grid lines on the floor beneath the blueprint
++  const localGrid = new THREE.GridHelper(8, 16, t.hologramEdge, t.hologramFill);
++  (localGrid.material as THREE.LineBasicMaterial).transparent = true;
++  (localGrid.material as THREE.LineBasicMaterial).opacity = 0.25;
++  localGrid.position.y = -2;
++  blueprint.add(localGrid);
++
++  blueprint.position.set(0, 1.5, 0);
++  root.add(blueprint);
++
++  // ─── Scanner beam (vertical cone sweeping the blueprint) ──────────────
++  // Cone tip up, base down (a downward "scan" beam)
++  const beamGeo = new THREE.ConeGeometry(1.4, 7, 32, 1, true);
++  const beamMat = new THREE.ShaderMaterial({
++    transparent: true,
++    depthWrite: false,
++    side: THREE.DoubleSide,
++    blending: THREE.AdditiveBlending,
++    uniforms: {
++      uTime: { value: 0 },
++      uColor: { value: beamColor },
++      uCore: { value: coreColor },
++      uOpacity: { value: 0.5 },
++    },
++    vertexShader: /* glsl */ `
++      varying float vY;
++      void main() {
++        vY = position.y;
++        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
++      }
++    `,
++    fragmentShader: /* glsl */ `
++      uniform float uTime;
++      uniform vec3 uColor;
++      uniform vec3 uCore;
++      uniform float uOpacity;
++      varying float vY;
++      void main() {
++        // vY ranges roughly -3.5 .. +3.5 in local space
++        float t = (vY + 3.5) / 7.0;
++        float sweep = fract(t - uTime * 0.4);
++        float ring = smoothstep(0.0, 0.05, sweep) * (1.0 - smoothstep(0.05, 0.5, sweep));
++        float fade = 1.0 - abs(t - 0.5) * 1.5;
++        vec3 col = mix(uColor, uCore, ring);
++        float a = uOpacity * fade * (0.5 + ring * 1.2);
++        gl_FragColor = vec4(col, a);
++      }
++    `,
++  });
++  const beam = new THREE.Mesh(beamGeo, beamMat);
++  beam.position.set(0, 1.5, 0);
++  beam.rotation.x = Math.PI; // tip up, base down
++  root.add(beam);
++
++  // A bright "core line" running vertically through the beam
++  const coreLineGeo = new THREE.CylinderGeometry(0.03, 0.03, 7, 8);
++  const coreLineMat = new THREE.MeshBasicMaterial({
++    color: coreColor,
++    transparent: true,
++    opacity: 0.9,
++  });
++  const coreLine = new THREE.Mesh(coreLineGeo, coreLineMat);
++  coreLine.position.set(0, 1.5, 0);
++  root.add(coreLine);
++
++  // ─── Update ───────────────────────────────────────────────────────────
++  const update = (_delta: number, elapsed: number, weight: number) => {
++    beamMat.uniforms.uTime.value = elapsed;
++
++    // Holographic blueprint gentle rotation + ring spin
++    blueprint.rotation.y = elapsed * 0.2;
++    ring1.rotation.z = elapsed * 0.6;
++    ring2.rotation.z = -elapsed * 0.4;
++
++    // Beam bob
++    beam.position.y = 1.5 + Math.sin(elapsed * 0.8) * 0.1;
++    coreLine.position.y = beam.position.y;
++
++    // Fade by weight
++    const w = THREE.MathUtils.clamp(weight, 0, 1);
++    root.visible = w > 0.01;
++    beamMat.uniforms.uOpacity.value = 0.5 * w;
++    (bpMat as THREE.LineBasicMaterial).opacity = 0.7 * w;
++    (bpFill.material as THREE.MeshBasicMaterial).opacity = 0.08 * w;
++    (ringMat as THREE.MeshBasicMaterial).opacity = 0.6 * w;
++    (ring2.material as THREE.MeshBasicMaterial).opacity = 0.6 * w;
++    (localGrid.material as THREE.LineBasicMaterial).opacity = 0.25 * w;
++    (coreLineMat as THREE.MeshBasicMaterial).opacity = 0.9 * w;
++  };
++
++  const dispose = () => {
++    beamGeo.dispose();
++    beamMat.dispose();
++    coreLineGeo.dispose();
++    coreLineMat.dispose();
++    bpGeo.dispose();
++    bpEdges.dispose();
++    bpMat.dispose();
++    (bpFill.material as THREE.Material).dispose();
++    ringGeo.dispose();
++    ringMat.dispose();
++    (localGrid.material as THREE.Material).dispose();
++    root.traverse((o) => {
++      const m = o as THREE.Mesh;
++      if (m.geometry && m !== bpFill) m.geometry.dispose();
++    });
++  };
++
++  return { group: root, update, dispose };
++}
+diff --git a/components/canvas/scene/chaosGroup.ts b/components/canvas/scene/chaosGroup.ts
+new file mode 100644
+index 0000000..c5b15b7
+--- /dev/null
++++ b/components/canvas/scene/chaosGroup.ts
+@@ -0,0 +1,240 @@
++/**
++ * chaosGroup.ts — Phase 1: "Data Crisis"
++ *
++ * - ~400 floating cube particles tumbling chaotically
++ * - A few broken cable segments (curved tubes) dangling mid-air
++ * - A pair of pulsing warning "lights" (red spheres)
++ *
++ * The whole group sways gently and the warning spheres pulse on a sine wave.
++ * Weight comes from the scroll progress; the chaos dies down as the user
++ * scrolls away (cubes fall, opacity fades).
++ */
++
++import * as THREE from 'three';
++import { tokens } from '@/tokens/design-tokens';
++
++const PARTICLE_COUNT = 400;
++const PARTICLE_AREA = 22; // half-extent of the chaos cube
++const CABLE_COUNT = 6;
++const WARNING_LIGHT_COUNT = 2;
++
++export interface ChaosGroup {
++  group: THREE.Group;
++  update: (delta: number, elapsed: number, weight: number) => void;
++  dispose: () => void;
++}
++
++export function createChaosGroup(opts: { x: number }): ChaosGroup {
++  const root = new THREE.Group();
++  root.position.set(opts.x, 0, 0);
++  root.name = 'chaosGroup';
++
++  const t = tokens.dataStorageScene;
++  const accent = new THREE.Color(t.chaosParticle);
++  const alarm = new THREE.Color(t.chaosAlarm);
++
++  // ─── Particles (InstancedMesh for performance) ────────────────────────
++  const particleGeo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
++  const particleMat = new THREE.MeshStandardMaterial({
++    color: accent,
++    emissive: accent,
++    emissiveIntensity: 0.6,
++    transparent: true,
++    opacity: 0.9,
++  });
++  const particles = new THREE.InstancedMesh(particleGeo, particleMat, PARTICLE_COUNT);
++  particles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
++
++  // Per-instance spin / drift state
++  const particleState: { pos: THREE.Vector3; spin: THREE.Vector3; phase: number }[] = [];
++  const dummy = new THREE.Object3D();
++  for (let i = 0; i < PARTICLE_COUNT; i++) {
++    const pos = new THREE.Vector3(
++      (Math.random() - 0.5) * PARTICLE_AREA * 2,
++      (Math.random() - 0.5) * PARTICLE_AREA * 1.5 + 1,
++      (Math.random() - 0.5) * PARTICLE_AREA * 2
++    );
++    particleState.push({
++      pos,
++      spin: new THREE.Vector3(
++        Math.random() * Math.PI,
++        Math.random() * Math.PI,
++        Math.random() * Math.PI
++      ),
++      phase: Math.random() * Math.PI * 2,
++    });
++    dummy.position.copy(pos);
++    dummy.updateMatrix();
++    particles.setMatrixAt(i, dummy.matrix);
++  }
++  particles.instanceMatrix.needsUpdate = true;
++  root.add(particles);
++
++  // ─── Broken cables (curved tubes) ─────────────────────────────────────
++  const cableGroup = new THREE.Group();
++  cableGroup.name = 'chaosCables';
++  for (let i = 0; i < CABLE_COUNT; i++) {
++    const points: THREE.Vector3[] = [];
++    const startX = (Math.random() - 0.5) * 16;
++    const startY = Math.random() * 4 - 1;
++    const startZ = (Math.random() - 0.5) * 16;
++    for (let j = 0; j < 8; j++) {
++      const t = j / 7;
++      points.push(
++        new THREE.Vector3(
++          startX + Math.sin(t * Math.PI * 2 + i) * 2.5,
++          startY + Math.cos(t * Math.PI + i) * 1.5 - t * 1.5, // dangle down
++          startZ + (t - 0.5) * 4
++        )
++      );
++    }
++    const curve = new THREE.CatmullRomCurve3(points);
++    const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.06, 6, false);
++    const tubeMat = new THREE.MeshStandardMaterial({
++      color: t.cableIdle,
++      emissive: t.cableIdle,
++      emissiveIntensity: 0.15,
++      transparent: true,
++      opacity: 0.7,
++    });
++    const tube = new THREE.Mesh(tubeGeo, tubeMat);
++    cableGroup.add(tube);
++  }
++  root.add(cableGroup);
++
++  // ─── Warning lights (pulsing red spheres) ─────────────────────────────
++  const warningLights: THREE.Mesh[] = [];
++  for (let i = 0; i < WARNING_LIGHT_COUNT; i++) {
++    const geo = new THREE.SphereGeometry(0.35, 16, 16);
++    const mat = new THREE.MeshStandardMaterial({
++      color: alarm,
++      emissive: alarm,
++      emissiveIntensity: 1.5,
++      transparent: true,
++      opacity: 0.9,
++    });
++    const m = new THREE.Mesh(geo, mat);
++    m.position.set(
++      (i === 0 ? -1 : 1) * 4,
++      3.5 + Math.sin(i) * 0.5,
++      (i === 0 ? -1 : 1) * 2
++    );
++    root.add(m);
++    warningLights.push(m);
++
++    // Outer glow halo
++    const haloGeo = new THREE.SphereGeometry(0.9, 16, 16);
++    const haloMat = new THREE.MeshBasicMaterial({
++      color: alarm,
++      transparent: true,
++      opacity: 0.15,
++    });
++    const halo = new THREE.Mesh(haloGeo, haloMat);
++    m.add(halo);
++  }
++
++  // ─── Tilted broken rack (procedural fallback, no GLB needed) ─────────
++  const brokenRack = new THREE.Group();
++  brokenRack.name = 'brokenRack';
++  const rackFrameMat = new THREE.MeshStandardMaterial({
++    color: t.rackFrame,
++    transparent: true,
++    opacity: 0.85,
++  });
++  const rackFrame = new THREE.Mesh(
++    new THREE.BoxGeometry(2, 5, 1.5),
++    rackFrameMat
++  );
++  brokenRack.add(rackFrame);
++  for (let i = 0; i < 4; i++) {
++    const unit = new THREE.Mesh(
++      new THREE.BoxGeometry(1.6, 0.5, 1.2),
++      new THREE.MeshStandardMaterial({
++        color: t.rackPanel,
++        transparent: true,
++        opacity: 0.85,
++      })
++    );
++    unit.position.y = -1.8 + i * 0.9;
++    brokenRack.add(unit);
++  }
++  brokenRack.position.set(0, 0.5, 0);
++  brokenRack.rotation.z = 0.18; // tilted, broken
++  root.add(brokenRack);
++
++  // ─── update ───────────────────────────────────────────────────────────
++  const update = (_delta: number, elapsed: number, weight: number) => {
++    // Particles: tumble + drift, weight controls how alive they are
++    for (let i = 0; i < PARTICLE_COUNT; i++) {
++      const s = particleState[i];
++      s.spin.x += 0.01 * (0.3 + weight);
++      s.spin.y += 0.013 * (0.3 + weight);
++      s.spin.z += 0.009 * (0.3 + weight);
++
++      const drift = 0.05 * weight;
++      const driftY = Math.sin(elapsed * 0.6 + s.phase) * drift;
++      const driftX = Math.cos(elapsed * 0.4 + s.phase * 0.7) * drift;
++      const driftZ = Math.sin(elapsed * 0.5 + s.phase * 1.1) * drift;
++
++      dummy.position.set(
++        s.pos.x + driftX,
++        s.pos.y + driftY,
++        s.pos.z + driftZ
++      );
++      dummy.rotation.set(s.spin.x, s.spin.y, s.spin.z);
++      dummy.updateMatrix();
++      particles.setMatrixAt(i, dummy.matrix);
++    }
++    particles.instanceMatrix.needsUpdate = true;
++
++    // Warning lights pulse
++    warningLights.forEach((l, i) => {
++      const pulse = 0.6 + Math.sin(elapsed * 3 + i) * 0.4;
++      (l.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse * 1.6 * weight;
++      (l.material as THREE.MeshStandardMaterial).opacity = 0.4 + pulse * 0.5;
++      const halo = l.children[0] as THREE.Mesh;
++      if (halo) {
++        (halo.material as THREE.MeshBasicMaterial).opacity = 0.1 + pulse * 0.2 * weight;
++        halo.scale.setScalar(0.8 + pulse * 0.4);
++      }
++    });
++
++    // Cables sway
++    cableGroup.children.forEach((c, i) => {
++      c.rotation.z = Math.sin(elapsed * 0.7 + i) * 0.05;
++      c.rotation.x = Math.cos(elapsed * 0.5 + i) * 0.05;
++    });
++
++    // Overall opacity & group fade by weight
++    root.visible = weight > 0.01;
++    const w = THREE.MathUtils.clamp(weight, 0, 1);
++    particleMat.opacity = 0.9 * w;
++    cableGroup.children.forEach((c) => {
++      (c as THREE.Mesh).traverse((m) => {
++        if ((m as THREE.Mesh).isMesh) {
++          const mat = (m as THREE.Mesh).material as THREE.MeshStandardMaterial;
++          if (mat.transparent) mat.opacity = 0.7 * w;
++        }
++      });
++    });
++    brokenRack.children.forEach((c) => {
++      const mat = (c as THREE.Mesh).material as THREE.MeshStandardMaterial;
++      if (mat.transparent) mat.opacity = 0.85 * w;
++    });
++  };
++
++  const dispose = () => {
++    particleGeo.dispose();
++    particleMat.dispose();
++    root.traverse((o) => {
++      const m = o as THREE.Mesh;
++      if (m.isMesh) {
++        m.geometry?.dispose();
++        if (Array.isArray(m.material)) m.material.forEach((mm) => mm.dispose());
++        else m.material?.dispose();
++      }
++    });
++  };
++
++  return { group: root, update, dispose };
++}
+diff --git a/components/canvas/scene/deployGroup.ts b/components/canvas/scene/deployGroup.ts
+new file mode 100644
+index 0000000..56cb5a4
+--- /dev/null
++++ b/components/canvas/scene/deployGroup.ts
+@@ -0,0 +1,235 @@
++/**
++ * deployGroup.ts — Phase 4: "Deploy"
++ *
++ * - The data_center_rack.glb is used as the "rack frame" (cloned so we can
++ *   also keep the original in the support phase if desired)
++ * - Procedural "storage units" slide INTO the rack from above with a stagger
++ * - Glowing cables plug into the back of each unit as it lands
++ * - Status LEDs on each unit go from amber → green
++ *
++ * The animation is time-based but only progresses meaningfully while the
++ * group has weight (i.e. user is in this phase). When weight drops, the
++ * animation pauses; when it returns, it resumes.
++ */
++
++import * as THREE from 'three';
++import { tokens } from '@/tokens/design-tokens';
++
++const UNIT_COUNT = 6;             // number of storage units in the rack
++const RACK_SLOT_COUNT = 8;        // visible slots in the rack
++const SLOT_HEIGHT = 0.42;
++const SLOT_BASE_Y = -1.6;
++const INSERT_DURATION = 0.6;      // seconds per unit
++const INSERT_STAGGER = 0.18;      // delay between units
++const CABLE_COLOR = new THREE.Color(tokens.dataStorageScene.cableActive);
++const CABLE_IDLE = new THREE.Color(tokens.dataStorageScene.cableIdle);
++
++export interface DeployGroup {
++  group: THREE.Group;
++  update: (delta: number, elapsed: number, weight: number) => void;
++  dispose: () => void;
++}
++
++interface UnitEntry {
++  mesh: THREE.Mesh;
++  led: THREE.Mesh;
++  cable: THREE.Mesh;
++  insertStart: number;   // when this unit's insert begins (in 'progress' time)
++  insertEnd: number;
++  cableProgress: number; // 0..1, builds after insert finishes
++}
++
++export function createDeployGroup(opts: {
++  x: number;
++  rackTemplate: THREE.Object3D | null;
++}): DeployGroup {
++  const root = new THREE.Group();
++  root.position.set(opts.x, 0, 0);
++  root.name = 'deployGroup';
++
++  const t = tokens.dataStorageScene;
++  const units: UnitEntry[] = [];
++  let progress = 0; // 0..1, drives the entire insert sequence
++
++  // ─── Rack frame (GLB if available, else procedural fallback) ──────────
++  if (opts.rackTemplate) {
++    // Clone the GLB so we can scale/position independently
++    const rack = opts.rackTemplate.clone(true);
++    rack.traverse((child: any) => {
++      if (child.isMesh) {
++        // Recolor to match the data storage palette
++        const mat = child.material as THREE.MeshStandardMaterial;
++        if (mat) {
++          if (child.name.toLowerCase().includes('frame') || child.name === 'Object_2') {
++            mat.color = new THREE.Color(t.rackFrame);
++            mat.metalness = 0.7;
++            mat.roughness = 0.4;
++          } else {
++            mat.color = new THREE.Color(t.rackPanel);
++            mat.metalness = 0.5;
++            mat.roughness = 0.6;
++          }
++          mat.emissive = new THREE.Color(t.rackEdge);
++          mat.emissiveIntensity = 0.05;
++        }
++      }
++    });
++    rack.position.set(0, 0.5, 0);
++    rack.scale.set(1.4, 1.0, 1.4);
++    root.add(rack);
++  } else {
++    // Procedural fallback rack
++    const rackGeo = new THREE.BoxGeometry(2.4, 4.5, 1.6);
++    const rackMat = new THREE.MeshStandardMaterial({
++      color: t.rackFrame,
++      metalness: 0.7,
++      roughness: 0.4,
++      transparent: true,
++      opacity: 0.95,
++    });
++    const rack = new THREE.Mesh(rackGeo, rackMat);
++    rack.position.y = 0.75;
++    root.add(rack);
++
++    // Empty slots (visible placeholders)
++    for (let i = 0; i < RACK_SLOT_COUNT; i++) {
++      const slotGeo = new THREE.BoxGeometry(2.0, SLOT_HEIGHT - 0.05, 1.4);
++      const slotMat = new THREE.MeshStandardMaterial({
++        color: t.insertSlotEmpty,
++        emissive: t.insertSlotEmpty,
++        emissiveIntensity: 0.1,
++      });
++      const slot = new THREE.Mesh(slotGeo, slotMat);
++      slot.position.set(0, SLOT_BASE_Y + i * SLOT_HEIGHT, 0);
++      root.add(slot);
++    }
++  }
++
++  // ─── Storage units (slide in from above) ──────────────────────────────
++  const unitGeo = new THREE.BoxGeometry(2.0, SLOT_HEIGHT - 0.05, 1.4);
++  for (let i = 0; i < UNIT_COUNT; i++) {
++    const unitMat = new THREE.MeshStandardMaterial({
++      color: t.rackPanel,
++      metalness: 0.6,
++      roughness: 0.4,
++      emissive: t.rackEdge,
++      emissiveIntensity: 0.15,
++      transparent: true,
++      opacity: 1.0,
++    });
++    const mesh = new THREE.Mesh(unitGeo, unitMat);
++    // Start position: high above the rack
++    mesh.position.set(0, 8 + i * 0.3, 0);
++    mesh.visible = false;
++    root.add(mesh);
++
++    // Status LED on the front of the unit
++    const ledGeo = new THREE.SphereGeometry(0.04, 8, 8);
++    const ledMat = new THREE.MeshBasicMaterial({
++      color: t.statusLEDpending,
++      transparent: true,
++      opacity: 1.0,
++    });
++    const led = new THREE.Mesh(ledGeo, ledMat);
++    led.position.set(0.85, 0, 0.71);
++    mesh.add(led);
++
++    // Cable (a tube going from the back of the unit to the floor)
++    const cablePoints = [
++      new THREE.Vector3(0, 0, -0.7),
++      new THREE.Vector3(0, -1.5, -0.7),
++      new THREE.Vector3(0, -2, -0.5),
++    ];
++    const cableCurve = new THREE.CatmullRomCurve3(cablePoints);
++    const cableGeo = new THREE.TubeGeometry(cableCurve, 16, 0.025, 6, false);
++    const cableMat = new THREE.MeshBasicMaterial({
++      color: CABLE_IDLE,
++      transparent: true,
++      opacity: 0.0, // hidden until unit lands
++    });
++    const cable = new THREE.Mesh(cableGeo, cableMat);
++    mesh.add(cable);
++
++    units.push({
++      mesh,
++      led,
++      cable,
++      insertStart: i * INSERT_STAGGER,
++      insertEnd: i * INSERT_STAGGER + INSERT_DURATION,
++      cableProgress: 0,
++    });
++  }
++
++  // ─── Update ───────────────────────────────────────────────────────────
++  const update = (delta: number, _elapsed: number, weight: number) => {
++    const w = THREE.MathUtils.clamp(weight, 0, 1);
++    root.visible = w > 0.01;
++
++    // Drive the insert progress only when this phase is in view
++    progress += delta * 0.6 * w;
++    progress = Math.min(progress, 1.5); // a little headroom so cables finish
++
++    units.forEach((u, i) => {
++      // Local progress 0..1 for this unit (0 = pre-insert, 1 = fully in)
++      const local =
++        progress <= u.insertStart
++          ? -1
++          : progress >= u.insertEnd
++            ? 1
++            : (progress - u.insertStart) / (u.insertEnd - u.insertStart);
++
++      if (local < 0) {
++        u.mesh.visible = false;
++        return;
++      }
++      u.mesh.visible = true;
++
++      // Ease-out cubic for a snappy landing
++      const t01 = 1 - Math.pow(1 - local, 3);
++      const targetY = SLOT_BASE_Y + i * SLOT_HEIGHT;
++      u.mesh.position.x = THREE.MathUtils.lerp(0.5, 0, t01);
++      u.mesh.position.y = THREE.MathUtils.lerp(8, targetY, t01);
++      u.mesh.position.z = THREE.MathUtils.lerp(0.3, 0, t01);
++      u.mesh.rotation.z = THREE.MathUtils.lerp(0.15, 0, t01);
++
++      // LED: amber while inserting, green when settled
++      const settled = local >= 1;
++      const ledColor = settled ? t.statusLED : t.statusLEDpending;
++      (u.led.material as THREE.MeshBasicMaterial).color.set(ledColor);
++      (u.led.material as THREE.MeshBasicMaterial).opacity = settled
++        ? 0.6 + Math.sin(_elapsed * 4 + i) * 0.4
++        : 1.0;
++
++      // Cable plugs in after unit lands
++      if (settled) {
++        u.cableProgress = Math.min(1, u.cableProgress + delta * 1.2);
++      }
++      const cableT = u.cableProgress;
++      (u.cable.material as THREE.MeshBasicMaterial).opacity = cableT * w;
++      (u.cable.material as THREE.MeshBasicMaterial).color.lerpColors(
++        CABLE_IDLE,
++        CABLE_COLOR,
++        cableT
++      );
++    });
++  };
++
++  const dispose = () => {
++    unitGeo.dispose();
++    units.forEach((u) => {
++      (u.mesh.material as THREE.Material).dispose();
++      (u.led.geometry as THREE.BufferGeometry).dispose();
++      (u.led.material as THREE.Material).dispose();
++      (u.cable.geometry as THREE.BufferGeometry).dispose();
++      (u.cable.material as THREE.Material).dispose();
++    });
++    root.traverse((o) => {
++      const m = o as THREE.Mesh;
++      if (m.isMesh && m.geometry && !units.find((u) => u.mesh === m)) {
++        m.geometry.dispose();
++      }
++    });
++  };
++
++  return { group: root, update, dispose };
++}
+diff --git a/components/canvas/scene/recommendGroup.ts b/components/canvas/scene/recommendGroup.ts
+new file mode 100644
+index 0000000..596266f
+--- /dev/null
++++ b/components/canvas/scene/recommendGroup.ts
+@@ -0,0 +1,204 @@
++/**
++ * recommendGroup.ts — Phase 3: "Recommend"
++ *
++ * Three floating "vendor cards" representing the brands the company sells.
++ * Each card is a thin box with a glowing accent edge and a label texture
++ * procedurally drawn on a canvas (QNAP, Dell, HPE).
++ *
++ * The cards orbit slowly around the phase anchor and face outward.
++ */
++
++import * as THREE from 'three';
++import { tokens } from '@/tokens/design-tokens';
++
++interface CardSpec {
++  label: string;
++  accent: number;
++  sub: string;
++}
++
++const CARDS: CardSpec[] = [
++  { label: 'QNAP', accent: tokens.dataStorageScene.cardAccent, sub: 'NAS / SAN' },
++  { label: 'Dell', accent: tokens.dataStorageScene.cardAccentDell, sub: 'PowerScale / PowerStore' },
++  { label: 'HPE', accent: tokens.dataStorageScene.cardAccentHpe, sub: 'Alletra / Primera' },
++];
++
++const CARD_W = 1.8;
++const CARD_H = 2.4;
++const CARD_D = 0.08;
++const ORBIT_RADIUS = 3.2;
++
++export interface RecommendGroup {
++  group: THREE.Group;
++  update: (delta: number, elapsed: number, weight: number) => void;
++  dispose: () => void;
++}
++
++function makeLabelTexture(spec: CardSpec): THREE.Texture {
++  const canvas = document.createElement('canvas');
++  canvas.width = 512;
++  canvas.height = 680;
++  const ctx = canvas.getContext('2d')!;
++  // BG
++  ctx.fillStyle = '#1e2240';
++  ctx.fillRect(0, 0, 512, 680);
++  // Accent bar
++  ctx.fillStyle = '#' + spec.accent.toString(16).padStart(6, '0');
++  ctx.fillRect(0, 0, 512, 8);
++  // Sub
++  ctx.fillStyle = '#a7d0fb';
++  ctx.font = '500 36px "Roboto", system-ui, sans-serif';
++  ctx.textAlign = 'center';
++  ctx.textBaseline = 'top';
++  ctx.fillText(spec.sub.toUpperCase(), 256, 60);
++  // Brand name
++  ctx.fillStyle = '#ffffff';
++  ctx.font = '700 96px "Roboto", system-ui, sans-serif';
++  ctx.fillText(spec.label, 256, 220);
++  // A small spec block to look "techy"
++  ctx.strokeStyle = '#57cdff';
++  ctx.lineWidth = 2;
++  ctx.strokeRect(40, 460, 432, 160);
++  ctx.fillStyle = '#57cdff';
++  ctx.font = '500 24px "Roboto", system-ui, sans-serif';
++  ctx.textAlign = 'left';
++  ctx.fillText('▸ Enterprise-grade', 70, 490);
++  ctx.fillText('▸ 24/7 Support', 70, 530);
++  ctx.fillText('▸ Certified deployment', 70, 570);
++
++  const tex = new THREE.CanvasTexture(canvas);
++  tex.anisotropy = 4;
++  tex.colorSpace = THREE.SRGBColorSpace;
++  return tex;
++}
++
++export function createRecommendGroup(opts: { x: number }): RecommendGroup {
++  const root = new THREE.Group();
++  root.position.set(opts.x, 0, 0);
++  root.name = 'recommendGroup';
++
++  const t = tokens.dataStorageScene;
++  const cards: THREE.Mesh[] = [];
++  const edges: THREE.LineSegments[] = [];
++  const accents: THREE.Mesh[] = [];
++
++  CARDS.forEach((spec) => {
++    // Card body
++    const geo = new THREE.BoxGeometry(CARD_W, CARD_H, CARD_D);
++    const tex = makeLabelTexture(spec);
++    const mat = new THREE.MeshStandardMaterial({
++      map: tex,
++      color: new THREE.Color(t.cardBase),
++      emissive: new THREE.Color(spec.accent),
++      emissiveIntensity: 0.18,
++      metalness: 0.4,
++      roughness: 0.6,
++      transparent: true,
++      opacity: 1.0,
++    });
++    const card = new THREE.Mesh(geo, mat);
++    card.userData.spec = spec;
++
++    // Glowing edge frame
++    const edgeGeo = new THREE.EdgesGeometry(geo);
++    const edgeMat = new THREE.LineBasicMaterial({
++      color: spec.accent,
++      transparent: true,
++      opacity: 0.9,
++    });
++    const edgeLines = new THREE.LineSegments(edgeGeo, edgeMat);
++    card.add(edgeLines);
++
++    // Accent strip on top
++    const stripGeo = new THREE.BoxGeometry(CARD_W, 0.08, CARD_D + 0.02);
++    const stripMat = new THREE.MeshBasicMaterial({
++      color: spec.accent,
++      transparent: true,
++      opacity: 1.0,
++    });
++    const strip = new THREE.Mesh(stripGeo, stripMat);
++    strip.position.y = CARD_H / 2 - 0.04;
++    card.add(strip);
++    accents.push(strip);
++
++    root.add(card);
++    cards.push(card);
++    edges.push(edgeLines);
++  });
++
++  // A central "YOU ARE HERE" highlight ring on the floor
++  const ringGeo = new THREE.RingGeometry(0.7, 0.9, 64);
++  const ringMat = new THREE.MeshBasicMaterial({
++    color: t.cardAccent,
++    transparent: true,
++    opacity: 0.6,
++    side: THREE.DoubleSide,
++  });
++  const highlightRing = new THREE.Mesh(ringGeo, ringMat);
++  highlightRing.rotation.x = -Math.PI / 2;
++  highlightRing.position.y = -1.95;
++  root.add(highlightRing);
++
++  const update = (_delta: number, elapsed: number, weight: number) => {
++    const w = THREE.MathUtils.clamp(weight, 0, 1);
++    root.visible = w > 0.01;
++
++    cards.forEach((card, i) => {
++      const angle = (i / CARDS.length) * Math.PI * 2 + elapsed * 0.15;
++      const x = Math.cos(angle) * ORBIT_RADIUS;
++      const z = Math.sin(angle) * ORBIT_RADIUS;
++      const y = 1.5 + Math.sin(elapsed * 0.8 + i) * 0.25;
++      card.position.set(x, y, z);
++
++      // Make card face outward (away from center) so the label is visible
++      // from the camera which sits at +Z.
++      card.lookAt(0, card.position.y, 0);
++      // Now flip 180° because lookAt makes the +Z axis face outward
++      card.rotation.y += Math.PI;
++
++      // Active (front) card has stronger emissive
++      const isActive = z > 0.5;
++      const targetIntensity = isActive ? 0.6 * w : 0.18 * w;
++      const mat = card.material as THREE.MeshStandardMaterial;
++      mat.emissiveIntensity = THREE.MathUtils.lerp(
++        mat.emissiveIntensity,
++        targetIntensity,
++        0.1
++      );
++      mat.opacity = 0.4 + 0.6 * w;
++    });
++
++    edges.forEach((e) => {
++      (e.material as THREE.LineBasicMaterial).opacity = 0.9 * w;
++    });
++
++    accents.forEach((a) => {
++      (a.material as THREE.MeshBasicMaterial).opacity = w;
++    });
++
++    // Pulse the highlight ring
++    ringMat.opacity = (0.3 + Math.sin(elapsed * 2) * 0.2) * w;
++    highlightRing.scale.setScalar(1 + Math.sin(elapsed * 2) * 0.1);
++  };
++
++  const dispose = () => {
++    cards.forEach((c) => {
++      c.geometry.dispose();
++      const m = c.material as THREE.MeshStandardMaterial;
++      m.map?.dispose();
++      m.dispose();
++    });
++    ringGeo.dispose();
++    ringMat.dispose();
++    edges.forEach((e) => {
++      e.geometry.dispose();
++      (e.material as THREE.Material).dispose();
++    });
++    accents.forEach((a) => {
++      a.geometry.dispose();
++      (a.material as THREE.Material).dispose();
++    });
++  };
++
++  return { group: root, update, dispose };
++}
+diff --git a/components/canvas/scene/scrollPath.ts b/components/canvas/scene/scrollPath.ts
+new file mode 100644
+index 0000000..5c0d43c
+--- /dev/null
++++ b/components/canvas/scene/scrollPath.ts
+@@ -0,0 +1,65 @@
++/**
++ * scrollPath.ts
++ *
++ * Maps page scroll (0..1) to a 5-phase journey. Each phase has an X anchor
++ * and a `lookY` (the height the camera aims at). The phase-progress helper
++ * returns:
++ *   - active: the dominant phase index
++ *   - distances: per-phase weight (0..1) that drops off as you scroll away
++ */
++
++import * as THREE from 'three';
++
++export enum Phase {
++  Chaos = 0,
++  Assessment = 1,
++  Recommend = 2,
++  Deploy = 3,
++  Support = 4,
++}
++
++export const PHASE_COUNT = 5;
++
++export interface PhaseAnchor {
++  x: number;
++  lookY: number;
++}
++
++export const createScrollPath = (): PhaseAnchor[] => [
++  { x: -30, lookY: 1.5 },   // Chaos
++  { x: -15, lookY: 2.5 },   // Assessment
++  { x:   0, lookY: 2.5 },   // Recommend
++  { x:  15, lookY: 2.0 },   // Deploy
++  { x:  30, lookY: 3.0 },   // Support
++];
++
++export interface PhaseState {
++  active: Phase;
++  distances: number[]; // length PHASE_COUNT, 0..1
++}
++
++/**
++ * Convert scroll progress (0..1) to a soft per-phase weight using a
++ * Gaussian falloff centered on each phase center. Adjacent phases
++ * cross-fade so transitions feel smooth.
++ */
++export function phaseProgress(scroll: number): PhaseState {
++  const s = THREE.MathUtils.clamp(scroll, 0, 1);
++  const centers = [0.0, 0.25, 0.5, 0.75, 1.0];
++  const sigma = 0.18;
++  const distances = centers.map((c) => {
++    const d = (s - c) / sigma;
++    return Math.exp(-0.5 * d * d);
++  });
++
++  let active: Phase = 0;
++  let max = -Infinity;
++  for (let i = 0; i < distances.length; i++) {
++    if (distances[i] > max) {
++      max = distances[i];
++      active = i as Phase;
++    }
++  }
++
++  return { active, distances };
++}
+diff --git a/components/canvas/scene/supportGroup.ts b/components/canvas/scene/supportGroup.ts
+new file mode 100644
+index 0000000..ddee310
+--- /dev/null
++++ b/components/canvas/scene/supportGroup.ts
+@@ -0,0 +1,338 @@
++/**
++ * supportGroup.ts — Phase 5: "Support"
++ *
++ * - A network_server_rack.glb (or procedural fallback) as the operational rack
++ * - Glowing data streams (tube geometries with flowing shader) entering from
++ *   the left and exiting to the right
++ * - A floating "remote-hand" glyph (an abstract wrench + hand shape built
++ *   from primitives) hovering over the rack
++ * - A security shield ring rotating around the whole assembly
++ * - Floating metric panels with procedurally drawn text (UPTIME, IOPS, etc.)
++ */
++
++import * as THREE from 'three';
++import { tokens } from '@/tokens/design-tokens';
++
++const METRIC_PANELS = ['UPTIME', 'IOPS', 'CAPACITY', 'LATENCY'];
++const METRIC_VALUES = ['99.99%', '125K', '2.4 PB', '< 2 ms'];
++
++export interface SupportGroup {
++  group: THREE.Group;
++  update: (delta: number, elapsed: number, weight: number) => void;
++  dispose: () => void;
++}
++
++function makeMetricTexture(label: string, value: string): THREE.Texture {
++  const canvas = document.createElement('canvas');
++  canvas.width = 512;
++  canvas.height = 256;
++  const ctx = canvas.getContext('2d')!;
++  ctx.fillStyle = '#0f1226';
++  ctx.fillRect(0, 0, 512, 256);
++  // Border
++  ctx.strokeStyle = '#57cdff';
++  ctx.lineWidth = 4;
++  ctx.strokeRect(8, 8, 496, 240);
++  // Label
++  ctx.fillStyle = '#a7d0fb';
++  ctx.font = '500 32px "Roboto", system-ui, sans-serif';
++  ctx.textAlign = 'left';
++  ctx.textBaseline = 'top';
++  ctx.fillText(label, 32, 32);
++  // Value
++  ctx.fillStyle = '#57cdff';
++  ctx.font = '700 88px "Roboto", system-ui, sans-serif';
++  ctx.textAlign = 'center';
++  ctx.fillText(value, 256, 90);
++  // A "live" indicator
++  ctx.fillStyle = '#69f29c';
++  ctx.beginPath();
++  ctx.arc(440, 56, 8, 0, Math.PI * 2);
++  ctx.fill();
++  ctx.fillStyle = '#69f29c';
++  ctx.font = '500 20px "Roboto", system-ui, sans-serif';
++  ctx.textAlign = 'right';
++  ctx.fillText('LIVE', 420, 46);
++
++  const tex = new THREE.CanvasTexture(canvas);
++  tex.anisotropy = 4;
++  tex.colorSpace = THREE.SRGBColorSpace;
++  return tex;
++}
++
++export function createSupportGroup(opts: {
++  x: number;
++  rackTemplate: THREE.Object3D | null;
++}): SupportGroup {
++  const root = new THREE.Group();
++  root.position.set(opts.x, 0, 0);
++  root.name = 'supportGroup';
++
++  const t = tokens.dataStorageScene;
++
++  // ─── Operational rack (GLB or procedural) ─────────────────────────────
++  if (opts.rackTemplate) {
++    const rack = opts.rackTemplate.clone(true);
++    rack.traverse((child: any) => {
++      if (child.isMesh) {
++        const mat = child.material as THREE.MeshStandardMaterial;
++        if (mat) {
++          mat.color = new THREE.Color(t.rackFrame);
++          mat.emissive = new THREE.Color(t.rackEdge);
++          mat.emissiveIntensity = 0.1;
++          mat.metalness = 0.7;
++          mat.roughness = 0.4;
++        }
++      }
++    });
++    rack.position.set(0, 0.5, 0);
++    rack.scale.set(1.4, 1.0, 1.4);
++    root.add(rack);
++  } else {
++    // Procedural fallback: a clean operational rack with 8 filled units
++    const rackGeo = new THREE.BoxGeometry(2.4, 4.5, 1.6);
++    const rackMat = new THREE.MeshStandardMaterial({
++      color: t.rackFrame,
++      metalness: 0.7,
++      roughness: 0.4,
++    });
++    const rack = new THREE.Mesh(rackGeo, rackMat);
++    rack.position.y = 0.75;
++    root.add(rack);
++
++    for (let i = 0; i < 8; i++) {
++      const u = new THREE.Mesh(
++        new THREE.BoxGeometry(2.0, 0.38, 1.4),
++        new THREE.MeshStandardMaterial({
++          color: t.insertSlotFilled,
++          emissive: t.statusLED,
++          emissiveIntensity: 0.2,
++        })
++      );
++      u.position.set(0, -1.6 + i * 0.45, 0);
++      root.add(u);
++
++      // Green LED
++      const led = new THREE.Mesh(
++        new THREE.SphereGeometry(0.05, 8, 8),
++        new THREE.MeshBasicMaterial({ color: t.statusLED })
++      );
++      led.position.set(0.85, 0, 0.71);
++      u.add(led);
++    }
++  }
++
++  // ─── Data streams (tubes with flowing shader) ─────────────────────────
++  const streamMat = new THREE.ShaderMaterial({
++    transparent: true,
++    depthWrite: false,
++    blending: THREE.AdditiveBlending,
++    uniforms: {
++      uTime: { value: 0 },
++      uColor: { value: new THREE.Color(t.dataStream) },
++      uOpacity: { value: 0.0 },
++    },
++    vertexShader: /* glsl */ `
++      varying float vX;
++      void main() {
++        vX = uv.x;
++        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
++      }
++    `,
++    fragmentShader: /* glsl */ `
++      uniform float uTime;
++      uniform vec3 uColor;
++      uniform float uOpacity;
++      varying float vX;
++      void main() {
++        float flow = fract(vX * 6.0 - uTime * 1.2);
++        float band = smoothstep(0.0, 0.05, flow) * (1.0 - smoothstep(0.05, 0.3, flow));
++        vec3 col = uColor * (0.5 + band * 1.5);
++        float a = uOpacity * (0.5 + band * 0.8);
++        gl_FragColor = vec4(col, a);
++      }
++    `,
++  });
++
++  const streamGroup = new THREE.Group();
++  streamGroup.name = 'dataStreams';
++
++  // Incoming stream (left → rack)
++  const inPts = [
++    new THREE.Vector3(-7, 0.5, 0.5),
++    new THREE.Vector3(-4, 1.0, 0.5),
++    new THREE.Vector3(-2, 1.0, 0.4),
++    new THREE.Vector3(0, 0.8, 0.2),
++  ];
++  const inCurve = new THREE.CatmullRomCurve3(inPts);
++  const inTube = new THREE.Mesh(
++    new THREE.TubeGeometry(inCurve, 64, 0.06, 8, false),
++    streamMat
++  );
++  streamGroup.add(inTube);
++
++  // Outgoing stream (rack → right)
++  const outPts = [
++    new THREE.Vector3(0, 0.5, -0.5),
++    new THREE.Vector3(2, 0.5, -0.5),
++    new THREE.Vector3(4, 1.0, -0.5),
++    new THREE.Vector3(7, 0.5, -0.5),
++  ];
++  const outCurve = new THREE.CatmullRomCurve3(outPts);
++  const outTube = new THREE.Mesh(
++    new THREE.TubeGeometry(outCurve, 64, 0.06, 8, false),
++    streamMat
++  );
++  streamGroup.add(outTube);
++
++  root.add(streamGroup);
++
++  // ─── Remote-hand glyph (abstract wrench + hand) ───────────────────────
++  // We build it from a small box (the "wrench handle") and a sphere on top
++  // (the "hand"), plus a slowly rotating ring around it.
++  const handGroup = new THREE.Group();
++  handGroup.name = 'remoteHand';
++
++  // Wrench handle
++  const handle = new THREE.Mesh(
++    new THREE.CylinderGeometry(0.12, 0.12, 1.2, 12),
++    new THREE.MeshStandardMaterial({
++      color: t.remoteHand,
++      emissive: t.remoteHand,
++      emissiveIntensity: 0.6,
++      metalness: 0.8,
++      roughness: 0.3,
++    })
++  );
++  handle.position.y = -0.6;
++  handGroup.add(handle);
++
++  // Wrench head (open-end style: a box with a notch)
++  const head = new THREE.Mesh(
++    new THREE.BoxGeometry(0.5, 0.4, 0.2),
++    new THREE.MeshStandardMaterial({
++      color: t.remoteHand,
++      emissive: t.remoteHand,
++      emissiveIntensity: 0.6,
++      metalness: 0.8,
++      roughness: 0.3,
++    })
++  );
++  head.position.y = 0.2;
++  handGroup.add(head);
++
++  // Halo ring around the hand
++  const handRing = new THREE.Mesh(
++    new THREE.TorusGeometry(0.7, 0.025, 8, 48),
++    new THREE.MeshBasicMaterial({
++      color: t.remoteHand,
++      transparent: true,
++      opacity: 0.6,
++    })
++  );
++  handRing.rotation.x = Math.PI / 2;
++  handGroup.add(handRing);
++
++  handGroup.position.set(0, 4.5, 0);
++  root.add(handGroup);
++
++  // ─── Shield ring (rotating around the whole assembly) ────────────────
++  const shieldGeo = new THREE.TorusGeometry(3.5, 0.05, 12, 96);
++  const shieldMat = new THREE.MeshBasicMaterial({
++    color: t.shieldRing,
++    transparent: true,
++    opacity: 0.5,
++  });
++  const shieldRing = new THREE.Mesh(shieldGeo, shieldMat);
++  shieldRing.rotation.x = Math.PI / 2;
++  shieldRing.position.y = 0.5;
++  root.add(shieldRing);
++
++  // Second, perpendicular shield ring for a fuller 3D cage look
++  const shieldRing2 = new THREE.Mesh(shieldGeo, shieldMat.clone());
++  shieldRing2.rotation.x = Math.PI / 4;
++  shieldRing2.rotation.y = Math.PI / 4;
++  shieldRing2.position.y = 0.5;
++  root.add(shieldRing2);
++
++  // ─── Metric panels (4 holographic cards) ──────────────────────────────
++  const metricGroup = new THREE.Group();
++  metricGroup.name = 'metricPanels';
++  const metricMeshes: THREE.Mesh[] = [];
++  METRIC_PANELS.forEach((label, i) => {
++    const tex = makeMetricTexture(label, METRIC_VALUES[i]);
++    const mat = new THREE.MeshBasicMaterial({
++      map: tex,
++      transparent: true,
++      opacity: 0.9,
++    });
++    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), mat);
++    // Place 4 panels in a 2x2 grid above-right of the rack
++    const col = i % 2;
++    const row = Math.floor(i / 2);
++    mesh.position.set(3.2 + col * 1.7, 3.2 - row * 1.0, 0);
++    mesh.lookAt(0, mesh.position.y, 5); // face camera roughly
++    metricGroup.add(mesh);
++    metricMeshes.push(mesh);
++  });
++  root.add(metricGroup);
++
++  // ─── Update ───────────────────────────────────────────────────────────
++  const update = (_delta: number, elapsed: number, weight: number) => {
++    const w = THREE.MathUtils.clamp(weight, 0, 1);
++    root.visible = w > 0.01;
++
++    // Data streams: opacity scales with weight, time animates flow
++    streamMat.uniforms.uTime.value = elapsed;
++    streamMat.uniforms.uOpacity.value = w;
++
++    // Remote-hand floats + rotates
++    handGroup.position.y = 4.5 + Math.sin(elapsed * 0.8) * 0.2;
++    handGroup.rotation.y = elapsed * 0.4;
++    handRing.rotation.z = elapsed * 1.2;
++
++    // Shield rings counter-rotate
++    shieldRing.rotation.z = elapsed * 0.25;
++    shieldRing2.rotation.z = -elapsed * 0.18;
++    shieldMat.opacity = 0.5 * w;
++    (shieldRing2.material as THREE.MeshBasicMaterial).opacity = 0.4 * w;
++
++    // Metric panels gently bob
++    metricMeshes.forEach((m, i) => {
++      m.position.y = 3.2 - Math.floor(i / 2) * 1.0 + Math.sin(elapsed * 0.6 + i) * 0.08;
++      const mat = m.material as THREE.MeshBasicMaterial;
++      mat.opacity = 0.9 * w;
++    });
++  };
++
++  const dispose = () => {
++    streamMat.dispose();
++    inTube.geometry.dispose();
++    outTube.geometry.dispose();
++    shieldGeo.dispose();
++    shieldMat.dispose();
++    (shieldRing2.material as THREE.Material).dispose();
++    handGroup.traverse((o) => {
++      const m = o as THREE.Mesh;
++      if (m.isMesh) {
++        m.geometry?.dispose();
++        if (Array.isArray(m.material)) m.material.forEach((mm) => mm.dispose());
++        else m.material?.dispose();
++      }
++    });
++    metricMeshes.forEach((m) => {
++      m.geometry.dispose();
++      const mat = m.material as THREE.MeshBasicMaterial;
++      mat.map?.dispose();
++      mat.dispose();
++    });
++    root.traverse((o) => {
++      const m = o as THREE.Mesh;
++      if (m.isMesh && !metricMeshes.includes(m) && m !== inTube && m !== outTube) {
++        m.geometry?.dispose();
++      }
++    });
++  };
++
++  return { group: root, update, dispose };
++}
+diff --git a/tokens/design-tokens.ts b/tokens/design-tokens.ts
+index 8da3801..72b529b 100644
+--- a/tokens/design-tokens.ts
++++ b/tokens/design-tokens.ts
+@@ -130,6 +130,63 @@ export const tokens = {
+     gridSecondary: 0x12113a,
+   },
+ 
++  /**
++   * Data storage A→B scene palette.
++   *
++   * Drives the HeroCanvas3D scene across the 5-phase journey:
++   *   1. Data Crisis   -> chaosAlarm
++   *   2. Assessment    -> scannerBeam
++   *   3. Recommend     -> cardAccent (QNAP default)
++   *   4. Deploy        -> statusLED
++   *   5. Support       -> dataStream
++   *
++   * Switch `cardAccent` to `cardAccentDell` or `cardAccentHpe` to re-skin
++   * the recommend phase for a different vendor without touching component code.
++   */
++  dataStorageScene: {
++    // Common
++    rackFrame: 0x1a1d2e,
++    rackPanel: 0x2a2e44,
++    rackEdge: 0x57cdff,
++    cableActive: 0x57cdff,
++    cableIdle: 0x3a4060,
++
++    // Phase 1: Data Crisis
++    chaosAlarm: 0xff4d67,
++    chaosParticle: 0xff7a8c,
++    chaosBackground: 0x0a0410,
++
++    // Phase 2: Assessment
++    scannerBeam: 0x57cdff,
++    scannerCore: 0xffffff,
++    hologramFill: 0x4f86ff,
++    hologramEdge: 0xa7d0fb,
++
++    // Phase 3: Recommend (vendor cards)
++    cardBase: 0x1e2240,
++    cardAccent: 0x00b8d4,        // QNAP cyan/teal (default)
++    cardAccentDell: 0x0076ce,    // Dell blue
++    cardAccentHpe: 0x01a982,     // HPE green
++    cardText: 0xe6f1ff,
++
++    // Phase 4: Deploy
++    statusLED: 0x69f29c,         // green
++    statusLEDpending: 0xffb454,  // amber
++    insertSlotEmpty: 0x14162a,
++    insertSlotFilled: 0x2a2e44,
++
++    // Phase 5: Support
++    dataStream: 0x57cdff,
++    shieldRing: 0x69f29c,
++    remoteHand: 0xa7d0fb,
++    metricPanel: 0x0f1226,
++    metricText: 0x57cdff,
++
++    // Lighting (tweaks the experimentalScene palette for warm/cool phases)
++    keyLightWarm: 0xff8a6b,      // phase 1 (warm/red)
++    fillLightCool: 0x4f86ff,     // phase 5 (cool/blue)
++  },
++
+   fonts: {
+     ui: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+     body: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+-- 
+2.47.3
+
+
+From 16a585433480093aa27ffdb1aa7f18b56ecc47c9 Mon Sep 17 00:00:00 2001
+From: Rastaak Dev <dev@rastaak.local>
+Date: Tue, 11 Aug 2026 13:11:20 +0000
+Subject: [PATCH 2/2] feat(home): wire HeroCanvas3D into homepage and update
+ copy for data-storage theme
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Three changes:
+
+  1. app/page.tsx — mount <HeroCanvasWrapper /> on the home route so the
+     React-driven 3D scene actually renders. (The component existed but
+     was orphaned.)
+
+  2. components/home/HomeContent.tsx
+     - Hero: 'The New Standard in Staffing' → 'Enterprise Storage, Delivered.'
+       Subtitle updated to mention Dell, HPE, QNAP and frame the value prop
+       around designing/deploying/supporting storage infrastructure.
+     - 4-step flow: 'Activation, simplified' / 'Cleared to count' / 'Proven
+       field match' / 'Seamless arrival' → 'Assess' / 'Recommend' / 'Deploy'
+       / 'Support' — matching the 5-phase A→B story in the 3D scene
+       (Assess, Recommend, Deploy + Support).
+     - Removed <div id="app" /> mount point: the new React canvas replaces
+       the legacy Astro WebGL bundle's mount target on the home page.
+
+  3. components/layout/ClientScripts.tsx
+     - Skip loading the legacy Astro CommonScripts bundle on the home
+       route. This avoids a second canvas competing for the same fixed
+       z-0 layer (which would render the old nuclear facility scene on
+       top of our new data-storage scene).
+     - All other routes are unaffected; the legacy bundle still loads
+       wherever the React canvas is not mounted.
+---
+ app/page.tsx                        | 10 ++++++++-
+ components/home/HomeContent.tsx     | 32 ++++++++++++++---------------
+ components/layout/ClientScripts.tsx |  7 ++++++-
+ package-lock.json                   |  1 +
+ 4 files changed, 32 insertions(+), 18 deletions(-)
+
+diff --git a/app/page.tsx b/app/page.tsx
+index 3971b69..62873e3 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -1,5 +1,13 @@
+ import { HomeContent } from '@/components/home/HomeContent';
++import { HeroCanvasWrapper } from '@/components/canvas/HeroCanvasWrapper';
+ 
+ export default function HomePage() {
+-  return <HomeContent />;
++  return (
++    <>
++      {/* Fixed-position 3D scene: data-storage A→B story.
++          Renders behind page content via z-0 (see HeroCanvas3D). */}
++      <HeroCanvasWrapper />
++      <HomeContent />
++    </>
++  );
+ }
+diff --git a/components/home/HomeContent.tsx b/components/home/HomeContent.tsx
+index 56857bf..4cd4dfa 100644
+--- a/components/home/HomeContent.tsx
++++ b/components/home/HomeContent.tsx
+@@ -15,8 +15,8 @@ export const HomeContent: React.FC = () => {
+                 transform: 'perspective(1000px) translateX(50%) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
+               }}
+             >
+-              <span>The New Standard </span>
+-              <span>in Staffing</span>
++              <span>Enterprise Storage,</span>
++              <span>Delivered.</span>
+             </h1>
+             <p
+               className="hero__subtitle"
+@@ -26,11 +26,11 @@ export const HomeContent: React.FC = () => {
+               }}
+             >
+               <span>
+-                AI driven speed. Expert curation.
++                Dell. HPE. QNAP. One trusted partner.
+                 <br className="sp" />
+               </span>
+               <span>
+-                We mobilize verified crews to protect your schedule and your bottom line in high-consequence environments.
++                We design, deploy, and support the right data-storage infrastructure for your organization — from a single rack to a multi-site enterprise roll-out.
+               </span>
+             </p>
+           </div>
+@@ -54,7 +54,7 @@ export const HomeContent: React.FC = () => {
+                   <div className="flow__number">
+                     <span>01</span>
+                   </div>
+-                  <h3 className="flow__title">Activation, simplified</h3>
++                  <h3 className="flow__title">Assess</h3>
+                 </div>
+                 <div className="flow__body">
+                   <div className="flow__body-inner">
+@@ -64,8 +64,8 @@ export const HomeContent: React.FC = () => {
+                       </div>
+                     </div>
+                     <p className="flow__description">
+-                      One call triggers mobilization.
+-                      <br /> Your requirements: craft, count, and start date route directly to our verified crews. No hand-offs. No escalations. Just boots on the ground in minutes.
++                      We map your data first.
++                      <br /> Capacity, performance, security, and compliance requirements — we audit your current environment and quantify the gap so the recommendation is grounded in your real workload, not a generic spec sheet.
+                     </p>
+                   </div>
+                 </div>
+@@ -76,7 +76,7 @@ export const HomeContent: React.FC = () => {
+                   <div className="flow__number">
+                     <span>02</span>
+                   </div>
+-                  <h3 className="flow__title">Cleared to count</h3>
++                  <h3 className="flow__title">Recommend</h3>
+                 </div>
+                 <div className="flow__body">
+                   <div className="flow__body-inner">
+@@ -86,7 +86,8 @@ export const HomeContent: React.FC = () => {
+                       </div>
+                     </div>
+                     <p className="flow__description">
+-                      Our team handles all screening and verification before dispatch. Compliance, background, certifications, and fitness-for-duty — we enforce a zero-fail model to guarantee every worker clears the gate on Day 1.
++                      Vendor-neutral sizing across Dell, HPE, and QNAP.
++                      <br /> We propose the right platform for your budget, growth curve, and integration constraints — including block, file, object, and backup tiers in a single, defensible architecture.
+                     </p>
+                   </div>
+                 </div>
+@@ -97,7 +98,7 @@ export const HomeContent: React.FC = () => {
+                   <div className="flow__number">
+                     <span>03</span>
+                   </div>
+-                  <h3 className="flow__title">Proven field match</h3>
++                  <h3 className="flow__title">Deploy</h3>
+                 </div>
+                 <div className="flow__body">
+                   <div className="flow__body-inner">
+@@ -107,7 +108,8 @@ export const HomeContent: React.FC = () => {
+                       </div>
+                     </div>
+                     <p className="flow__description">
+-                      We don&apos;t just provide available workers. We deploy proven crews. By filtering for past performance, role fit, and reliability, we deliver teams engineered for endurance — ensuring your project stays fully manned from first break to completion.
++                      Certified engineers, on-site and remote.
++                      <br /> From rack-and-stack to data migration, our team handles the install, the cabling, the configuration, and the cutover — with zero-downtime windows where your workload requires it.
+                     </p>
+                   </div>
+                 </div>
+@@ -118,7 +120,7 @@ export const HomeContent: React.FC = () => {
+                   <div className="flow__number">
+                     <span>04</span>
+                   </div>
+-                  <h3 className="flow__title">Seamless arrival</h3>
++                  <h3 className="flow__title">Support</h3>
+                 </div>
+                 <div className="flow__body">
+                   <div className="flow__body-inner">
+@@ -128,7 +130,8 @@ export const HomeContent: React.FC = () => {
+                       </div>
+                     </div>
+                     <p className="flow__description">
+-                      We manage the &quot;last mile&quot; of mobilization. Every crew arrives site-ready with finalized reporting details. With real-time arrival monitoring and active coordination, we ensure your shift starts on time, even when field conditions shift.
++                      24/7 monitoring and on-call engineers.
++                      <br /> We stay engaged after the rack powers on. Proactive health checks, firmware management, capacity planning, and rapid remote-hands response — so your storage is something you stop thinking about.
+                     </p>
+                   </div>
+                 </div>
+@@ -309,9 +312,6 @@ export const HomeContent: React.FC = () => {
+           </div>
+         </section>
+       </div>
+-
+-      {/* 3D WebGL mount container */}
+-      <div id="app" />
+     </div>
+   );
+ };
+diff --git a/components/layout/ClientScripts.tsx b/components/layout/ClientScripts.tsx
+index eb3ba51..9b2ebec 100644
+--- a/components/layout/ClientScripts.tsx
++++ b/components/layout/ClientScripts.tsx
+@@ -8,6 +8,11 @@ import Script from 'next/script';
+ export const ClientScripts: React.FC = () => {
+   const pathname = usePathname();
+   const isTokenStudio = pathname?.startsWith('/token-studio') ?? false;
++  // The new React-driven 3D scene (HeroCanvas3D) replaces the legacy Astro
++  // WebGL bundle on the homepage. We skip loading CommonScripts there to
++  // avoid a second canvas competing for the same fixed layer.
++  const isHomeWithReactCanvas =
++    pathname === '/' || pathname === '' || pathname === '/index';
+ 
+   useEffect(() => {
+     document.documentElement.classList.remove('preload');
+@@ -18,7 +23,7 @@ export const ClientScripts: React.FC = () => {
+     }
+   }, [isTokenStudio]);
+ 
+-  if (isTokenStudio) return null;
++  if (isTokenStudio || isHomeWithReactCanvas) return null;
+ 
+   return (
+     <Script
+diff --git a/package-lock.json b/package-lock.json
+index fae9df5..4252fa4 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -7,6 +7,7 @@
+     "": {
+       "name": "vectr-nextjs",
+       "version": "1.0.0",
++      "hasInstallScript": true,
+       "dependencies": {
+         "clsx": "^2.1.1",
+         "framer-motion": "^12.38.0",
+-- 
+2.47.3
+
