@@ -14,9 +14,9 @@ export const tokens = {
   colors: {
     primary: 'oklch(30.52% 0.154 279.05)',
     primaryHover: 'oklch(25.3% 0.1219 279.99)',
-    primaryLight: 'oklch(100.00% 0.0000 89.88)',
+    primaryLight: 'oklch(80.11% 0.1264 229.37)',
     primaryGlow: 'oklch(30.52% 0.154 279.05 / 0.35)',
-    primaryHoverGlow: 'oklch(100.00% 0.0000 89.88 / 0.45)',
+    primaryHoverGlow: 'oklch(30.52% 0.154 279.05 / 0.45)',
 
     bgLight: 'oklch(99.11% 0 89.88)',
     bgHero: 'oklch(99.11% 0 89.88)',
@@ -78,38 +78,38 @@ export const tokens = {
    */
   scene: {
     // elements.png
-    elementsFill: 0xffffff,
+    elementsFill: 0xa7d0fb,
 
     // building-logo.png
     buildingLogoFill: 0x261779,
     buildingLogoGlow: 0x000000,
 
     // glowing-dots.png
-    glowingDotsFill: 0xbbc9ff,
-    glowingDotsGlow: 0xbbc9ff,
+    glowingDotsFill: 0x57cdff,
+    glowingDotsGlow: 0x57cdff,
 
     // laser-1.png
-    laser1Fill: 0xb70000,
-    laser1Glow: 0xb70000,
+    laser1Fill: 0xff4d67,
+    laser1Glow: 0xff4d67,
 
     // laser-2.png
-    laser2Fill: 0x1a1052,
-    laser2Glow: 0x1a1052,
+    laser2Fill: 0x0e94fb,
+    laser2Glow: 0x0e94fb,
 
     // logo-active.png
-    logoActiveFill: 0xffffff,
-    logoActiveGlow: 0xbbc9ff,
+    logoActiveFill: 0x261779,
+    logoActiveGlow: 0x000000,
 
     // logo-deactive.png
-    logoDeactiveFill: 0xffffff,
+    logoDeactiveFill: 0xa7d0fb,
     logoDeactiveGlow: 0x000000,
 
     // square-active.png
-    squareActiveFill: 0xbbc9ff,
-    squareActiveGlow: 0xbbc9ff,
+    squareActiveFill: 0x261779,
+    squareActiveGlow: 0x57cdff,
 
     // squares-deactive.png
-    squaresDeactiveFill: 0xffffff,
+    squaresDeactiveFill: 0x94bbe5,
   },
 
   /**
@@ -117,13 +117,13 @@ export const tokens = {
    * renderer and intentionally stay out of the Token Studio live palette.
    */
   experimentalScene: {
-    canvasBackground: 0x261779,
-    ambient: 0xffffff,
-    hemisphereGround: 0x261779,
-    keyLight: 0x261779,
+    canvasBackground: 0x050419,
+    ambient: 0x261779,
+    hemisphereGround: 0x050419,
+    keyLight: 0x4f86ff,
     fillLight: 0x261779,
-    gridPrimary: 0xffffff,
-    gridSecondary: 0xffffff,
+    gridPrimary: 0x261779,
+    gridSecondary: 0x12113a,
   },
 
   fonts: {
