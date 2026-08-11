@@ -105,8 +105,12 @@ export const tokens = {
     logoDeactiveGlow: 0x000000,
 
     // square-active.png
-    squareActiveFill: 0x261779,
+    squareActiveFill: 0x57cdff,
     squareActiveGlow: 0x57cdff,
+
+    // The central square that carries the worker in the activation sequence.
+    activationSquareFill: 0x261779,
+    activationSquareGlow: 0x000000,
 
     // squares-deactive.png
     squaresDeactiveFill: 0x94bbe5,

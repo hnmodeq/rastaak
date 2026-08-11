@@ -40,6 +40,7 @@ const sceneGroup = (name: string) => {
   if (name.startsWith('logoActive')) return 'Logo active';
   if (name.startsWith('logoDeactive')) return 'Logo deactive';
   if (name.startsWith('squareActive')) return 'Square active';
+  if (name.startsWith('activationSquare')) return 'Activation square';
   if (name.startsWith('squaresDeactive')) return 'Squares deactive';
   return 'Other';
 };
@@ -68,6 +69,8 @@ const sceneLabel = (name: string) => {
     logoDeactiveGlow: 'Logo deactive glow',
     squareActiveFill: 'Square active fill',
     squareActiveGlow: 'Square active glow',
+    activationSquareFill: 'Activation square fill',
+    activationSquareGlow: 'Activation square glow',
     squaresDeactiveFill: 'Squares deactive fill',
   };
   return labels[name] ?? name;
