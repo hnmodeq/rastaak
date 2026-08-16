@@ -7,26 +7,27 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { tokens } from '@/tokens/design-tokens';
-import { createChaosGroup } from './scene/chaosGroup';
-import { createAssessmentGroup } from './scene/assessmentGroup';
-import { createRecommendGroup } from './scene/recommendGroup';
-import { createDeployGroup } from './scene/deployGroup';
-import { createSupportGroup } from './scene/supportGroup';
-import { createScrollPath, phaseProgress, Phase } from './scene/scrollPath';
+import { sampleJourney, FINALE, LANDMARKS } from './scene/journeyPath';
 
 /**
  * HeroCanvas3D
  *
- * A 5-phase A→B story for a data-storage seller:
- *   1. Data Crisis   (chaos)
- *   2. Assessment    (scanner / hologram)
- *   3. Recommend     (vendor cards: QNAP, Dell, HPE)
- *   4. Deploy        (server rack GLB + sliding units)
- *   5. Support       (operational rack + data streams + remote-hand glyph)
+ * Scroll-driven flythrough of the authored Blender world
+ * (`/glb/Rastaak-3D-Scene.glb`).
  *
- * The camera travels along the X axis driven by page scroll. Each phase
- * is a separate THREE.Group with its own update() function so the active
- * group can animate while the others rest.
+ * The world already contains the whole A→B story as a line of landmarks
+ * along the Z axis — organisations and their buildings at one end, the
+ * Rastaak logo at the other, with storage and support in between. So the
+ * component's only job is to move the camera along that line as the user
+ * scrolls, and to light it.
+ *
+ * Story beats, in scroll order:
+ *   1. Chaos       — the organisations (buildings + cooling tower)
+ *   2. Assessment  — approach, small Rastaak logo
+ *   3. Recommend   — mid-path proposal
+ *   4. Deploy      — the wrench / installation
+ *   5. Support     — server stacks + headset operator (24/7)
+ *   →  Finale      — Rastaak Logo Big
  */
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,91 +44,96 @@ export const HeroCanvas3D: React.FC = () => {
     // ─────────────────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(tokens.experimentalScene.canvasBackground);
-    scene.fog = new THREE.Fog(tokens.experimentalScene.canvasBackground, 30, 120);
+    // The world is ~477 units across, so fog has to sit much further out
+    // than it did for the old procedural scene or the far landmarks vanish.
+    scene.fog = new THREE.Fog(
+      tokens.experimentalScene.canvasBackground,
+      120,
+      420,
+    );
 
     const camera = new THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight,
       0.1,
-      1000
+      2000,
     );
-    camera.position.set(0, 6, 28);
-    camera.lookAt(0, 2, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.1;
 
     containerRef.current.innerHTML = '';
+    // Global CSS ships `canvas { opacity:0; z-index:-1 }` and only reveals
+    // via `.is-ready` (the legacy bundle used to add that). We own this
+    // canvas, so opt into the ready state and sit above the -1 layer.
+    renderer.domElement.classList.add('is-ready');
+    renderer.domElement.style.zIndex = '0';
     containerRef.current.appendChild(renderer.domElement);
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Lighting (carried from existing scene, slightly brightened)
+    //  Lighting
+    //
+    //  The Blender materials are mostly untextured light greys, so the mood
+    //  comes almost entirely from these lights. Warm at the "problem" end of
+    //  the path, cool and clean at the "solved" end.
     // ─────────────────────────────────────────────────────────────────────
-    const ambient = new THREE.AmbientLight(tokens.experimentalScene.ambient, 1.4);
+    const ambient = new THREE.AmbientLight(tokens.experimentalScene.ambient, 1.2);
     scene.add(ambient);
 
     const hemi = new THREE.HemisphereLight(
-      tokens.experimentalScene.ambient,
+      tokens.experimentalScene.keyLight,
       tokens.experimentalScene.hemisphereGround,
-      2
+      1.6,
     );
     scene.add(hemi);
 
-    const keyLight = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, 2.5);
-    keyLight.position.set(20, 40, 20);
+    const keyLight = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, 2.2);
+    keyLight.position.set(60, 90, 40);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, 1.5);
-    fillLight.position.set(-20, -10, -20);
+    const fillLight = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, 1.2);
+    fillLight.position.set(-70, 40, -50);
     scene.add(fillLight);
 
-    // Warm key light, only used in phase 1 (Data Crisis). Starts off.
-    const warmKey = new THREE.PointLight(tokens.dataStorageScene.keyLightWarm, 0, 30, 2);
-    warmKey.position.set(-30, 6, 8);
+    // Warm accent over the organisations (start of the journey).
+    const warmKey = new THREE.PointLight(
+      tokens.dataStorageScene.keyLightWarm,
+      0,
+      160,
+      2,
+    );
+    warmKey.position.set(-10, 30, -82);
     scene.add(warmKey);
 
-    // Cool fill light, ramps up in phase 5 (Support).
-    const coolFill = new THREE.PointLight(tokens.dataStorageScene.fillLightCool, 0, 30, 2);
-    coolFill.position.set(30, 6, 8);
+    // Cool accent over the storage/support cluster (end of the journey).
+    const coolFill = new THREE.PointLight(
+      tokens.dataStorageScene.fillLightCool,
+      0,
+      160,
+      2,
+    );
+    coolFill.position.set(-10, 26, 46);
     scene.add(coolFill);
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Floor grid
-    // ─────────────────────────────────────────────────────────────────────
-    const grid = new THREE.GridHelper(
-      200,
-      100,
-      tokens.experimentalScene.gridPrimary,
-      tokens.experimentalScene.gridSecondary
+    // Dedicated logo light so the finale mark reads crisply against the fog.
+    const logoLight = new THREE.PointLight(
+      tokens.dataStorageScene.scannerBeam,
+      0,
+      120,
+      2,
     );
-    grid.position.y = -2;
-    scene.add(grid);
+    logoLight.position.set(
+      LANDMARKS.logoBig[0] + 10,
+      LANDMARKS.logoBig[1] + 22,
+      LANDMARKS.logoBig[2] + 16,
+    );
+    scene.add(logoLight);
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Phase groups (each is a self-contained THREE.Group with update())
-    // ─────────────────────────────────────────────────────────────────────
-    const path = createScrollPath(); // contains per-phase anchors
-
-    const chaos = createChaosGroup({ x: path[Phase.Chaos].x });
-    scene.add(chaos.group);
-
-    const assessment = createAssessmentGroup({ x: path[Phase.Assessment].x });
-    scene.add(assessment.group);
-
-    const recommend = createRecommendGroup({ x: path[Phase.Recommend].x });
-    scene.add(recommend.group);
-
-    // deploy + support depend on the loaded server-rack GLB, so we mount
-    // them inside the loader callback below.
-
-    let support: ReturnType<typeof createSupportGroup> | null = null;
-    let deploy: ReturnType<typeof createDeployGroup> | null = null;
-
-    // ─────────────────────────────────────────────────────────────────────
-    //  GLB loaders
+    //  World
     // ─────────────────────────────────────────────────────────────────────
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
@@ -135,61 +141,48 @@ export const HeroCanvas3D: React.FC = () => {
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
 
-    gltfLoader.load(
-      '/glb/servers/data_center_rack.glb',
-      (gltf: any) => {
-        if (isDisposed) return;
-        const rack = gltf.scene;
-        rack.traverse((child: any) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        deploy = createDeployGroup({
-          x: path[Phase.Deploy].x,
-          rackTemplate: rack,
-        });
-        scene.add(deploy.group);
-        setIsLoaded(true);
-      },
-      undefined,
-      (err: any) => {
-        console.warn('data_center_rack.glb failed:', err);
-        // Fall back: still create an empty deploy group with placeholder geometry
-        deploy = createDeployGroup({ x: path[Phase.Deploy].x, rackTemplate: null });
-        scene.add(deploy.group);
-        setIsLoaded(true);
-      }
-    );
+    let world: THREE.Group | null = null;
 
     gltfLoader.load(
-      '/glb/servers/network_server_rack.glb',
+      '/glb/Rastaak-3D-Scene.glb',
       (gltf: any) => {
         if (isDisposed) return;
-        const rack = gltf.scene;
-        rack.traverse((child: any) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
+        world = gltf.scene as THREE.Group;
+
+        world.traverse((child: any) => {
+          if (!child.isMesh) return;
+          child.castShadow = true;
+          child.receiveShadow = true;
+          // No environment map is bound in this scene, so any metalness
+          // above ~0.3 renders as flat black. Keep surfaces diffuse.
+          const materials = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+          for (const m of materials) {
+            if (!m) continue;
+            if (typeof m.metalness === 'number') {
+              m.metalness = Math.min(m.metalness, 0.25);
+            }
+            if (typeof m.roughness === 'number') {
+              m.roughness = Math.max(m.roughness, 0.45);
+            }
           }
         });
-        support = createSupportGroup({
-          x: path[Phase.Support].x,
-          rackTemplate: rack,
-        });
-        scene.add(support.group);
+
+        scene.add(world);
+        setIsLoaded(true);
       },
       undefined,
-      (err: any) => {
-        console.warn('network_server_rack.glb failed:', err);
-        support = createSupportGroup({ x: path[Phase.Support].x, rackTemplate: null });
-        scene.add(support.group);
-      }
+      (error: unknown) => {
+        // Don't leave the page hidden behind a permanently transparent
+        // canvas if the world fails to load.
+        console.error('[HeroCanvas3D] failed to load world', error);
+        setIsLoaded(true);
+      },
     );
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Scroll → phase progress
+    //  Scroll wiring
     // ─────────────────────────────────────────────────────────────────────
     let targetScrollProgress = 0;
     let currentScrollProgress = 0;
@@ -214,47 +207,60 @@ export const HeroCanvas3D: React.FC = () => {
     //  Render loop
     // ─────────────────────────────────────────────────────────────────────
     const clock = new THREE.Clock();
+    const sample = {
+      camera: [0, 0, 0] as [number, number, number],
+      target: [0, 0, 0] as [number, number, number],
+    };
+    const camPos = new THREE.Vector3();
+    const lookAt = new THREE.Vector3();
+    const warmColor = new THREE.Color(tokens.dataStorageScene.keyLightWarm);
+    const coolColor = new THREE.Color(tokens.experimentalScene.keyLight);
 
     const animate = () => {
       if (isDisposed) return;
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      // Smooth-scroll lerp
+      // Framerate-independent damping. A fixed per-frame factor converges at
+      // wildly different speeds on 144Hz vs. a throttled tab, and on slow
+      // hardware the camera would never reach the end of the path.
+      const damping = 1 - Math.exp(-delta * 3.71);
       currentScrollProgress +=
-        (targetScrollProgress - currentScrollProgress) * 0.06;
+        (targetScrollProgress - currentScrollProgress) * damping;
 
-      // Phase 0..4
-      const phase = phaseProgress(currentScrollProgress);
-      const { active, distances } = phase;
+      const t = currentScrollProgress;
 
-      // Per-group update (animations only fire when the group is "near" the camera)
-      chaos.update(delta, elapsed, distances[Phase.Chaos]);
-      assessment.update(delta, elapsed, distances[Phase.Assessment]);
-      recommend.update(delta, elapsed, distances[Phase.Recommend]);
-      deploy?.update(delta, elapsed, distances[Phase.Deploy]);
-      support?.update(delta, elapsed, distances[Phase.Support]);
+      // Walk the authored path.
+      sampleJourney(t, sample);
 
-      // Camera: travel along the X axis from -30 to +30 with a slight arc
-      const xT = currentScrollProgress;
-      const camX = THREE.MathUtils.lerp(-30, 30, xT);
-      const camZ = 28 - Math.sin(xT * Math.PI) * 4; // gentle push-in mid-path
-      const camY = 6 + Math.sin(elapsed * 0.4) * 0.25 - xT * 1.5;
+      // Ease onto the logo over the last stretch so the finale lands cleanly
+      // without fighting the Support beat for the same frame.
+      const finaleWeight = THREE.MathUtils.smoothstep(t, 0.86, 1.0);
 
-      camera.position.set(camX, camY, camZ);
-
-      // Look at the active phase anchor
-      const activeAnchor = path[active];
-      camera.lookAt(activeAnchor.x, activeAnchor.lookY, 0);
-
-      // Dynamic lighting: warm during crisis, cool during support
-      warmKey.intensity = distances[Phase.Chaos] * 4.0;
-      coolFill.intensity = distances[Phase.Support] * 4.0;
-      keyLight.color.lerpColors(
-        new THREE.Color(tokens.dataStorageScene.keyLightWarm),
-        new THREE.Color(tokens.experimentalScene.keyLight),
-        xT
+      camPos.set(
+        THREE.MathUtils.lerp(sample.camera[0], FINALE.camera[0], finaleWeight),
+        THREE.MathUtils.lerp(sample.camera[1], FINALE.camera[1], finaleWeight),
+        THREE.MathUtils.lerp(sample.camera[2], FINALE.camera[2], finaleWeight),
       );
+      // A gentle idle drift keeps the shot alive when the user stops scrolling.
+      camPos.y += Math.sin(elapsed * 0.4) * 0.4;
+      camera.position.copy(camPos);
+
+      lookAt.set(
+        THREE.MathUtils.lerp(sample.target[0], FINALE.target[0], finaleWeight),
+        THREE.MathUtils.lerp(sample.target[1], FINALE.target[1], finaleWeight),
+        THREE.MathUtils.lerp(sample.target[2], FINALE.target[2], finaleWeight),
+      );
+      camera.lookAt(lookAt);
+
+      // Lighting follows the story: warm/uneasy at the start, cool and
+      // resolved at the end, with the logo lit only for the finale.
+      const chaosWeight = 1 - THREE.MathUtils.smoothstep(t, 0.0, 0.35);
+      const supportWeight = THREE.MathUtils.smoothstep(t, 0.55, 0.95);
+      warmKey.intensity = chaosWeight * 900;
+      coolFill.intensity = supportWeight * 900;
+      logoLight.intensity = finaleWeight * 700;
+      keyLight.color.lerpColors(warmColor, coolColor, THREE.MathUtils.clamp(t * 1.4, 0, 1));
 
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
@@ -271,12 +277,25 @@ export const HeroCanvas3D: React.FC = () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
 
-      // Dispose all groups
-      chaos.dispose();
-      assessment.dispose();
-      recommend.dispose();
-      deploy?.dispose();
-      support?.dispose();
+      if (world) {
+        world.traverse((child: any) => {
+          if (!child.isMesh) return;
+          child.geometry?.dispose();
+          const materials = Array.isArray(child.material)
+            ? child.material
+            : [child.material];
+          for (const m of materials) {
+            if (!m) continue;
+            for (const key of Object.keys(m)) {
+              const value = (m as any)[key];
+              if (value && value.isTexture) value.dispose();
+            }
+            m.dispose();
+          }
+        });
+        scene.remove(world);
+        world = null;
+      }
 
       dracoLoader.dispose();
       renderer.dispose();

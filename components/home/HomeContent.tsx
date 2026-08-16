@@ -309,9 +309,6 @@ export const HomeContent: React.FC = () => {
           </div>
         </section>
       </div>
-
-      {/* 3D WebGL mount container */}
-      <div id="app" />
     </div>
   );
 };
