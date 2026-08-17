@@ -87,6 +87,9 @@ export const HeroCanvas3D: React.FC = () => {
           light.shadow.camera.top = 45;
           light.shadow.camera.bottom = -45;
           light.shadow.bias = cfg.shadowBias ?? -0.0005;
+          if (cfg.radius !== undefined) {
+            light.shadow.radius = cfg.radius;
+          }
         }
         scene.add(light);
       } else if (cfg.type === 'point') {
@@ -98,6 +101,9 @@ export const HeroCanvas3D: React.FC = () => {
           light.shadow.mapSize.width = size;
           light.shadow.mapSize.height = size;
           light.shadow.bias = cfg.shadowBias ?? -0.0005;
+          if (cfg.radius !== undefined) {
+            light.shadow.radius = cfg.radius;
+          }
         }
         scene.add(light);
       } else if (cfg.type === 'spot') {
@@ -119,6 +125,9 @@ export const HeroCanvas3D: React.FC = () => {
           light.shadow.mapSize.width = size;
           light.shadow.mapSize.height = size;
           light.shadow.bias = cfg.shadowBias ?? -0.0005;
+          if (cfg.radius !== undefined) {
+            light.shadow.radius = cfg.radius;
+          }
         }
         scene.add(light);
       }

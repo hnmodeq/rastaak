@@ -9,7 +9,8 @@
  *  3. Direction / Target [X, Y, Z]
  *  4. Power / Intensity
  *  5. Color
- *  6. Shadows (castShadow, shadowMapSize, shadowBias)
+ *  6. Light Radius & Falloff Distance (matching Blender's Radius e.g. 2.27m)
+ *  7. Shadows (castShadow, shadowMapSize, shadowBias, radius)
  */
 
 import { tokens } from '@/tokens/design-tokens';
@@ -43,8 +44,14 @@ export interface LightConfig {
   /** Target point in 3D world space [X, Y, Z] for directional or spot lights */
   target?: [number, number, number];
 
-  /** Distance falloff for Point / Spot lights (0 = infinite distance) */
+  /** Distance falloff range in meters for Point / Spot lights (0 = infinite distance) */
   distance?: number;
+
+  /**
+   * Light Radius in meters (matches Blender's Radius setting e.g. 2.27m).
+   * Also controls soft shadow blur radius.
+   */
+  radius?: number;
 
   /** Cone angle in degrees for Spot lights (e.g. 45) */
   angle?: number;
@@ -86,6 +93,7 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     castShadow: true,
     shadowMapSize: 2048,
     shadowBias: -0.0005,
+    radius: 2.27, // Soft shadow blur radius matching Blender 2.27m radius
   },
   {
     id: 'soft_fill_light',
