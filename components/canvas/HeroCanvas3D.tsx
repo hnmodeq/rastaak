@@ -23,7 +23,7 @@ export const HeroCanvas3D: React.FC = () => {
     const camConfig = SCENE_CONFIG.camera;
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Scene / Camera / Renderer
+    //  Scene / Camera / Renderer (Shadow Map Enabled)
     // ─────────────────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(tokens.experimentalScene.canvasBackground);
@@ -44,7 +44,9 @@ export const HeroCanvas3D: React.FC = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     containerRef.current.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
@@ -52,7 +54,7 @@ export const HeroCanvas3D: React.FC = () => {
     containerRef.current.appendChild(renderer.domElement);
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Neutral Directional Lighting (Exact Blender setup)
+    //  Exact Blender Viewport Lighting (6500K Point / Sun Light with Shadows)
     // ─────────────────────────────────────────────────────────────────────
     const ambient = new THREE.AmbientLight(tokens.experimentalScene.ambient, env.ambientIntensity);
     scene.add(ambient);
@@ -60,17 +62,28 @@ export const HeroCanvas3D: React.FC = () => {
     const hemi = new THREE.HemisphereLight(
       tokens.experimentalScene.keyLight,
       tokens.experimentalScene.hemisphereGround,
-      1.2,
+      1.1,
     );
     scene.add(hemi);
 
+    // Main 6500K Key Light matching Blender's 763W Light
     const keyLight = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, env.keyLightIntensity);
-    keyLight.position.set(...env.keyLightPosition);
+    keyLight.position.set(-20, 55, -15);
     keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 1;
+    keyLight.shadow.camera.far = 180;
+    keyLight.shadow.camera.left = -45;
+    keyLight.shadow.camera.right = 45;
+    keyLight.shadow.camera.top = 45;
+    keyLight.shadow.camera.bottom = -45;
+    keyLight.shadow.bias = -0.0005;
     scene.add(keyLight);
 
+    // Soft fill light from opposite angle to soften dark shadow faces
     const fillLight = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, env.fillLightIntensity);
-    fillLight.position.set(-50, 40, -50);
+    fillLight.position.set(40, 30, 30);
     scene.add(fillLight);
 
     // ─────────────────────────────────────────────────────────────────────
@@ -101,8 +114,8 @@ export const HeroCanvas3D: React.FC = () => {
 
           for (const m of materials) {
             if (!m) continue;
-            m.metalness = Math.min(m.metalness, 0.15);
-            m.roughness = Math.max(m.roughness, 0.55);
+            m.metalness = Math.min(m.metalness, 0.12);
+            m.roughness = Math.max(m.roughness, 0.60);
           }
         });
 
