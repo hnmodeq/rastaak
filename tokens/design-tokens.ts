@@ -19,7 +19,7 @@ export const tokens = {
     primaryHoverGlow: 'oklch(30.52% 0.154 279.05 / 0.45)',
 
     bgLight: 'oklch(99.11% 0 89.88)',
-    bgHero: 'oklch(99.11% 0 89.88)',
+    bgHero: 'oklch(20% 0.01 260)',
     bgAlt: 'oklch(92.24% 0.0202 233.86)',
     bgMuted: 'oklch(96.34% 0.0053 197.07)',
     bgDark: 'oklch(12.78% 0.0477 280.42)',
@@ -51,7 +51,7 @@ export const tokens = {
     overlayDark10: 'oklch(12.78% 0.0477 280.42 / 0.1)',
     overlayDark20: 'oklch(12.78% 0.0477 280.42 / 0.2)',
     overlayDark30: 'oklch(12.78% 0.0477 280.42 / 0.3)',
-    overlayBrandStrong: 'oklch(30.52% 0.154 279.05 / 0.9)',
+    overlayBrandStrong: 'oklch(15% 0.01 260 / 0.9)',
     overlayGlass10: 'oklch(99.11% 0 89.88 / 0.1)',
     overlayGlass15: 'oklch(99.11% 0 89.88 / 0.15)',
     overlayGlass20: 'oklch(99.11% 0 89.88 / 0.2)',
@@ -70,121 +70,69 @@ export const tokens = {
     debugPaused: 'oklch(14.85% 0 0)',
   },
 
-  /**
-   * Active homepage WebGL palette.
-   *
-   * Each group maps to one of the reference images in /uploads and to a
-   * dedicated renderer binding. Fill and glow never share a token.
-   */
   scene: {
-    // elements.png
     elementsFill: 0xa7d0fb,
-
-    // building-logo.png
     buildingLogoFill: 0x261779,
     buildingLogoGlow: 0x000000,
-
-    // glowing-dots.png
     glowingDotsFill: 0x57cdff,
     glowingDotsGlow: 0x57cdff,
-
-    // laser-1.png
     laser1Fill: 0xff4d67,
     laser1Glow: 0xff4d67,
-
-    // laser-2.png
     laser2Fill: 0x0e94fb,
     laser2Glow: 0x0e94fb,
-
-    // logo-active.png
     logoActiveFill: 0x261779,
     logoActiveGlow: 0x000000,
-
-    // logo-deactive.png
     logoDeactiveFill: 0xa7d0fb,
     logoDeactiveGlow: 0x000000,
-
-    // square-active.png
     squareActiveFill: 0x57cdff,
     squareActiveGlow: 0x57cdff,
-
-    // The central square that carries the worker in the activation sequence.
     activationSquareFill: 0x261779,
     activationSquareGlow: 0x000000,
-
-    // squares-deactive.png
     squaresDeactiveFill: 0x94bbe5,
   },
 
   /**
-   * Not mounted on the homepage. These support the optional React Three.js
-   * renderer and intentionally stay out of the Token Studio live palette.
+   * Neutral Clay Monochrome Scene Setup (Matching Blender image.png)
    */
   experimentalScene: {
-    canvasBackground: 0x050419,
-    ambient: 0x261779,
-    hemisphereGround: 0x050419,
-    keyLight: 0x4f86ff,
-    fillLight: 0x261779,
-    gridPrimary: 0x261779,
-    gridSecondary: 0x12113a,
+    canvasBackground: 0x22242a,
+    ambient: 0x888c95,
+    hemisphereGround: 0x18191e,
+    keyLight: 0xffffff,
+    fillLight: 0x666970,
+    gridPrimary: 0x444850,
+    gridSecondary: 0x282a30,
   },
 
-  /**
-   * Data storage A→B scene palette.
-   *
-   * Drives the HeroCanvas3D scene across the 5-phase journey:
-   *   1. Data Crisis   -> chaosAlarm
-   *   2. Assessment    -> scannerBeam
-   *   3. Recommend     -> cardAccent (QNAP default)
-   *   4. Deploy        -> statusLED
-   *   5. Support       -> dataStream
-   *
-   * Switch `cardAccent` to `cardAccentDell` or `cardAccentHpe` to re-skin
-   * the recommend phase for a different vendor without touching component code.
-   */
   dataStorageScene: {
-    // Common
     rackFrame: 0x1a1d2e,
     rackPanel: 0x2a2e44,
     rackEdge: 0x57cdff,
     cableActive: 0x57cdff,
     cableIdle: 0x3a4060,
-
-    // Phase 1: Data Crisis
     chaosAlarm: 0xff4d67,
     chaosParticle: 0xff7a8c,
     chaosBackground: 0x0a0410,
-
-    // Phase 2: Assessment
-    scannerBeam: 0x57cdff,
+    scannerBeam: 0xffffff,
     scannerCore: 0xffffff,
-    hologramFill: 0x4f86ff,
-    hologramEdge: 0xa7d0fb,
-
-    // Phase 3: Recommend (vendor cards)
+    hologramFill: 0xaaaaaa,
+    hologramEdge: 0xcccccc,
     cardBase: 0x1e2240,
-    cardAccent: 0x00b8d4,        // QNAP cyan/teal (default)
-    cardAccentDell: 0x0076ce,    // Dell blue
-    cardAccentHpe: 0x01a982,     // HPE green
+    cardAccent: 0x00b8d4,
+    cardAccentDell: 0x0076ce,
+    cardAccentHpe: 0x01a982,
     cardText: 0xe6f1ff,
-
-    // Phase 4: Deploy
-    statusLED: 0x69f29c,         // green
-    statusLEDpending: 0xffb454,  // amber
+    statusLED: 0xffffff,
+    statusLEDpending: 0xdddddd,
     insertSlotEmpty: 0x14162a,
     insertSlotFilled: 0x2a2e44,
-
-    // Phase 5: Support
-    dataStream: 0x57cdff,
-    shieldRing: 0x69f29c,
+    dataStream: 0xffffff,
+    shieldRing: 0xffffff,
     remoteHand: 0xa7d0fb,
     metricPanel: 0x0f1226,
     metricText: 0x57cdff,
-
-    // Lighting (tweaks the experimentalScene palette for warm/cool phases)
-    keyLightWarm: 0xff8a6b,      // phase 1 (warm/red)
-    fillLightCool: 0x4f86ff,     // phase 5 (cool/blue)
+    keyLightWarm: 0xffffff,
+    fillLightCool: 0xffffff,
   },
 
   fonts: {

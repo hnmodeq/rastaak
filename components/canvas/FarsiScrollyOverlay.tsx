@@ -48,8 +48,9 @@ export const FarsiScrollyOverlay: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+      // Calculate progress t over the header scrollytelling height (2.5x viewport height)
+      const heroHeight = window.innerHeight * 2.5;
+      const progress = Math.min(1.0, Math.max(0, window.scrollY / heroHeight));
       setScrollT(progress);
     };
 
@@ -62,10 +63,15 @@ export const FarsiScrollyOverlay: React.FC = () => {
     FARSI_BEATS.find((b) => scrollT >= b.range[0] && scrollT <= b.range[1]) ||
     FARSI_BEATS[0];
 
+  // Fade out completely when user scrolls past the 3D header intro section
+  const isVisible = scrollT < 0.99;
+
   return (
     <div
       dir="rtl"
-      className="fixed bottom-6 left-6 md:bottom-12 md:left-12 z-20 pointer-events-none max-w-xs sm:max-w-md w-[calc(100vw-3rem)]"
+      className={`fixed bottom-6 left-6 md:bottom-12 md:left-12 z-20 pointer-events-none max-w-xs sm:max-w-md w-[calc(100vw-3rem)] transition-opacity duration-500 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
     >
       <div
         className="backdrop-blur-md p-5 md:p-6 rounded-2xl shadow-2xl transition-all duration-500 transform translate-y-0 border"
