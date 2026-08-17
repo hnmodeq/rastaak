@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronDown, FeatureIcon } from '../ui/Icons';
+import { FlowSection } from './FlowSection';
 
 export const HomeContent: React.FC = () => {
   return (
@@ -46,96 +47,8 @@ export const HomeContent: React.FC = () => {
 
         <div className="hero-spacer" />
 
-        <section className="flow">
-          <div className="flow__wrapper">
-            <div className="flow__steps">
-              <div className="flow__step" data-step="1">
-                <div className="flow__header">
-                  <div className="flow__number">
-                    <span>01</span>
-                  </div>
-                  <h3 className="flow__title">Activation, simplified</h3>
-                </div>
-                <div className="flow__body">
-                  <div className="flow__body-inner">
-                    <div className="flow__track">
-                      <div className="flow__track-bar">
-                        <div className="flow__track-fill" />
-                      </div>
-                    </div>
-                    <p className="flow__description">
-                      One call triggers mobilization.
-                      <br /> Your requirements: craft, count, and start date route directly to our verified crews. No hand-offs. No escalations. Just boots on the ground in minutes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flow__step" data-step="2">
-                <div className="flow__header">
-                  <div className="flow__number">
-                    <span>02</span>
-                  </div>
-                  <h3 className="flow__title">Cleared to count</h3>
-                </div>
-                <div className="flow__body">
-                  <div className="flow__body-inner">
-                    <div className="flow__track">
-                      <div className="flow__track-bar">
-                        <div className="flow__track-fill" />
-                      </div>
-                    </div>
-                    <p className="flow__description">
-                      Our team handles all screening and verification before dispatch. Compliance, background, certifications, and fitness-for-duty — we enforce a zero-fail model to guarantee every worker clears the gate on Day 1.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flow__step" data-step="3">
-                <div className="flow__header">
-                  <div className="flow__number">
-                    <span>03</span>
-                  </div>
-                  <h3 className="flow__title">Proven field match</h3>
-                </div>
-                <div className="flow__body">
-                  <div className="flow__body-inner">
-                    <div className="flow__track">
-                      <div className="flow__track-bar">
-                        <div className="flow__track-fill" />
-                      </div>
-                    </div>
-                    <p className="flow__description">
-                      We don&apos;t just provide available workers. We deploy proven crews. By filtering for past performance, role fit, and reliability, we deliver teams engineered for endurance — ensuring your project stays fully manned from first break to completion.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flow__step" data-step="4">
-                <div className="flow__header">
-                  <div className="flow__number">
-                    <span>04</span>
-                  </div>
-                  <h3 className="flow__title">Seamless arrival</h3>
-                </div>
-                <div className="flow__body">
-                  <div className="flow__body-inner">
-                    <div className="flow__track">
-                      <div className="flow__track-bar">
-                        <div className="flow__track-fill" />
-                      </div>
-                    </div>
-                    <p className="flow__description">
-                      We manage the &quot;last mile&quot; of mobilization. Every crew arrives site-ready with finalized reporting details. With real-time arrival monitoring and active coordination, we ensure your shift starts on time, even when field conditions shift.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Process Flow Steps driven by flowConfig.ts */}
+        <FlowSection />
 
         <section className="features">
           <div className="features__sticky">
