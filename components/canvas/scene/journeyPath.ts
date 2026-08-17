@@ -1,101 +1,67 @@
 /**
- * journeyPath
+ * journeyPath.ts
  *
- * The A→B route through the authored Blender world
- * (`/glb/Rastaak-3D-Scene.glb`).
+ * Scrollytelling route through Rastaak-3D-Scene-Ver-IV.glb.
  *
- * The scene was modelled as a line of landmarks along the Z axis, so the
- * "story" is already baked into the geometry — we only have to walk it.
- * World-space centres measured from the GLB node graph:
- *
- *   Z = -82   buildings + cooling tower, Organization/Industry/Company/Bank text
- *   Z = -43   Rastaak Logo Small
- *   Z = +14   Wrench
- *   Z = +30…45  Data Storage (server stacks + headset figure)
- *   Z = +66   Rastaak Logo Big   ← the finale, "B"
- *
- * Scroll 0 starts at the organisations and scroll 1 lands on the big logo.
+ * Landmarks measured from world positions in GLB:
+ *   Bank Building:                   [13.36, 0.02, -4.39]
+ *   Government Building:             [9.94,  0.02, -2.41]
+ *   Industry Building:               [16.68, 0.02,  0.48]
+ *   Government Organization Building: [14.35, 0.02,  2.87]
+ *   Rastaak Building:                [15.91, 0.02,  2.61]
+ *   Logo:                            [16.07, 4.10,  2.20]
  */
 
 export interface JourneyStop {
-  /** Human label — matches the story beat. */
   readonly id: string;
-  /** Where the camera sits, world space. */
   readonly camera: readonly [number, number, number];
-  /** Where the camera aims, world space. */
   readonly target: readonly [number, number, number];
 }
 
-/**
- * Five stops mapped onto the five story beats. Camera positions are offset
- * to the +X side of the landmarks so the travelling shot sweeps past them
- * rather than driving through them.
- */
 export const JOURNEY: readonly JourneyStop[] = [
   {
-    // 1. Chaos — the organisations: cooling tower, office blocks and the
-    //    Industry / Company / Organization / Bank labels. Wide and cold.
-    id: 'chaos',
-    camera: [10, 22, -130],
-    target: [-10, 8, -82],
+    // Beat 1: Overview of Customer Buildings (Bank & Government) & Red Data Alert
+    id: 'request',
+    camera: [2.0, 16.0, -14.0],
+    target: [13.0, 1.5, -2.0],
   },
   {
-    // 2. Assessment — we close in; the small Rastaak logo comes into view.
-    id: 'assessment',
-    camera: [4, 15, -82],
-    target: [-14, 4, -43],
+    // Beat 2: Zooming into Rastaak Building Base (Analysis & Intake)
+    id: 'analyze',
+    camera: [7.0, 6.0, 0.0],
+    target: [15.9, 2.5, 2.6],
   },
   {
-    // 3. Recommend — mid-path, travelling toward the proposal.
-    id: 'recommend',
-    camera: [0, 12, -34],
-    target: [-15, 4, 0],
+    // Beat 3: Spiraling up Rastaak Mid-Floors (Solution Architecture & Staffing)
+    id: 'solution',
+    camera: [22.0, 12.0, 5.0],
+    target: [15.9, 8.0, 2.6],
   },
   {
-    // 4. Deploy — the wrench: installation and hands-on rollout.
-    id: 'deploy',
-    camera: [-3, 10, -12],
-    target: [-15, 3.5, 14],
-  },
-  {
-    // 5. Support — server stacks with the headset operator, 24/7 cover.
-    id: 'support',
-    camera: [-6, 10, 20],
-    target: [-14.6, 3, 44.5],
+    // Beat 4: Top Spire View Firing Blue Protection Lasers across the City
+    id: 'shield',
+    camera: [18.0, 16.0, 8.0],
+    target: [12.0, 1.5, -2.0],
   },
 ];
 
-/**
- * The finale. Kept separate from JOURNEY because the logo is the resolution
- * of the story, not a sixth stop — the camera eases onto it over the tail of
- * the scroll while the Support beat is still on screen.
- *
- * Deliberately aimed well BELOW the logo: at the foot of the page the opaque
- * CTA/footer sections cover the bottom of the viewport, so a low aim point
- * pushes the mark up into the band of canvas that stays visible.
- */
 export const FINALE: JourneyStop = {
   id: 'logo',
-  camera: [-13, 20, 90],
-  target: [-11, -7, 59],
+  camera: [6.0, 22.0, -8.0],
+  target: [16.0, 3.5, 2.2],
 };
 
-/** Landmark world positions, for anything that needs to reference them. */
 export const LANDMARKS = {
-  logoBig: [-14.9, 2.7, 66.1],
-  logoSmall: [-14.4, 2.1, -42.6],
-  dataStorage: [-14.6, 2.7, 44.5],
-  wrench: [-15.3, 3.3, 13.6],
-  industryText: [-3.3, 13.3, -81.9],
+  bank: [13.36, 1.2, -4.39],
+  gov: [9.94, 1.2, -2.41],
+  industry: [16.68, 1.2, 0.48],
+  govOrg: [14.35, 1.2, 2.87],
+  rastaakBase: [15.91, 1.5, 2.61],
+  rastaakMid: [15.91, 6.0, 2.61],
+  rastaakTop: [15.91, 12.0, 2.61],
+  logo: [16.07, 4.10, 2.20],
 } as const;
 
-/**
- * Sample the path at `t` (0..1).
- *
- * Uses Catmull-Rom style interpolation across the stops so the camera curves
- * between landmarks instead of snapping in straight lines between them. The
- * endpoints are duplicated so the curve starts and ends cleanly.
- */
 export function sampleJourney(
   t: number,
   out: { camera: [number, number, number]; target: [number, number, number] },
