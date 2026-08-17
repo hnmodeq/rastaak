@@ -8,6 +8,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG, sampleSceneJourney } from './scene/sceneConfig';
+import { LIGHTS_CONFIG } from './scene/lightingConfig';
 
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -23,7 +24,7 @@ export const HeroCanvas3D: React.FC = () => {
     const camConfig = SCENE_CONFIG.camera;
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Scene / Camera / Renderer (Shadow Map Enabled)
+    //  Scene / Camera / Renderer
     // ─────────────────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(tokens.experimentalScene.canvasBackground);
@@ -54,37 +55,74 @@ export const HeroCanvas3D: React.FC = () => {
     containerRef.current.appendChild(renderer.domElement);
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Exact Blender Viewport Lighting (6500K Point / Sun Light with Shadows)
+    //  Dynamic Lights Setup from LIGHTS_CONFIG
     // ─────────────────────────────────────────────────────────────────────
-    const ambient = new THREE.AmbientLight(tokens.experimentalScene.ambient, env.ambientIntensity);
-    scene.add(ambient);
-
-    const hemi = new THREE.HemisphereLight(
-      tokens.experimentalScene.keyLight,
-      tokens.experimentalScene.hemisphereGround,
-      1.1,
-    );
-    scene.add(hemi);
-
-    // Main 6500K Key Light matching Blender's 763W Light
-    const keyLight = new THREE.DirectionalLight(tokens.experimentalScene.keyLight, env.keyLightIntensity);
-    keyLight.position.set(-20, 55, -15);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
-    keyLight.shadow.camera.near = 1;
-    keyLight.shadow.camera.far = 180;
-    keyLight.shadow.camera.left = -45;
-    keyLight.shadow.camera.right = 45;
-    keyLight.shadow.camera.top = 45;
-    keyLight.shadow.camera.bottom = -45;
-    keyLight.shadow.bias = -0.0005;
-    scene.add(keyLight);
-
-    // Soft fill light from opposite angle to soften dark shadow faces
-    const fillLight = new THREE.DirectionalLight(tokens.experimentalScene.fillLight, env.fillLightIntensity);
-    fillLight.position.set(40, 30, 30);
-    scene.add(fillLight);
+    for (const cfg of LIGHTS_CONFIG) {
+      if (cfg.type === 'ambient') {
+        const light = new THREE.AmbientLight(cfg.color, cfg.intensity);
+        scene.add(light);
+      } else if (cfg.type === 'hemisphere') {
+        const light = new THREE.HemisphereLight(
+          cfg.color,
+          cfg.groundColor ?? tokens.experimentalScene.hemisphereGround,
+          cfg.intensity,
+        );
+        scene.add(light);
+      } else if (cfg.type === 'directional') {
+        const light = new THREE.DirectionalLight(cfg.color, cfg.intensity);
+        if (cfg.position) light.position.set(...cfg.position);
+        if (cfg.target) {
+          light.target.position.set(...cfg.target);
+          scene.add(light.target);
+        }
+        if (cfg.castShadow) {
+          light.castShadow = true;
+          const size = cfg.shadowMapSize ?? 2048;
+          light.shadow.mapSize.width = size;
+          light.shadow.mapSize.height = size;
+          light.shadow.camera.near = 1;
+          light.shadow.camera.far = 180;
+          light.shadow.camera.left = -45;
+          light.shadow.camera.right = 45;
+          light.shadow.camera.top = 45;
+          light.shadow.camera.bottom = -45;
+          light.shadow.bias = cfg.shadowBias ?? -0.0005;
+        }
+        scene.add(light);
+      } else if (cfg.type === 'point') {
+        const light = new THREE.PointLight(cfg.color, cfg.intensity, cfg.distance ?? 0);
+        if (cfg.position) light.position.set(...cfg.position);
+        if (cfg.castShadow) {
+          light.castShadow = true;
+          const size = cfg.shadowMapSize ?? 1024;
+          light.shadow.mapSize.width = size;
+          light.shadow.mapSize.height = size;
+          light.shadow.bias = cfg.shadowBias ?? -0.0005;
+        }
+        scene.add(light);
+      } else if (cfg.type === 'spot') {
+        const light = new THREE.SpotLight(
+          cfg.color,
+          cfg.intensity,
+          cfg.distance ?? 0,
+          THREE.MathUtils.degToRad(cfg.angle ?? 45),
+          cfg.penumbra ?? 0.5,
+        );
+        if (cfg.position) light.position.set(...cfg.position);
+        if (cfg.target) {
+          light.target.position.set(...cfg.target);
+          scene.add(light.target);
+        }
+        if (cfg.castShadow) {
+          light.castShadow = true;
+          const size = cfg.shadowMapSize ?? 1024;
+          light.shadow.mapSize.width = size;
+          light.shadow.mapSize.height = size;
+          light.shadow.bias = cfg.shadowBias ?? -0.0005;
+        }
+        scene.add(light);
+      }
+    }
 
     // ─────────────────────────────────────────────────────────────────────
     //  3D Model Loading

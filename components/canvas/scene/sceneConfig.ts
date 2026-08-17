@@ -13,6 +13,10 @@
  */
 
 import { tokens } from '@/tokens/design-tokens';
+import { LIGHTS_CONFIG, LightConfig } from './lightingConfig';
+
+export { LIGHTS_CONFIG };
+export type { LightConfig };
 
 export interface CameraStop {
   /** Identifier label for this stop point */
@@ -129,24 +133,24 @@ export const SCENE_CONFIG = {
 
   /**
    * ───────────────────────────────────────────────────────────────────────────
-   *  4. LIGHTING & ATMOSPHERE
+   *  4. LIGHTS CONFIGURATION
+   * ───────────────────────────────────────────────────────────────────────────
+   * Edit `components/canvas/scene/lightingConfig.ts` to manage all scene lights.
+   */
+  lights: LIGHTS_CONFIG,
+
+  /**
+   * ───────────────────────────────────────────────────────────────────────────
+   *  5. ATMOSPHERE & ENVIRONMENT
    * ───────────────────────────────────────────────────────────────────────────
    */
   environment: {
-    /** Neutral clay background color (from tokens source) */
+    /** Neutral clay background color */
     backgroundColor: tokens.experimentalScene.canvasBackground,
 
     /** Fog range: distance clear vs fully faded into background */
     fogStart: 100,
     fogEnd: 380,
-
-    /** Light brightness levels */
-    ambientIntensity: 1.4,
-    keyLightIntensity: 1.8,
-    fillLightIntensity: 1.0,
-
-    /** Directional sun position [X, Y, Z] */
-    keyLightPosition: [50, 80, 40] as [number, number, number],
   },
 };
 
