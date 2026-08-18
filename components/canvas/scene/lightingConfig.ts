@@ -3,69 +3,54 @@
  *  RASTAAK 3D LIGHTING CONTROLLER CONFIG
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * Edit this file to have FULL CONTROL over all lights in your 3D scene:
- *  1. Light Type ('directional', 'point', 'spot', 'ambient', 'hemisphere')
- *  2. Position [X, Y, Z]
- *  3. Direction / Target [X, Y, Z]
- *  4. Power / Intensity
- *  5. Color
- *  6. Light Radius & Falloff Distance (matching Blender's Radius e.g. 2.27m)
- *  7. Shadows (castShadow, shadowMapSize, shadowBias, radius)
+ * Replicating exact Blender viewport rendering (blender.png):
+ *  - Far back-left directional sun angle so shadows cast toward front-right.
+ *  - Soft ambient fill so shadow faces stay smooth grey instead of pitch black.
  */
 
 import { tokens } from '@/tokens/design-tokens';
 
 export interface LightConfig {
-  /** Identifier label (e.g. 'blender_main_sun', 'ambient_sky', 'rastaak_spot') */
+  /** Identifier label */
   id: string;
 
-  /**
-   * LIGHT TYPE:
-   *  - 'directional' : Sun-like parallel light rays (best for realistic shadows)
-   *  - 'point'       : Emits light in all directions from a 3D point
-   *  - 'spot'        : Cone-shaped spotlight pointing from position to target
-   *  - 'ambient'     : Universal background fill light (no direction/shadows)
-   *  - 'hemisphere'  : Sky color vs Ground color gradient fill light
-   */
+  /** Light Type */
   type: 'directional' | 'point' | 'spot' | 'ambient' | 'hemisphere';
 
-  /** Light color (hex number or token reference) */
+  /** Light color */
   color: number;
 
-  /** Ground color (ONLY used for hemisphere lights) */
+  /** Ground color (ONLY for hemisphere lights) */
   groundColor?: number;
 
-  /** Power / Intensity multiplier (e.g. 1.8 for bright sun, 0.4 for soft fill) */
+  /** Power / Intensity multiplier */
   intensity: number;
 
-  /** Light position in 3D world space: [X, Y, Z] */
+  /** Position in 3D world space: [X, Y, Z] */
   position?: [number, number, number];
 
-  /** Target point in 3D world space [X, Y, Z] for directional or spot lights */
+  /** Target point in 3D world space: [X, Y, Z] */
   target?: [number, number, number];
 
-  /** Distance falloff range in meters for Point / Spot lights (0 = infinite distance) */
+  /** Distance falloff range for Point / Spot lights (0 = infinite) */
   distance?: number;
 
-  /**
-   * Light Radius in meters (matches Blender's Radius setting e.g. 2.27m).
-   * Also controls soft shadow blur radius.
-   */
+  /** Soft shadow blur radius (matches Blender's Radius setting e.g. 2.27m) */
   radius?: number;
 
-  /** Cone angle in degrees for Spot lights (e.g. 45) */
+  /** Cone angle in degrees for Spot lights */
   angle?: number;
 
-  /** Cone edge softness for Spot lights (0.0 = hard edge, 1.0 = soft edge) */
+  /** Cone edge softness for Spot lights (0.0 to 1.0) */
   penumbra?: number;
 
-  /** Whether this light casts shadows on buildings & ground (true / false) */
+  /** Whether this light casts shadows (true / false) */
   castShadow?: boolean;
 
-  /** Shadow map resolution (512, 1024, 2048, or 4096) */
+  /** Shadow map resolution */
   shadowMapSize?: number;
 
-  /** Shadow bias to avoid acne artifacts (e.g. -0.0005) */
+  /** Shadow bias */
   shadowBias?: number;
 }
 
@@ -74,34 +59,34 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     id: 'ambient_fill',
     type: 'ambient',
     color: tokens.experimentalScene.ambient,
-    intensity: 0,
+    intensity: 1.2,
   },
   {
     id: 'hemisphere_sky_ground',
     type: 'hemisphere',
     color: tokens.experimentalScene.keyLight,
     groundColor: tokens.experimentalScene.hemisphereGround,
-    intensity: 0,
+    intensity: 0.8,
   },
   {
     id: 'blender_main_sun',
-    type: 'point',
+    type: 'directional',
     color: tokens.experimentalScene.keyLight, // 6500K daylight white
-    intensity: 400,
-    position: [13, 15, -4],
-    target: [0, 0, 0],
+    intensity: 2.2,
+    position: [-60, 50, -40], // Far back-left angle matching blender.png
+    target: [14, 2, 0],
     castShadow: true,
     shadowMapSize: 2048,
-    shadowBias: -0.0001,
-    radius: 10, // Soft shadow blur radius matching Blender 2.27m radius
+    shadowBias: -0.0003,
+    radius: 4.0, // Soft diffused shadows
   },
   {
     id: 'soft_fill_light',
     type: 'directional',
     color: tokens.experimentalScene.fillLight,
-    intensity: 0.0,
-    position: [40, 30, 30],
-    target: [14, 2, -1],
+    intensity: 0.8,
+    position: [40, 30, 40],
+    target: [14, 2, 0],
     castShadow: false,
   },
 ];
