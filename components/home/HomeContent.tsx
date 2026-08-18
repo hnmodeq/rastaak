@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronDown, FeatureIcon } from '../ui/Icons';
-import { FlowSection } from './FlowSection';
+import { FLOW_CONFIG } from './flowConfig';
 
 export const HomeContent: React.FC = () => {
   return (
@@ -47,8 +47,41 @@ export const HomeContent: React.FC = () => {
 
         <div className="hero-spacer" />
 
-        {/* Process Flow Steps driven by flowConfig.ts */}
-        <FlowSection />
+        {/* Process Flow Section preserving 100% authentic HTML DOM for legacy Astro animations */}
+        <section className="flow">
+          <div className="flow__wrapper">
+            <div className="flow__steps">
+              {FLOW_CONFIG.map((step, idx) => (
+                <div key={step.num} className="flow__step" data-step={idx + 1}>
+                  <div className="flow__header">
+                    <div className="flow__number">
+                      <span>{step.num}</span>
+                    </div>
+                    <h3 className="flow__title">{step.title}</h3>
+                  </div>
+                  <div className="flow__body">
+                    <div className="flow__body-inner">
+                      <div className="flow__track">
+                        <div className="flow__track-bar">
+                          <div className="flow__track-fill" />
+                        </div>
+                      </div>
+                      <p className="flow__description">
+                        {step.subtitle && (
+                          <>
+                            {step.subtitle}
+                            <br />
+                          </>
+                        )}
+                        {step.caption}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <section className="features">
           <div className="features__sticky">
