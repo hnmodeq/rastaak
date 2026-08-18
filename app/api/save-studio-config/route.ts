@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
 
-function sanitizeHex(val: any, fallback = '0x' + '1c1d22'): string {
+function toHexLiteral(val: any, fallback = '0x' + '1c1d22'): string {
   if (typeof val === 'number') {
     return '0x' + val.toString(16);
   }
   if (typeof val === 'string') {
     const clean = val.trim().replace('#', '').replace('0x', '');
-    if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
+    if (/^[0-9a-fA-F]{1,8}$/.test(clean)) {
       return '0x' + clean;
     }
   }
@@ -27,15 +27,15 @@ export async function POST(req: Request) {
     const hexFacade = '0x' + '8c8c8c';
     const hexInset = '0x' + '222222';
 
-    // 1. Sanitize and write updated lightingConfig.ts
+    // 1. Sanitize lights and write updated lightingConfig.ts
     if (Array.isArray(lights)) {
       const sanitizedLights = lights.map((l: any) => {
         const item = { ...l };
         if (item.color !== undefined) {
-          item.color = sanitizeHex(item.color, hexWhite);
+          item.color = toHexLiteral(item.color, hexWhite);
         }
         if (item.groundColor !== undefined) {
-          item.groundColor = sanitizeHex(item.groundColor, hexDark);
+          item.groundColor = toHexLiteral(item.groundColor, hexDark);
         }
         return item;
       });
@@ -94,7 +94,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
       );
 
       const bgHexCode = environment?.backgroundColor
-        ? sanitizeHex(
+        ? toHexLiteral(
             environment.backgroundColor,
             'tokens.experimentalScene.canvasBackground',
           )
@@ -106,7 +106,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
           if (bldg && typeof bldg === 'object') {
             const bObj = { ...(bldg as any) };
             if (bObj.color) {
-              bObj.color = sanitizeHex(bObj.color, hexFacade);
+              bObj.color = toHexLiteral(bObj.color, hexFacade);
             }
             sanitizedBuildings[key] = bObj;
           }
@@ -116,14 +116,14 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
       const sanitizedMaterials = {
         lightFacades: {
           color: materials?.lightFacades?.color
-            ? sanitizeHex(materials.lightFacades.color, hexFacade)
+            ? toHexLiteral(materials.lightFacades.color, hexFacade)
             : hexFacade,
           roughness: materials?.lightFacades?.roughness ?? 0.6,
           metalness: materials?.lightFacades?.metalness ?? 0.0,
         },
         windowInsets: {
           color: materials?.windowInsets?.color
-            ? sanitizeHex(materials.windowInsets.color, hexInset)
+            ? toHexLiteral(materials.windowInsets.color, hexInset)
             : hexInset,
           roughness: materials?.windowInsets?.roughness ?? 0.6,
         },
