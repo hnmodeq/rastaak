@@ -145,6 +145,22 @@ export const HeroCanvas3D: React.FC = () => {
     }
 
     // ─────────────────────────────────────────────────────────────────────
+    //  Interactive Studio GUI
+    // ─────────────────────────────────────────────────────────────────────
+    let world: THREE.Group | null = null;
+
+    const studioGUI = new SceneStudioGUI(
+      scene,
+      camera,
+      renderer,
+      lightsMap,
+      () => world,
+      (forcedT: number) => {
+        targetScrollProgress = forcedT;
+      }
+    );
+
+    // ─────────────────────────────────────────────────────────────────────
     //  3D Model Loading
     // ─────────────────────────────────────────────────────────────────────
     const dracoLoader = new DRACOLoader();
@@ -152,8 +168,6 @@ export const HeroCanvas3D: React.FC = () => {
 
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
-
-    let world: THREE.Group | null = null;
 
     gltfLoader.load(
       '/glb/Rastaak-3D-Scene-Ver-IV.glb',
@@ -178,6 +192,9 @@ export const HeroCanvas3D: React.FC = () => {
         });
 
         scene.add(world);
+
+        // Populate materials in studio panel now that GLTF is ready
+        studioGUI.populateMaterials();
 
         // Notify loader of 100% completion
         window.dispatchEvent(
@@ -224,20 +241,6 @@ export const HeroCanvas3D: React.FC = () => {
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener('resize', handleResize);
-
-    // ─────────────────────────────────────────────────────────────────────
-    //  Interactive Studio GUI (Real-time Camera, Light & Material Controls)
-    // ─────────────────────────────────────────────────────────────────────
-    const studioGUI = new SceneStudioGUI(
-      scene,
-      camera,
-      renderer,
-      lightsMap,
-      () => world,
-      (forcedT: number) => {
-        targetScrollProgress = forcedT;
-      }
-    );
 
     // ─────────────────────────────────────────────────────────────────────
     //  Render Loop

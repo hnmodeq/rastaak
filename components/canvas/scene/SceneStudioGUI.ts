@@ -19,6 +19,7 @@ export class SceneStudioGUI {
   private gui: any = null;
   private toggleButton: HTMLButtonElement | null = null;
   private isOpen = false;
+  private materialsFolderPopulated = false;
 
   // Real-time camera override state
   public isManualMode = false;
@@ -341,7 +342,7 @@ export class SceneStudioGUI {
           .name('Color')
           .listen()
           .onChange((v: string) => {
-            light.color.set(v);
+            light.color.set(new THREE.Color(v));
           });
 
         if (light.position) {
@@ -391,82 +392,8 @@ export class SceneStudioGUI {
         }
       }
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // 3. Real-time Materials Controller
-      // ─────────────────────────────────────────────────────────────────────────
-      const matFolder = this.gui.addFolder('Materials Controller');
-      const worldGroup = this.worldGroupSupplier();
-
-      if (worldGroup) {
-        const uniqueMaterials = new Set<THREE.MeshStandardMaterial>();
-        worldGroup.traverse((child: any) => {
-          if (child.isMesh && child.material) {
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            mats.forEach((m: any) => {
-              if (m.isMeshStandardMaterial || m.isMeshBasicMaterial) {
-                uniqueMaterials.add(m);
-              }
-            });
-          }
-        });
-
-        let matIdx = 1;
-        const defaultColorHex = '#' + new THREE.Color(tokens.experimentalScene.keyLight).getHexString();
-
-        uniqueMaterials.forEach((mat) => {
-          const matName = mat.name ? mat.name : `Material_${matIdx++}`;
-          const sub = matFolder.addFolder(matName);
-
-          const matParams = {
-            roughness: (mat as any).roughness ?? 0.5,
-            metalness: (mat as any).metalness ?? 0.1,
-            color: mat.color ? '#' + mat.color.getHexString() : defaultColorHex,
-            wireframe: mat.wireframe ?? false,
-          };
-
-          if (typeof (mat as any).roughness === 'number') {
-            sub
-              .add(matParams, 'roughness', 0.0, 1.0, 0.02)
-              .name('Roughness')
-              .listen()
-              .onChange((v: number) => {
-                (mat as any).roughness = v;
-                mat.needsUpdate = true;
-              });
-          }
-
-          if (typeof (mat as any).metalness === 'number') {
-            sub
-              .add(matParams, 'metalness', 0.0, 1.0, 0.02)
-              .name('Metalness')
-              .listen()
-              .onChange((v: number) => {
-                (mat as any).metalness = v;
-                mat.needsUpdate = true;
-              });
-          }
-
-          if (mat.color) {
-            sub
-              .addColor(matParams, 'color')
-              .name('Color')
-              .listen()
-              .onChange((v: string) => {
-                mat.color.set(v);
-                mat.needsUpdate = true;
-              });
-          }
-
-          sub
-            .add(matParams, 'wireframe')
-            .name('Wireframe')
-            .listen()
-            .onChange((v: boolean) => {
-              mat.wireframe = v;
-              mat.needsUpdate = true;
-            });
-        });
-      }
+      // Try populating materials immediately or on demand
+      this.populateMaterials();
 
       // ─────────────────────────────────────────────────────────────────────────
       // 4. Atmosphere & Background
@@ -538,6 +465,194 @@ export class SceneStudioGUI {
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
+  }
+
+  public populateMaterials() {
+    if (!this.gui || this.materialsFolderPopulated) return;
+
+    const worldGroup = this.worldGroupSupplier();
+    if (!worldGroup) return;
+
+    const matFolder = this.gui.addFolder('Materials Controller');
+    this.materialsFolderPopulated = true;
+
+    const uniqueMaterials = new Map<string, THREE.MeshStandardMaterial>();
+
+    worldGroup.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((m: any) => {
+          if (m && (m.isMeshStandardMaterial || m.isMeshBasicMaterial || m.isMeshPhysicalMaterial)) {
+            const key = m.name || `Material_${m.id}`;
+            if (!uniqueMaterials.has(key)) {
+              uniqueMaterials.set(key, m);
+            }
+          }
+        });
+      }
+    });
+
+    if (uniqueMaterials.size === 0) return;
+
+    const lightMats: THREE.MeshStandardMaterial[] = [];
+    const darkMats: THREE.MeshStandardMaterial[] = [];
+
+    uniqueMaterials.forEach((m) => {
+      if (m.color) {
+        const lightness = (m.color.r + m.color.g + m.color.b) / 3;
+        if (lightness >= 0.5) lightMats.push(m);
+        else darkMats.push(m);
+      }
+    });
+
+    // Group 1: Light Color Materials
+    if (lightMats.length > 0) {
+      const lightGroupSub = matFolder.addFolder('💡 Light Color Materials (Group)');
+      const defaultLightHex = '#' + lightMats[0].color.getHexString();
+
+      const lightParams = {
+        color: defaultLightHex,
+        roughness: lightMats[0].roughness ?? 0.6,
+        metalness: lightMats[0].metalness ?? 0.1,
+      };
+
+      lightGroupSub
+        .addColor(lightParams, 'color')
+        .name('Light Color')
+        .listen()
+        .onChange((hex: string) => {
+          const col = new THREE.Color(hex);
+          lightMats.forEach((m) => {
+            m.color.copy(col);
+            m.needsUpdate = true;
+          });
+        });
+
+      lightGroupSub
+        .add(lightParams, 'roughness', 0.0, 1.0, 0.02)
+        .name('Roughness')
+        .listen()
+        .onChange((v: number) => {
+          lightMats.forEach((m) => {
+            m.roughness = v;
+            m.needsUpdate = true;
+          });
+        });
+
+      lightGroupSub
+        .add(lightParams, 'metalness', 0.0, 1.0, 0.02)
+        .name('Metalness')
+        .listen()
+        .onChange((v: number) => {
+          lightMats.forEach((m) => {
+            m.metalness = v;
+            m.needsUpdate = true;
+          });
+        });
+    }
+
+    // Group 2: Dark Color Materials
+    if (darkMats.length > 0) {
+      const darkGroupSub = matFolder.addFolder('🕶️ Dark Color Materials (Group)');
+      const defaultDarkHex = '#' + darkMats[0].color.getHexString();
+
+      const darkParams = {
+        color: defaultDarkHex,
+        roughness: darkMats[0].roughness ?? 0.6,
+        metalness: darkMats[0].metalness ?? 0.1,
+      };
+
+      darkGroupSub
+        .addColor(darkParams, 'color')
+        .name('Dark Color')
+        .listen()
+        .onChange((hex: string) => {
+          const col = new THREE.Color(hex);
+          darkMats.forEach((m) => {
+            m.color.copy(col);
+            m.needsUpdate = true;
+          });
+        });
+
+      darkGroupSub
+        .add(darkParams, 'roughness', 0.0, 1.0, 0.02)
+        .name('Roughness')
+        .listen()
+        .onChange((v: number) => {
+          darkMats.forEach((m) => {
+            m.roughness = v;
+            m.needsUpdate = true;
+          });
+        });
+
+      darkGroupSub
+        .add(darkParams, 'metalness', 0.0, 1.0, 0.02)
+        .name('Metalness')
+        .listen()
+        .onChange((v: number) => {
+          darkMats.forEach((m) => {
+            m.metalness = v;
+            m.needsUpdate = true;
+          });
+        });
+    }
+
+    // Group 3: All Individual Materials
+    const indSub = matFolder.addFolder('Individual Materials');
+    const defaultColorHex = '#' + new THREE.Color(tokens.experimentalScene.keyLight).getHexString();
+
+    uniqueMaterials.forEach((mat, name) => {
+      const sub = indSub.addFolder(name);
+
+      const matParams = {
+        roughness: (mat as any).roughness ?? 0.5,
+        metalness: (mat as any).metalness ?? 0.1,
+        color: mat.color ? '#' + mat.color.getHexString() : defaultColorHex,
+        wireframe: mat.wireframe ?? false,
+      };
+
+      if (typeof (mat as any).roughness === 'number') {
+        sub
+          .add(matParams, 'roughness', 0.0, 1.0, 0.02)
+          .name('Roughness')
+          .listen()
+          .onChange((v: number) => {
+            (mat as any).roughness = v;
+            mat.needsUpdate = true;
+          });
+      }
+
+      if (typeof (mat as any).metalness === 'number') {
+        sub
+          .add(matParams, 'metalness', 0.0, 1.0, 0.02)
+          .name('Metalness')
+          .listen()
+          .onChange((v: number) => {
+            (mat as any).metalness = v;
+            mat.needsUpdate = true;
+          });
+      }
+
+      if (mat.color) {
+        sub
+          .addColor(matParams, 'color')
+          .name('Color')
+          .listen()
+          .onChange((v: string) => {
+            mat.color.set(new THREE.Color(v));
+            mat.needsUpdate = true;
+          });
+      }
+
+      sub
+        .add(matParams, 'wireframe')
+        .name('Wireframe')
+        .listen()
+        .onChange((v: boolean) => {
+          mat.wireframe = v;
+          mat.needsUpdate = true;
+        });
+    });
   }
 
   private refreshCamDisplay = () => {};
