@@ -3,9 +3,14 @@
  *  RASTAAK 3D LIGHTING CONTROLLER CONFIG
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * Replicating exact Blender viewport rendering (blender.png):
- *  - Far back-left directional sun angle so shadows cast toward front-right.
- *  - Soft ambient fill so shadow faces stay smooth grey instead of pitch black.
+ * Exact Blender 5.1.2 Single Point Light Setup (image.png):
+ *  - Type: Point Light
+ *  - Position: [13.5, 18.0, -4.0] (Hovering over central skyscraper cluster)
+ *  - Temperature: 6500K pure white
+ *  - Power: 763.4W
+ *  - Radius: 2.27m (Soft falloff)
+ *  - Custom Distance: 40m
+ *  - Shadows: Enabled
  */
 
 import { tokens } from '@/tokens/design-tokens';
@@ -32,16 +37,19 @@ export interface LightConfig {
   /** Target point in 3D world space: [X, Y, Z] */
   target?: [number, number, number];
 
-  /** Distance falloff range for Point / Spot lights (0 = infinite) */
+  /** Distance falloff range in meters (matches Blender Custom Distance: 40m) */
   distance?: number;
 
-  /** Soft shadow blur radius (matches Blender's Radius setting e.g. 2.27m) */
+  /** Light decay exponent (2 = physical inverse square decay) */
+  decay?: number;
+
+  /** Soft shadow blur radius (matches Blender Radius: 2.27m) */
   radius?: number;
 
   /** Cone angle in degrees for Spot lights */
   angle?: number;
 
-  /** Cone edge softness for Spot lights (0.0 to 1.0) */
+  /** Cone edge softness for Spot lights */
   penumbra?: number;
 
   /** Whether this light casts shadows (true / false) */
@@ -56,37 +64,16 @@ export interface LightConfig {
 
 export const LIGHTS_CONFIG: LightConfig[] = [
   {
-    id: 'ambient_fill',
-    type: 'ambient',
-    color: tokens.experimentalScene.ambient,
-    intensity: 1.2,
-  },
-  {
-    id: 'hemisphere_sky_ground',
-    type: 'hemisphere',
-    color: tokens.experimentalScene.keyLight,
-    groundColor: tokens.experimentalScene.hemisphereGround,
-    intensity: 0.8,
-  },
-  {
-    id: 'blender_main_sun',
-    type: 'directional',
+    id: 'blender_single_point_light',
+    type: 'point',
     color: tokens.experimentalScene.keyLight, // 6500K daylight white
-    intensity: 2.2,
-    position: [-60, 50, -40], // Far back-left angle matching blender.png
-    target: [14, 2, 0],
+    intensity: 950,                           // 763.4W Blender power
+    position: [13.5, 18.0, -4.0],             // Hovering above central skyscraper cluster
+    distance: 40,                             // Blender Custom Distance: 40m
+    decay: 1.8,                               // Soft physical falloff
+    radius: 2.27,                             // Blender Radius: 2.27m
     castShadow: true,
     shadowMapSize: 2048,
-    shadowBias: -0.0003,
-    radius: 4.0, // Soft diffused shadows
-  },
-  {
-    id: 'soft_fill_light',
-    type: 'directional',
-    color: tokens.experimentalScene.fillLight,
-    intensity: 0.8,
-    position: [40, 30, 40],
-    target: [14, 2, 0],
-    castShadow: false,
+    shadowBias: -0.0001,
   },
 ];

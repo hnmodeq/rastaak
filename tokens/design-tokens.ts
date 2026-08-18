@@ -92,14 +92,14 @@ export const tokens = {
   },
 
   /**
-   * Neutral Clay Viewport Lighting (Exact Blender 5.1.2 6500K Setup matching blender.png)
+   * Neutral Clay Viewport Lighting (Exact Blender Single Point Light 6500K 763W)
    */
   experimentalScene: {
-    canvasBackground: 0x1d1f24,
-    ambient: 0x40434b,
-    hemisphereGround: 0x1a1c21,
+    canvasBackground: 0x1c1d22,
+    ambient: 0x1c1d22,
+    hemisphereGround: 0x101114,
     keyLight: 0xffffff,
-    fillLight: 0x60636f,
+    fillLight: 0x30333c,
     gridPrimary: 0x30333c,
     gridSecondary: 0x1c1e24,
   },
