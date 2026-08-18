@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+// @ts-ignore
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG, sampleSceneJourney } from './scene/sceneConfig';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
@@ -57,6 +59,12 @@ export const HeroCanvas3D: React.FC = () => {
     renderer.domElement.classList.add('is-ready');
     renderer.domElement.style.zIndex = '0';
     containerRef.current.appendChild(renderer.domElement);
+
+    // OrbitControls for Free Orbit Camera Studio Mode
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enabled = false;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
 
     // ─────────────────────────────────────────────────────────────────────
     //  Dynamic Lights Setup from LIGHTS_CONFIG
@@ -157,11 +165,14 @@ export const HeroCanvas3D: React.FC = () => {
       () => world,
       (forcedT: number) => {
         targetScrollProgress = forcedT;
+      },
+      (orbitEnabled: boolean) => {
+        controls.enabled = orbitEnabled;
       }
     );
 
     // ─────────────────────────────────────────────────────────────────────
-    //  3D Model Loading
+    //  3D Model Loading (Rastaak-3D-Scene-Ver-V.glb)
     // ─────────────────────────────────────────────────────────────────────
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
@@ -170,7 +181,7 @@ export const HeroCanvas3D: React.FC = () => {
     gltfLoader.setDRACOLoader(dracoLoader);
 
     gltfLoader.load(
-      '/glb/Rastaak-3D-Scene-Ver-IV.glb',
+      '/glb/Rastaak-3D-Scene-Ver-V.glb',
       (gltf: any) => {
         if (isDisposed) return;
         world = gltf.scene as THREE.Group;
@@ -269,8 +280,9 @@ export const HeroCanvas3D: React.FC = () => {
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      if (studioGUI && studioGUI.isManualMode) {
-        // Real-time manual camera mode driven live by GUI sliders!
+      if (studioGUI && studioGUI.isOrbitMode) {
+        controls.update();
+      } else if (studioGUI && studioGUI.isManualMode) {
         camera.position.copy(studioGUI.manualCamPos);
         camera.lookAt(studioGUI.manualLookAt);
       } else {
@@ -313,6 +325,7 @@ export const HeroCanvas3D: React.FC = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      controls.dispose();
       studioGUI.destroy();
 
       if (world) {

@@ -23,6 +23,7 @@ export class SceneStudioGUI {
 
   // Real-time camera override state
   public isManualMode = false;
+  public isOrbitMode = false;
   public manualCamPos = new THREE.Vector3();
   public manualLookAt = new THREE.Vector3();
 
@@ -33,10 +34,12 @@ export class SceneStudioGUI {
     private lightsMap: Map<string, THREE.Light>,
     private worldGroupSupplier: () => THREE.Group | null,
     private onProgressChange?: (t: number) => void,
+    private onOrbitModeToggle?: (enabled: boolean) => void,
   ) {
     if (typeof window === 'undefined') return;
     this.createToggleButton();
     this.initGUI();
+    this.initRaycaster();
   }
 
   private createToggleButton() {
@@ -81,6 +84,38 @@ export class SceneStudioGUI {
 
     document.body.appendChild(btn);
     this.toggleButton = btn;
+  }
+
+  private initRaycaster() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const onPointerDown = (e: MouseEvent) => {
+      if (!this.isOpen && !this.isManualMode && !this.isOrbitMode) return;
+      if ((e.target as HTMLElement)?.closest('.lil-gui') || (e.target as HTMLElement)?.id === 'rastaak-studio-btn') {
+        return;
+      }
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, this.camera);
+      const worldGroup = this.worldGroupSupplier();
+      if (!worldGroup) return;
+
+      const intersects = raycaster.intersectObjects(worldGroup.children, true);
+      if (intersects.length > 0) {
+        const clickedObj = intersects[0].object;
+        if (clickedObj && clickedObj.name) {
+          const name = clickedObj.name;
+          if (!name.toLowerCase().startsWith('cube') && !name.toLowerCase().startsWith('plane')) {
+            console.log(`[3D Studio] Clicked Object: '${name}'`);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('pointerdown', onPointerDown);
   }
 
   private async initGUI(forceOpen = false) {
@@ -131,9 +166,9 @@ export class SceneStudioGUI {
             id: newId,
             progress: 1.0,
             camera: [
-              parseFloat(this.manualCamPos.x.toFixed(1)),
-              parseFloat(this.manualCamPos.y.toFixed(1)),
-              parseFloat(this.manualCamPos.z.toFixed(1)),
+              parseFloat(this.camera.position.x.toFixed(1)),
+              parseFloat(this.camera.position.y.toFixed(1)),
+              parseFloat(this.camera.position.z.toFixed(1)),
             ],
             target: [
               parseFloat(this.manualLookAt.x.toFixed(1)),
@@ -159,10 +194,16 @@ export class SceneStudioGUI {
       };
 
       camFolder
-        .add(camParams, 'mode', ['Scroll Journey', 'Manual Live Camera'])
+        .add(camParams, 'mode', ['Scroll Journey', 'Manual Live Sliders', 'Free Orbit Camera'])
         .name('Mode')
         .onChange((v: string) => {
-          this.isManualMode = v === 'Manual Live Camera';
+          this.isManualMode = v === 'Manual Live Sliders';
+          this.isOrbitMode = v === 'Free Orbit Camera';
+
+          if (this.onOrbitModeToggle) {
+            this.onOrbitModeToggle(this.isOrbitMode);
+          }
+
           if (this.isManualMode) {
             this.manualCamPos.copy(this.camera.position);
             camParams.camX = this.manualCamPos.x;
@@ -584,21 +625,37 @@ export class SceneStudioGUI {
     const matFolder = this.gui.addFolder('Materials Controller');
     this.materialsFolderPopulated = true;
 
+    const isValidNamedObject = (name: string) => {
+      if (!name) return false;
+      const lower = name.toLowerCase().trim();
+      if (
+        lower.startsWith('cube') ||
+        lower.startsWith('plane') ||
+        lower.startsWith('mesh') ||
+        lower.startsWith('object')
+      ) {
+        return false;
+      }
+      return true;
+    };
+
     const buildingMeshes: { name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }[] = [];
 
     worldGroup.traverse((child: any) => {
-      if (child.isMesh && child.material) {
+      if (child.isMesh && child.material && isValidNamedObject(child.name)) {
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach((m: any) => {
           if (m && (m.isMeshStandardMaterial || m.isMeshBasicMaterial || m.isMeshPhysicalMaterial)) {
-            const meshName = child.name || `Building_${child.id}`;
-            buildingMeshes.push({ name: meshName, mesh: child, mat: m });
+            buildingMeshes.push({ name: child.name, mesh: child, mat: m });
           }
         });
       }
     });
 
     if (buildingMeshes.length === 0) return;
+
+    // Sort named objects (Earth, Grounds, Rastaak Building, Building 1...36, Logo)
+    buildingMeshes.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     const lightBuildingMeshes = buildingMeshes.filter((b) => {
       if (!b.mat.color) return false;
@@ -652,8 +709,8 @@ export class SceneStudioGUI {
         });
     }
 
-    // Group 2: Individual Building Colors
-    const indBldgSub = matFolder.addFolder('🏢 Individual Building Colors');
+    // Group 2: Named Buildings & Scene Objects Only (Filters out default Cubes/Planes)
+    const indBldgSub = matFolder.addFolder('🏢 Named Objects & Buildings');
 
     buildingMeshes.forEach((b) => {
       const sub = indBldgSub.addFolder(b.name);
@@ -670,7 +727,7 @@ export class SceneStudioGUI {
       if (b.mat.color) {
         sub
           .addColor(bldgParams, 'color')
-          .name('Building Color')
+          .name('Color')
           .listen()
           .onChange((hex: string) => {
             b.mat.color.set(new THREE.Color(hex));
