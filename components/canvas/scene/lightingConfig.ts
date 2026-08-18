@@ -67,13 +67,31 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     id: 'blender_single_point_light',
     type: 'point',
     color: tokens.experimentalScene.keyLight, // 6500K daylight white
-    intensity: 950,                           // 763.4W Blender power
-    position: [13.5, 18.0, -4.0],             // Hovering above central skyscraper cluster
-    distance: 40,                             // Blender Custom Distance: 40m
-    decay: 1.8,                               // Soft physical falloff
-    radius: 2.27,                             // Blender Radius: 2.27m
+    intensity: 8000,                           // 763.4W Blender power
+    position: [13.5, 40, 0],             // Hovering above central skyscraper cluster
+    distance: 70,                             // Blender Custom Distance: 40m
+    decay: 10,                               // Soft physical falloff
+    radius: 20,                             // Blender Radius: 2.27m
     castShadow: true,
+    shadowMapSize: 2000,
+    shadowBias: -0.001,
+  },
+
+  {
+    id: 'blender_single_point_light',
+    type: 'ambient',
+    color: tokens.experimentalScene.keyLight, // 6500K daylight white
+    intensity: 0.3,                           // 763.4W Blender power
+    position: [13.5, 18.0, 0],             // Hovering above central skyscraper cluster
+    distance: 22,                             // Blender Custom Distance: 40m
+    decay: 5,                               // Soft physical falloff
+    radius: 200,                             // Blender Radius: 2.27m
+    castShadow: false,
     shadowMapSize: 2048,
     shadowBias: -0.0001,
   },
+
+
+
+
 ];
