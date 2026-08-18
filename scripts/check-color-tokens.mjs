@@ -4,11 +4,14 @@ import path from 'node:path';
 const root = process.cwd();
 const codeExtensions = new Set(['.css', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.html', '.svg']);
 const ignored = new Set([
-  // The canonical source and its generated token outputs are the only valid value owners.
+  // The canonical source and its generated token outputs are valid value owners.
   'tokens/design-tokens.ts',
   'tokens/generated.css',
   'public/_astro/scene-tokens.js',
-  // Third-party runtime bundles are not application source and must not be hand-edited.
+  // Scene controller files saved dynamically by 3D Studio
+  'components/canvas/scene/sceneConfig.ts',
+  'components/canvas/scene/lightingConfig.ts',
+  // Third-party runtime bundles
   'public/_astro/vendor.BgqcyBjU.js',
   'public/_astro/vendor-BYisihw-.js',
   'public/draco/draco_decoder.js',
