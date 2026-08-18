@@ -19,46 +19,14 @@ export { LIGHTS_CONFIG };
 export type { LightConfig };
 
 export interface CameraStop {
-  /** Identifier label for this stop point */
   id: string;
-
-  /**
-   * Scroll progress threshold between 0.0 and 1.0:
-   *  0.0  = top of page / start of scrolling
-   *  0.25 = 25% scrolled through header
-   *  0.50 = 50% scrolled
-   *  0.75 = 75% scrolled
-   *  1.00 = end of scrollytelling header
-   */
   progress: number;
-
-  /**
-   * Camera Position [X, Y, Z] in world space
-   * (Matches Blender object transform coordinates)
-   */
   camera: [number, number, number];
-
-  /**
-   * Where the camera aims / looks at [X, Y, Z] in world space
-   * (Nudge this to center your subject in frame)
-   */
   target: [number, number, number];
-
-  /**
-   * Field of View (FOV) in degrees for this stop.
-   *  - Lower values (e.g. 30) = zoomed in / close-up look
-   *  - Higher values (e.g. 60) = wide angle / distant view
-   */
   fov?: number;
 }
 
 export const SCENE_CONFIG = {
-  /**
-   * ───────────────────────────────────────────────────────────────────────────
-   *  1. CAMERA STOP POINTS & ROADMAP
-   * ───────────────────────────────────────────────────────────────────────────
-   * You can ADD new stops, REMOVE stops, or edit coordinates & progress below.
-   */
   stops: [
     {
       id: 'stop_1_overview',
@@ -97,66 +65,28 @@ export const SCENE_CONFIG = {
     },
   ] as CameraStop[],
 
-  /**
-   * ───────────────────────────────────────────────────────────────────────────
-   *  2. SCROLL & MOTION DYNAMICS
-   * ───────────────────────────────────────────────────────────────────────────
-   */
   scroll: {
-    /** How many screen heights are allocated for the 3D header journey */
     headerScrollMultiplier: 2.5,
-
-    /**
-     * Camera responsiveness to scroll:
-     *  - Higher (e.g. 8.0) = tight, instant scroll tracking
-     *  - Lower (e.g. 1.5) = smooth, floaty, cinematic lag
-     */
     cameraDamping: 3.71,
-
-    /** Subtle idle float height when user stops scrolling (0 to turn off) */
     idleFloatAmount: 0.2,
-
-    /** Speed of gentle idle float */
     idleFloatSpeed: 0.4,
   },
 
-  /**
-   * ───────────────────────────────────────────────────────────────────────────
-   *  3. CAMERA LENS SETTINGS
-   * ───────────────────────────────────────────────────────────────────────────
-   */
   camera: {
     defaultFov: 45,
     near: 0.1,
     far: 1000,
   },
 
-  /**
-   * ───────────────────────────────────────────────────────────────────────────
-   *  4. LIGHTS CONFIGURATION
-   * ───────────────────────────────────────────────────────────────────────────
-   * Edit `components/canvas/scene/lightingConfig.ts` to manage all scene lights.
-   */
   lights: LIGHTS_CONFIG,
 
-  /**
-   * ───────────────────────────────────────────────────────────────────────────
-   *  5. ATMOSPHERE & ENVIRONMENT
-   * ───────────────────────────────────────────────────────────────────────────
-   */
   environment: {
-    /** Neutral clay background color */
     backgroundColor: tokens.experimentalScene.canvasBackground,
-
-    /** Fog range: distance clear vs fully faded into background */
-    fogStart: 100,
-    fogEnd: 380,
+    fogStart: 15,
+    fogEnd: 110,
   },
 };
 
-/**
- * Catmull-Rom spline curve helper
- */
 function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): number {
   const t2 = t * t;
   const t3 = t2 * t;
@@ -169,9 +99,6 @@ function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): 
   );
 }
 
-/**
- * Samples camera position, lookAt target, and FOV at scroll progress `t` (0.0 to 1.0).
- */
 export function sampleSceneJourney(
   t: number,
   out: { camera: [number, number, number]; target: [number, number, number]; fov: number },
@@ -188,7 +115,6 @@ export function sampleSceneJourney(
 
   const clamped = Math.max(0, Math.min(1, t));
 
-  // Find current segment between stops based on progress
   let idx = 0;
   while (idx < stops.length - 1 && stops[idx + 1].progress <= clamped) {
     idx++;

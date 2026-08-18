@@ -398,8 +398,8 @@ export class SceneStudioGUI {
       const envParams = {
         exposure: this.renderer.toneMappingExposure,
         bgColor: currentBgHex,
-        fogNear: (this.scene.fog as THREE.Fog)?.near ?? 100,
-        fogFar: (this.scene.fog as THREE.Fog)?.far ?? 380,
+        fogNear: (this.scene.fog as THREE.Fog)?.near ?? 15,
+        fogFar: (this.scene.fog as THREE.Fog)?.far ?? 110,
       };
 
       envFolder
@@ -425,7 +425,7 @@ export class SceneStudioGUI {
 
       if (this.scene.fog) {
         envFolder
-          .add(envParams, 'fogNear', 0, 300, 5)
+          .add(envParams, 'fogNear', 0, 100, 1)
           .name('Fog Clear Distance')
           .listen()
           .onChange((v: number) => {
@@ -434,7 +434,7 @@ export class SceneStudioGUI {
           });
 
         envFolder
-          .add(envParams, 'fogFar', 50, 1000, 10)
+          .add(envParams, 'fogFar', 10, 250, 2)
           .name('Fog Max Distance')
           .listen()
           .onChange((v: number) => {
@@ -522,7 +522,6 @@ export class SceneStudioGUI {
     // 2. Real-time Lights & Shadows Controller
     // ─────────────────────────────────────────────────────────────────────────
     const lightFolder = this.gui.addFolder('Lighting Controller');
-    const shadowFolder = this.gui.addFolder('Shadows Controller');
 
     for (const [id, light] of this.lightsMap.entries()) {
       const sub = lightFolder.addFolder(id);
@@ -537,7 +536,7 @@ export class SceneStudioGUI {
         posX: light.position ? light.position.x : 0,
         posY: light.position ? light.position.y : 0,
         posZ: light.position ? light.position.z : 0,
-        distance: (light as any).distance ?? 40,
+        distance: (light as any).distance ?? 50,
         decay: (light as any).decay ?? 1.8,
       };
 
@@ -570,10 +569,14 @@ export class SceneStudioGUI {
           }
 
           const sh = (light as any).shadow;
-          if (sh && sh.camera) {
-            sh.camera.updateMatrixWorld(true);
-            sh.camera.updateProjectionMatrix();
+          if (sh) {
+            sh.needsUpdate = true;
+            if (sh.camera) {
+              sh.camera.updateMatrixWorld(true);
+              sh.camera.updateProjectionMatrix();
+            }
           }
+          this.renderer.shadowMap.needsUpdate = true;
 
           const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
           if (cfg && cfg.position) {
@@ -624,8 +627,8 @@ export class SceneStudioGUI {
           });
       }
 
-      // Add Shadow Controls directly under Shadows Controller folder
-      const shadowSub = shadowFolder.addFolder(id);
+      // Add Shadow Settings directly inside each light subfolder
+      const shadowSub = sub.addFolder('Shadows Settings');
       const sh = (light as any).shadow;
 
       const shadowParams = {
@@ -641,6 +644,7 @@ export class SceneStudioGUI {
         .listen()
         .onChange((v: boolean) => {
           light.castShadow = v;
+          this.renderer.shadowMap.needsUpdate = true;
           const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
           if (cfg) cfg.castShadow = v;
         });
@@ -650,7 +654,11 @@ export class SceneStudioGUI {
         .name('Soft Shadow Radius')
         .listen()
         .onChange((v: number) => {
-          if ((light as any).shadow) (light as any).shadow.radius = v;
+          if ((light as any).shadow) {
+            (light as any).shadow.radius = v;
+            (light as any).shadow.needsUpdate = true;
+          }
+          this.renderer.shadowMap.needsUpdate = true;
           const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
           if (cfg) cfg.radius = v;
         });
@@ -660,7 +668,11 @@ export class SceneStudioGUI {
         .name('Shadow Bias')
         .listen()
         .onChange((v: number) => {
-          if ((light as any).shadow) (light as any).shadow.bias = v;
+          if ((light as any).shadow) {
+            (light as any).shadow.bias = v;
+            (light as any).shadow.needsUpdate = true;
+          }
+          this.renderer.shadowMap.needsUpdate = true;
           const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
           if (cfg) cfg.shadowBias = v;
         });
@@ -678,10 +690,99 @@ export class SceneStudioGUI {
               shadowObj.map.dispose();
               shadowObj.map = null;
             }
+            shadowObj.needsUpdate = true;
           }
+          this.renderer.shadowMap.needsUpdate = true;
           const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
           if (cfg) cfg.shadowMapSize = size;
         });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. Dedicated Shadows Controller (Duck-typing check)
+    // ─────────────────────────────────────────────────────────────────────────
+    const shadowFolder = this.gui.addFolder('Shadows Controller');
+
+    for (const [id, light] of this.lightsMap.entries()) {
+      const shadowObj = (light as any).shadow;
+      const isShadowCapable =
+        shadowObj ||
+        (light as any).isPointLight ||
+        (light as any).isDirectionalLight ||
+        (light as any).isSpotLight ||
+        light.type === 'PointLight' ||
+        light.type === 'DirectionalLight' ||
+        light.type === 'SpotLight';
+
+      if (isShadowCapable) {
+        const sub = shadowFolder.addFolder(id);
+
+        const shadowParams = {
+          castShadow: light.castShadow ?? true,
+          radius: shadowObj ? shadowObj.radius ?? 2.27 : 2.27,
+          bias: shadowObj ? shadowObj.bias ?? -0.0001 : -0.0001,
+          mapSize: shadowObj?.mapSize?.width ?? 2048,
+        };
+
+        sub
+          .add(shadowParams, 'castShadow')
+          .name('Enable Shadows')
+          .listen()
+          .onChange((v: boolean) => {
+            light.castShadow = v;
+            this.renderer.shadowMap.needsUpdate = true;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.castShadow = v;
+          });
+
+        sub
+          .add(shadowParams, 'radius', 0, 20, 0.1)
+          .name('Soft Shadow Radius')
+          .listen()
+          .onChange((v: number) => {
+            if ((light as any).shadow) {
+              (light as any).shadow.radius = v;
+              (light as any).shadow.needsUpdate = true;
+            }
+            this.renderer.shadowMap.needsUpdate = true;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.radius = v;
+          });
+
+        sub
+          .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
+          .name('Shadow Bias')
+          .listen()
+          .onChange((v: number) => {
+            if ((light as any).shadow) {
+              (light as any).shadow.bias = v;
+              (light as any).shadow.needsUpdate = true;
+            }
+            this.renderer.shadowMap.needsUpdate = true;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.shadowBias = v;
+          });
+
+        sub
+          .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
+          .name('Shadow Resolution')
+          .onChange((v: number) => {
+            const size = parseInt(String(v), 10);
+            const sh = (light as any).shadow;
+            if (sh && sh.mapSize) {
+              sh.mapSize.width = size;
+              sh.mapSize.height = size;
+              if (sh.map) {
+                sh.map.dispose();
+                sh.map = null;
+              }
+              sh.needsUpdate = true;
+            }
+            this.renderer.shadowMap.needsUpdate = true;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.shadowMapSize = size;
+          });
+      }
     }
   }
 

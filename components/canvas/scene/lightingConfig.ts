@@ -6,10 +6,10 @@
  * Exact Blender 5.1.2 Single Point Light Setup (image.png):
  *  - Type: Point Light
  *  - Position: [13.5, 18.0, -4.0] (Hovering over central skyscraper cluster)
- *  - Temperature: 6500K pure white
- *  - Power: 763.4W
+ *  - Temperature: 6500K daylight white
+ *  - Power: 1200
  *  - Radius: 2.27m (Soft falloff)
- *  - Custom Distance: 40m
+ *  - Custom Distance: 50m
  *  - Shadows: Enabled
  */
 
@@ -37,7 +37,7 @@ export interface LightConfig {
   /** Target point in 3D world space: [X, Y, Z] */
   target?: [number, number, number];
 
-  /** Distance falloff range in meters (matches Blender Custom Distance: 40m) */
+  /** Distance falloff range in meters (matches Blender Custom Distance) */
   distance?: number;
 
   /** Light decay exponent (2 = physical inverse square decay) */
@@ -67,31 +67,13 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     id: 'blender_single_point_light',
     type: 'point',
     color: tokens.experimentalScene.keyLight, // 6500K daylight white
-    intensity: 8000,                           // 763.4W Blender power
-    position: [13.5, 40, 0],             // Hovering above central skyscraper cluster
-    distance: 70,                             // Blender Custom Distance: 40m
-    decay: 10,                               // Soft physical falloff
-    radius: 20,                             // Blender Radius: 2.27m
+    intensity: 1200,                          // Bright Point Light power
+    position: [13.5, 18.0, -4.0],             // Hovering above central skyscraper cluster
+    distance: 50,                             // Blender Custom Distance: 50m
+    decay: 1.8,                               // Soft physical falloff
+    radius: 2.27,                             // Blender Radius: 2.27m
     castShadow: true,
-    shadowMapSize: 2000,
-    shadowBias: -0.001,
-  },
-
-  {
-    id: 'blender_single_point_light',
-    type: 'ambient',
-    color: tokens.experimentalScene.keyLight, // 6500K daylight white
-    intensity: 0.3,                           // 763.4W Blender power
-    position: [13.5, 18.0, 0],             // Hovering above central skyscraper cluster
-    distance: 22,                             // Blender Custom Distance: 40m
-    decay: 5,                               // Soft physical falloff
-    radius: 200,                             // Blender Radius: 2.27m
-    castShadow: false,
     shadowMapSize: 2048,
     shadowBias: -0.0001,
   },
-
-
-
-
 ];
