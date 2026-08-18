@@ -171,7 +171,7 @@ export const HeroCanvas3D: React.FC = () => {
       }
     );
 
-    // Apply saved materials directly to the loaded GLTF world meshes
+    // Apply saved materials directly to the loaded GLTF world meshes using unique slot keys
     const applySavedMaterials = (worldGroup: THREE.Group) => {
       const savedMats = SCENE_CONFIG.materials;
       if (!savedMats) return;
@@ -196,50 +196,30 @@ export const HeroCanvas3D: React.FC = () => {
           displayName = child.parent.name;
         }
 
-        if (child.isMesh && child.material) {
+        if (child.isMesh && child.material && isValidNamedObject(displayName)) {
           const mats = Array.isArray(child.material) ? child.material : [child.material];
 
-          // 1. Light facades batch override
-          if (mats[0] && savedMats.lightFacades) {
-            if (savedMats.lightFacades.color !== undefined) {
-              mats[0].color.set(new THREE.Color(savedMats.lightFacades.color));
-            }
-            if (savedMats.lightFacades.roughness !== undefined) {
-              mats[0].roughness = savedMats.lightFacades.roughness;
-            }
-            if (savedMats.lightFacades.metalness !== undefined) {
-              mats[0].metalness = savedMats.lightFacades.metalness;
-            }
-            mats[0].needsUpdate = true;
-          }
+          mats.forEach((mat: THREE.MeshStandardMaterial, index: number) => {
+            const key = `${displayName}_mat_${index}`;
 
-          // 2. Window insets batch override
-          if (mats[1] && savedMats.windowInsets) {
-            if (savedMats.windowInsets.color !== undefined) {
-              mats[1].color.set(new THREE.Color(savedMats.windowInsets.color));
-            }
-            if (savedMats.windowInsets.roughness !== undefined) {
-              mats[1].roughness = savedMats.windowInsets.roughness;
-            }
-            mats[1].needsUpdate = true;
-          }
-
-          // 3. Individual building material override
-          if (savedMats.buildings && savedMats.buildings[displayName]) {
-            const savedBldg = savedMats.buildings[displayName];
-            if (mats[0]) {
-              if (savedBldg.color !== undefined) {
-                mats[0].color.set(new THREE.Color(savedBldg.color));
+            // Check if a specific slot override exists in SCENE_CONFIG.materials.overrides
+            if (savedMats.overrides && savedMats.overrides[key]) {
+              const ov = savedMats.overrides[key];
+              if (ov.color !== undefined) mat.color.set(new THREE.Color(ov.color));
+              if (ov.roughness !== undefined) mat.roughness = ov.roughness;
+              if (ov.metalness !== undefined) mat.metalness = ov.metalness;
+              mat.needsUpdate = true;
+            } else {
+              // Global defaults: slot 0 = facade, slot 1 = window
+              if (index === 0 && savedMats.globalFacadeColor !== undefined) {
+                mat.color.set(new THREE.Color(savedMats.globalFacadeColor));
+                mat.needsUpdate = true;
+              } else if (index === 1 && savedMats.globalWindowColor !== undefined) {
+                mat.color.set(new THREE.Color(savedMats.globalWindowColor));
+                mat.needsUpdate = true;
               }
-              if (savedBldg.roughness !== undefined) {
-                mats[0].roughness = savedBldg.roughness;
-              }
-              if (savedBldg.metalness !== undefined) {
-                mats[0].metalness = savedBldg.metalness;
-              }
-              mats[0].needsUpdate = true;
             }
-          }
+          });
         }
       });
     };
@@ -276,16 +256,16 @@ export const HeroCanvas3D: React.FC = () => {
           // Programmatically clone materials so each building mesh gets its own unique, independent material copy
           if (child.material) {
             if (Array.isArray(child.material)) {
-              child.material = child.material.map((m: any) => {
+              child.material = child.material.map((m: any, idx: number) => {
                 const cloned = m.clone();
-                cloned.name = `${child.name || 'Building'}_Mat`;
+                cloned.name = `${child.name || 'Building'}_Mat_${idx}`;
                 cloned.metalness = Math.min(cloned.metalness, 0.12);
                 cloned.roughness = Math.max(cloned.roughness, 0.60);
                 return cloned;
               });
             } else {
               const cloned = child.material.clone();
-              cloned.name = `${child.name || 'Building'}_Mat`;
+              cloned.name = `${child.name || 'Building'}_Mat_0`;
               cloned.metalness = Math.min(cloned.metalness, 0.12);
               cloned.roughness = Math.max(cloned.roughness, 0.60);
               child.material = cloned;

@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const hexFacade = '0x' + '8c8c8c';
     const hexInset = '0x' + '222222';
 
-    // 1. Sanitize lights and write updated lightingConfig.ts
+    // 1. Sanitize and write updated lightingConfig.ts
     if (Array.isArray(lights)) {
       const sanitizedLights = lights.map((l: any) => {
         const item = { ...l };
@@ -100,34 +100,27 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
           )
         : 'tokens.experimentalScene.canvasBackground';
 
-      const sanitizedBuildings: Record<string, any> = {};
-      if (materials?.buildings && typeof materials.buildings === 'object') {
-        for (const [key, bldg] of Object.entries(materials.buildings)) {
-          if (bldg && typeof bldg === 'object') {
-            const bObj = { ...(bldg as any) };
-            if (bObj.color) {
-              bObj.color = toHexLiteral(bObj.color, hexFacade);
+      const sanitizedOverrides: Record<string, any> = {};
+      if (materials?.overrides && typeof materials.overrides === 'object') {
+        for (const [key, obj] of Object.entries(materials.overrides)) {
+          if (obj && typeof obj === 'object') {
+            const item = { ...(obj as any) };
+            if (item.color) {
+              item.color = toHexLiteral(item.color, hexFacade);
             }
-            sanitizedBuildings[key] = bObj;
+            sanitizedOverrides[key] = item;
           }
         }
       }
 
       const sanitizedMaterials = {
-        lightFacades: {
-          color: materials?.lightFacades?.color
-            ? toHexLiteral(materials.lightFacades.color, hexFacade)
-            : hexFacade,
-          roughness: materials?.lightFacades?.roughness ?? 0.6,
-          metalness: materials?.lightFacades?.metalness ?? 0.0,
-        },
-        windowInsets: {
-          color: materials?.windowInsets?.color
-            ? toHexLiteral(materials.windowInsets.color, hexInset)
-            : hexInset,
-          roughness: materials?.windowInsets?.roughness ?? 0.6,
-        },
-        buildings: sanitizedBuildings,
+        globalFacadeColor: materials?.globalFacadeColor
+          ? toHexLiteral(materials.globalFacadeColor, hexFacade)
+          : hexFacade,
+        globalWindowColor: materials?.globalWindowColor
+          ? toHexLiteral(materials.globalWindowColor, hexInset)
+          : hexInset,
+        overrides: sanitizedOverrides,
       };
 
       const materialsString = JSON.stringify(sanitizedMaterials, null, 2).replace(
@@ -154,16 +147,16 @@ export interface CameraStop {
   fov?: number;
 }
 
-export interface BuildingMaterialConfig {
+export interface BuildingMaterialOverride {
   color?: number;
   roughness?: number;
   metalness?: number;
 }
 
 export interface MaterialsConfig {
-  lightFacades?: BuildingMaterialConfig;
-  windowInsets?: BuildingMaterialConfig;
-  buildings?: Record<string, BuildingMaterialConfig>;
+  globalFacadeColor?: number;
+  globalWindowColor?: number;
+  overrides?: Record<string, BuildingMaterialOverride>;
 }
 
 export const SCENE_CONFIG = {
