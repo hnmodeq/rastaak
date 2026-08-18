@@ -180,14 +180,23 @@ export const HeroCanvas3D: React.FC = () => {
           child.castShadow = true;
           child.receiveShadow = true;
 
-          const materials = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
-
-          for (const m of materials) {
-            if (!m) continue;
-            m.metalness = Math.min(m.metalness, 0.12);
-            m.roughness = Math.max(m.roughness, 0.60);
+          // Programmatically clone materials so each building mesh gets its own unique, independent material copy
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material = child.material.map((m: any) => {
+                const cloned = m.clone();
+                cloned.name = `${child.name || 'Building'}_Mat`;
+                cloned.metalness = Math.min(cloned.metalness, 0.12);
+                cloned.roughness = Math.max(cloned.roughness, 0.60);
+                return cloned;
+              });
+            } else {
+              const cloned = child.material.clone();
+              cloned.name = `${child.name || 'Building'}_Mat`;
+              cloned.metalness = Math.min(cloned.metalness, 0.12);
+              cloned.roughness = Math.max(cloned.roughness, 0.60);
+              child.material = cloned;
+            }
           }
         });
 
