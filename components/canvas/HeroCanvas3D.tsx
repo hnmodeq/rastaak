@@ -111,7 +111,7 @@ export const HeroCanvas3D: React.FC = () => {
         if (cfg.position) ptLight.position.set(...cfg.position);
         if (cfg.castShadow) {
           ptLight.castShadow = true;
-          const size = cfg.shadowMapSize ?? 1024;
+          const size = cfg.shadowMapSize ?? 2048;
           ptLight.shadow.mapSize.width = size;
           ptLight.shadow.mapSize.height = size;
           ptLight.shadow.bias = cfg.shadowBias ?? -0.0001;
@@ -187,6 +187,16 @@ export const HeroCanvas3D: React.FC = () => {
         world = gltf.scene as THREE.Group;
 
         world.traverse((child: any) => {
+          // Transfer Blender custom node name to child mesh if parent is named
+          if (child.parent && child.parent.name && !child.parent.name.toLowerCase().startsWith('scene')) {
+            const pName = child.parent.name;
+            if (!pName.toLowerCase().startsWith('cube') && !pName.toLowerCase().startsWith('plane')) {
+              if (!child.name || child.name.toLowerCase().startsWith('cube') || child.name.toLowerCase().startsWith('plane')) {
+                child.name = pName;
+              }
+            }
+          }
+
           if (!child.isMesh) return;
           child.castShadow = true;
           child.receiveShadow = true;
