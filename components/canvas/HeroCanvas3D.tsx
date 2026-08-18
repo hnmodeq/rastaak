@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG, sampleSceneJourney } from './scene/sceneConfig';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
+import { SceneStudioGUI } from './scene/SceneStudioGUI';
 
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,79 +58,86 @@ export const HeroCanvas3D: React.FC = () => {
     // ─────────────────────────────────────────────────────────────────────
     //  Dynamic Lights Setup from LIGHTS_CONFIG
     // ─────────────────────────────────────────────────────────────────────
+    const lightsMap = new Map<string, THREE.Light>();
+
     for (const cfg of LIGHTS_CONFIG) {
+      let light: THREE.Light | null = null;
+
       if (cfg.type === 'ambient') {
-        const light = new THREE.AmbientLight(cfg.color, cfg.intensity);
-        scene.add(light);
+        light = new THREE.AmbientLight(cfg.color, cfg.intensity);
       } else if (cfg.type === 'hemisphere') {
-        const light = new THREE.HemisphereLight(
+        light = new THREE.HemisphereLight(
           cfg.color,
           cfg.groundColor ?? tokens.experimentalScene.hemisphereGround,
           cfg.intensity,
         );
-        scene.add(light);
       } else if (cfg.type === 'directional') {
-        const light = new THREE.DirectionalLight(cfg.color, cfg.intensity);
-        if (cfg.position) light.position.set(...cfg.position);
+        const dirLight = new THREE.DirectionalLight(cfg.color, cfg.intensity);
+        if (cfg.position) dirLight.position.set(...cfg.position);
         if (cfg.target) {
-          light.target.position.set(...cfg.target);
-          scene.add(light.target);
+          dirLight.target.position.set(...cfg.target);
+          scene.add(dirLight.target);
         }
         if (cfg.castShadow) {
-          light.castShadow = true;
+          dirLight.castShadow = true;
           const size = cfg.shadowMapSize ?? 2048;
-          light.shadow.mapSize.width = size;
-          light.shadow.mapSize.height = size;
-          light.shadow.camera.near = 1;
-          light.shadow.camera.far = 180;
-          light.shadow.camera.left = -45;
-          light.shadow.camera.right = 45;
-          light.shadow.camera.top = 45;
-          light.shadow.camera.bottom = -45;
-          light.shadow.bias = cfg.shadowBias ?? -0.0005;
+          dirLight.shadow.mapSize.width = size;
+          dirLight.shadow.mapSize.height = size;
+          dirLight.shadow.camera.near = 1;
+          dirLight.shadow.camera.far = 180;
+          dirLight.shadow.camera.left = -45;
+          dirLight.shadow.camera.right = 45;
+          dirLight.shadow.camera.top = 45;
+          dirLight.shadow.camera.bottom = -45;
+          dirLight.shadow.bias = cfg.shadowBias ?? -0.0005;
           if (cfg.radius !== undefined) {
-            light.shadow.radius = cfg.radius;
+            dirLight.shadow.radius = cfg.radius;
           }
         }
-        scene.add(light);
+        light = dirLight;
       } else if (cfg.type === 'point') {
-        const light = new THREE.PointLight(cfg.color, cfg.intensity, cfg.distance ?? 0);
-        if (cfg.position) light.position.set(...cfg.position);
+        const ptLight = new THREE.PointLight(cfg.color, cfg.intensity, cfg.distance ?? 0);
+        if (cfg.position) ptLight.position.set(...cfg.position);
         if (cfg.castShadow) {
-          light.castShadow = true;
+          ptLight.castShadow = true;
           const size = cfg.shadowMapSize ?? 1024;
-          light.shadow.mapSize.width = size;
-          light.shadow.mapSize.height = size;
-          light.shadow.bias = cfg.shadowBias ?? -0.0005;
+          ptLight.shadow.mapSize.width = size;
+          ptLight.shadow.mapSize.height = size;
+          ptLight.shadow.bias = cfg.shadowBias ?? -0.0001;
           if (cfg.radius !== undefined) {
-            light.shadow.radius = cfg.radius;
+            ptLight.shadow.radius = cfg.radius;
           }
         }
-        scene.add(light);
+        light = ptLight;
       } else if (cfg.type === 'spot') {
-        const light = new THREE.SpotLight(
+        const spotLight = new THREE.SpotLight(
           cfg.color,
           cfg.intensity,
           cfg.distance ?? 0,
           THREE.MathUtils.degToRad(cfg.angle ?? 45),
           cfg.penumbra ?? 0.5,
         );
-        if (cfg.position) light.position.set(...cfg.position);
+        if (cfg.position) spotLight.position.set(...cfg.position);
         if (cfg.target) {
-          light.target.position.set(...cfg.target);
-          scene.add(light.target);
+          spotLight.target.position.set(...cfg.target);
+          scene.add(spotLight.target);
         }
         if (cfg.castShadow) {
-          light.castShadow = true;
+          spotLight.castShadow = true;
           const size = cfg.shadowMapSize ?? 1024;
-          light.shadow.mapSize.width = size;
-          light.shadow.mapSize.height = size;
-          light.shadow.bias = cfg.shadowBias ?? -0.0005;
+          spotLight.shadow.mapSize.width = size;
+          spotLight.shadow.mapSize.height = size;
+          spotLight.shadow.bias = cfg.shadowBias ?? -0.0005;
           if (cfg.radius !== undefined) {
-            light.shadow.radius = cfg.radius;
+            spotLight.shadow.radius = cfg.radius;
           }
         }
+        light = spotLight;
+      }
+
+      if (light) {
         scene.add(light);
+        lightsMap.set(cfg.id, light);
       }
     }
 
@@ -215,6 +223,19 @@ export const HeroCanvas3D: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     // ─────────────────────────────────────────────────────────────────────
+    //  Interactive Studio GUI (Active in Dev mode / ?studio=1)
+    // ─────────────────────────────────────────────────────────────────────
+    const studioGUI = new SceneStudioGUI(
+      scene,
+      camera,
+      renderer,
+      lightsMap,
+      (forcedT: number) => {
+        targetScrollProgress = forcedT;
+      }
+    );
+
+    // ─────────────────────────────────────────────────────────────────────
     //  Render Loop
     // ─────────────────────────────────────────────────────────────────────
     const clock = new THREE.Clock();
@@ -272,6 +293,7 @@ export const HeroCanvas3D: React.FC = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      studioGUI.destroy();
 
       if (world) {
         world.traverse((child: any) => {
