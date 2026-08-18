@@ -127,6 +127,61 @@ export class SceneStudioGUI {
     window.addEventListener('pointerdown', onPointerDown);
   }
 
+  private collectCurrentLights() {
+    const result: any[] = [];
+
+    for (const [id, light] of this.lightsMap.entries()) {
+      const origCfg = LIGHTS_CONFIG.find((l) => l.id === id);
+      const lightType =
+        origCfg?.type ||
+        (light.type ? light.type.toLowerCase().replace('light', '') : 'point');
+
+      const item: any = {
+        id,
+        type: lightType,
+        color: '#' + light.color.getHexString(),
+        intensity: light.intensity,
+      };
+
+      if (light.position) {
+        item.position = [
+          parseFloat(light.position.x.toFixed(2)),
+          parseFloat(light.position.y.toFixed(2)),
+          parseFloat(light.position.z.toFixed(2)),
+        ];
+      }
+
+      if ((light as any).target && (light as any).target.position) {
+        const tp = (light as any).target.position;
+        item.target = [
+          parseFloat(tp.x.toFixed(2)),
+          parseFloat(tp.y.toFixed(2)),
+          parseFloat(tp.z.toFixed(2)),
+        ];
+      }
+
+      if ((light as any).distance !== undefined) {
+        item.distance = (light as any).distance;
+      }
+
+      if ((light as any).decay !== undefined) {
+        item.decay = (light as any).decay;
+      }
+
+      const shadowObj = (light as any).shadow;
+      if (shadowObj || light.castShadow !== undefined) {
+        item.castShadow = light.castShadow ?? true;
+        item.shadowMapSize = shadowObj?.mapSize?.width ?? 2048;
+        item.shadowBias = shadowObj?.bias ?? -0.0001;
+        item.radius = shadowObj?.radius ?? 2.27;
+      }
+
+      result.push(item);
+    }
+
+    return result;
+  }
+
   private collectCurrentMaterials() {
     const worldGroup = this.worldGroupSupplier();
     if (!worldGroup) return null;
@@ -516,7 +571,7 @@ export class SceneStudioGUI {
           try {
             const payload = {
               cameraStops: SCENE_CONFIG.stops,
-              lights: LIGHTS_CONFIG,
+              lights: this.collectCurrentLights(),
               environment: {
                 backgroundColor: '#' + (this.scene.background as THREE.Color).getHexString(),
                 fogStart: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
@@ -551,7 +606,7 @@ export class SceneStudioGUI {
         exportConfigJSON: () => {
           const configData = {
             cameraStops: SCENE_CONFIG.stops,
-            lights: LIGHTS_CONFIG,
+            lights: this.collectCurrentLights(),
             scroll: SCENE_CONFIG.scroll,
             environment: SCENE_CONFIG.environment,
             materials: this.collectCurrentMaterials(),
@@ -693,7 +748,7 @@ export class SceneStudioGUI {
           });
       }
 
-      // Add Shadow Controls directly under Shadows Controller folder
+      // Add Shadow Controls directly under Shadows Settings subfolder
       const shadowSub = sub.addFolder('Shadows Settings');
       const sh = (light as any).shadow;
 
