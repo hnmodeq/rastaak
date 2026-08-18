@@ -110,19 +110,19 @@ export class SceneStudioGUI {
       const camFolder = this.gui.addFolder('Camera & Stop Points');
 
       let currentStopIndex = 0;
-      const stopNames = SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
+      const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
 
       const camParams = {
         mode: 'Scroll Journey',
-        selectedStop: stopNames[0],
-        scrollT: 0.0,
-        camX: this.camera.position.x,
-        camY: this.camera.position.y,
-        camZ: this.camera.position.z,
-        targetX: 14.0,
-        targetY: 2.0,
-        targetZ: 0.0,
-        fov: this.camera.fov,
+        selectedStop: getStopNames()[0],
+        scrollT: SCENE_CONFIG.stops[0]?.progress ?? 0.0,
+        camX: SCENE_CONFIG.stops[0]?.camera[0] ?? this.camera.position.x,
+        camY: SCENE_CONFIG.stops[0]?.camera[1] ?? this.camera.position.y,
+        camZ: SCENE_CONFIG.stops[0]?.camera[2] ?? this.camera.position.z,
+        targetX: SCENE_CONFIG.stops[0]?.target[0] ?? 14.0,
+        targetY: SCENE_CONFIG.stops[0]?.target[1] ?? 2.0,
+        targetZ: SCENE_CONFIG.stops[0]?.target[2] ?? 0.0,
+        fov: SCENE_CONFIG.stops[0]?.fov ?? 45,
 
         addNewStop: () => {
           const newId = `stop_${SCENE_CONFIG.stops.length + 1}_custom`;
@@ -142,6 +142,9 @@ export class SceneStudioGUI {
             fov: this.camera.fov,
           };
           SCENE_CONFIG.stops.push(newStop);
+
+          stopDropdownController.options(getStopNames());
+          stopDropdownController.setValue(`${SCENE_CONFIG.stops.length}. ${newId}`);
           alert(`Added new stop point '${newId}'!`);
         },
 
@@ -164,17 +167,20 @@ export class SceneStudioGUI {
             camParams.camX = this.manualCamPos.x;
             camParams.camY = this.manualCamPos.y;
             camParams.camZ = this.manualCamPos.z;
+            this.refreshCamDisplay();
           }
         });
 
-      camFolder
-        .add(camParams, 'selectedStop', stopNames)
+      const stopDropdownController = camFolder
+        .add(camParams, 'selectedStop', getStopNames())
         .name('Edit Stop Point')
         .onChange((name: string) => {
-          const idx = stopNames.indexOf(name);
+          const names = getStopNames();
+          const idx = names.indexOf(name);
           if (idx >= 0 && idx < SCENE_CONFIG.stops.length) {
             currentStopIndex = idx;
             const stop = SCENE_CONFIG.stops[idx];
+
             camParams.scrollT = stop.progress;
             camParams.camX = stop.camera[0];
             camParams.camY = stop.camera[1];
@@ -191,20 +197,27 @@ export class SceneStudioGUI {
             this.camera.fov = camParams.fov;
             this.camera.updateProjectionMatrix();
 
+            this.refreshCamDisplay();
+
             if (this.onProgressChange) this.onProgressChange(stop.progress);
           }
         });
 
-      camFolder
+      const scrollCtrl = camFolder
         .add(camParams, 'scrollT', 0.0, 1.0, 0.01)
         .name('Scroll t')
+        .listen()
         .onChange((val: number) => {
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].progress = val;
+          }
           if (this.onProgressChange) this.onProgressChange(val);
         });
 
-      camFolder
+      const camXCtrl = camFolder
         .add(camParams, 'camX', -100, 100, 0.5)
         .name('Cam X')
+        .listen()
         .onChange((v: number) => {
           this.manualCamPos.x = v;
           this.camera.position.x = v;
@@ -213,9 +226,10 @@ export class SceneStudioGUI {
           }
         });
 
-      camFolder
+      const camYCtrl = camFolder
         .add(camParams, 'camY', 0, 100, 0.5)
         .name('Cam Y')
+        .listen()
         .onChange((v: number) => {
           this.manualCamPos.y = v;
           this.camera.position.y = v;
@@ -224,9 +238,10 @@ export class SceneStudioGUI {
           }
         });
 
-      camFolder
+      const camZCtrl = camFolder
         .add(camParams, 'camZ', -100, 100, 0.5)
         .name('Cam Z')
+        .listen()
         .onChange((v: number) => {
           this.manualCamPos.z = v;
           this.camera.position.z = v;
@@ -235,9 +250,10 @@ export class SceneStudioGUI {
           }
         });
 
-      camFolder
+      const targetXCtrl = camFolder
         .add(camParams, 'targetX', -100, 100, 0.5)
         .name('Target X')
+        .listen()
         .onChange((v: number) => {
           this.manualLookAt.x = v;
           this.camera.lookAt(this.manualLookAt);
@@ -246,9 +262,10 @@ export class SceneStudioGUI {
           }
         });
 
-      camFolder
+      const targetYCtrl = camFolder
         .add(camParams, 'targetY', -50, 100, 0.5)
         .name('Target Y')
+        .listen()
         .onChange((v: number) => {
           this.manualLookAt.y = v;
           this.camera.lookAt(this.manualLookAt);
@@ -257,9 +274,10 @@ export class SceneStudioGUI {
           }
         });
 
-      camFolder
+      const targetZCtrl = camFolder
         .add(camParams, 'targetZ', -100, 100, 0.5)
         .name('Target Z')
+        .listen()
         .onChange((v: number) => {
           this.manualLookAt.z = v;
           this.camera.lookAt(this.manualLookAt);
@@ -268,9 +286,10 @@ export class SceneStudioGUI {
           }
         });
 
-      camFolder
+      const fovCtrl = camFolder
         .add(camParams, 'fov', 15, 90, 1)
         .name('FOV Zoom')
+        .listen()
         .onChange((v: number) => {
           this.camera.fov = v;
           this.camera.updateProjectionMatrix();
@@ -281,6 +300,17 @@ export class SceneStudioGUI {
 
       camFolder.add(camParams, 'addNewStop').name('➕ Add Current View as Stop');
       camFolder.add(camParams, 'copyStopsConfig').name('📋 Copy Stops JSON');
+
+      this.refreshCamDisplay = () => {
+        scrollCtrl.updateDisplay();
+        camXCtrl.updateDisplay();
+        camYCtrl.updateDisplay();
+        camZCtrl.updateDisplay();
+        targetXCtrl.updateDisplay();
+        targetYCtrl.updateDisplay();
+        targetZCtrl.updateDisplay();
+        fovCtrl.updateDisplay();
+      };
 
       // ─────────────────────────────────────────────────────────────────────────
       // 2. Real-time Lights Controller
@@ -301,18 +331,24 @@ export class SceneStudioGUI {
         sub
           .add(lightParams, 'intensity', 0, 3000, 10)
           .name('Power / Intensity')
+          .listen()
           .onChange((v: number) => {
             light.intensity = v;
           });
 
-        sub.addColor(lightParams, 'color').name('Color').onChange((v: string) => {
-          light.color.set(v);
-        });
+        sub
+          .addColor(lightParams, 'color')
+          .name('Color')
+          .listen()
+          .onChange((v: string) => {
+            light.color.set(v);
+          });
 
         if (light.position) {
           sub
             .add(lightParams, 'posX', -100, 100, 0.5)
             .name('Position X')
+            .listen()
             .onChange((v: number) => {
               light.position.x = v;
               if ((light as any).target) {
@@ -323,6 +359,7 @@ export class SceneStudioGUI {
           sub
             .add(lightParams, 'posY', -10, 100, 0.5)
             .name('Position Y')
+            .listen()
             .onChange((v: number) => {
               light.position.y = v;
               if ((light as any).target) {
@@ -333,6 +370,7 @@ export class SceneStudioGUI {
           sub
             .add(lightParams, 'posZ', -100, 100, 0.5)
             .name('Position Z')
+            .listen()
             .onChange((v: number) => {
               light.position.z = v;
               if ((light as any).target) {
@@ -346,6 +384,7 @@ export class SceneStudioGUI {
           sub
             .add(extra, 'distance', 0, 200, 1)
             .name('Distance Falloff')
+            .listen()
             .onChange((v: number) => {
               light.distance = v;
             });
@@ -389,6 +428,7 @@ export class SceneStudioGUI {
             sub
               .add(matParams, 'roughness', 0.0, 1.0, 0.02)
               .name('Roughness')
+              .listen()
               .onChange((v: number) => {
                 (mat as any).roughness = v;
                 mat.needsUpdate = true;
@@ -399,6 +439,7 @@ export class SceneStudioGUI {
             sub
               .add(matParams, 'metalness', 0.0, 1.0, 0.02)
               .name('Metalness')
+              .listen()
               .onChange((v: number) => {
                 (mat as any).metalness = v;
                 mat.needsUpdate = true;
@@ -406,21 +447,29 @@ export class SceneStudioGUI {
           }
 
           if (mat.color) {
-            sub.addColor(matParams, 'color').name('Color').onChange((v: string) => {
-              mat.color.set(v);
-              mat.needsUpdate = true;
-            });
+            sub
+              .addColor(matParams, 'color')
+              .name('Color')
+              .listen()
+              .onChange((v: string) => {
+                mat.color.set(v);
+                mat.needsUpdate = true;
+              });
           }
 
-          sub.add(matParams, 'wireframe').name('Wireframe').onChange((v: boolean) => {
-            mat.wireframe = v;
-            mat.needsUpdate = true;
-          });
+          sub
+            .add(matParams, 'wireframe')
+            .name('Wireframe')
+            .listen()
+            .onChange((v: boolean) => {
+              mat.wireframe = v;
+              mat.needsUpdate = true;
+            });
         });
       }
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 4. Atmosphere & Background (Unified Top Header Color Control)
+      // 4. Atmosphere & Background
       // ─────────────────────────────────────────────────────────────────────────
       const envFolder = this.gui.addFolder('Environment & Atmosphere');
       const currentBgHex = '#' + (this.scene.background as THREE.Color).getHexString();
@@ -433,6 +482,7 @@ export class SceneStudioGUI {
       envFolder
         .add(envParams, 'exposure', 0.1, 3.0, 0.05)
         .name('Exposure')
+        .listen()
         .onChange((v: number) => {
           this.renderer.toneMappingExposure = v;
         });
@@ -440,13 +490,13 @@ export class SceneStudioGUI {
       envFolder
         .addColor(envParams, 'bgColor')
         .name('Unified Background Color')
+        .listen()
         .onChange((v: string) => {
           const col = new THREE.Color(v);
           this.scene.background = col;
           if (this.scene.fog) {
             this.scene.fog.color = col;
           }
-          // Unified document body background color to eliminate top bar seam
           document.body.style.backgroundColor = v;
         });
 
@@ -489,6 +539,8 @@ export class SceneStudioGUI {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
   }
+
+  private refreshCamDisplay = () => {};
 
   public destroy() {
     if (this.toggleButton) {
