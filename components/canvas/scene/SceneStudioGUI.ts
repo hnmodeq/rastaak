@@ -327,14 +327,18 @@ export class SceneStudioGUI {
           posX: light.position ? light.position.x : 0,
           posY: light.position ? light.position.y : 0,
           posZ: light.position ? light.position.z : 0,
+          distance: (light as any).distance ?? 40,
+          decay: (light as any).decay ?? 1.8,
         };
 
         sub
-          .add(lightParams, 'intensity', 0, 3000, 10)
+          .add(lightParams, 'intensity', 0, 5000, 10)
           .name('Power / Intensity')
           .listen()
           .onChange((v: number) => {
             light.intensity = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.intensity = v;
           });
 
         sub
@@ -352,9 +356,9 @@ export class SceneStudioGUI {
             .listen()
             .onChange((v: number) => {
               light.position.x = v;
-              if ((light as any).target) {
-                (light as any).target.updateMatrixWorld();
-              }
+              if ((light as any).target) (light as any).target.updateMatrixWorld();
+              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+              if (cfg && cfg.position) cfg.position[0] = v;
             });
 
           sub
@@ -363,9 +367,9 @@ export class SceneStudioGUI {
             .listen()
             .onChange((v: number) => {
               light.position.y = v;
-              if ((light as any).target) {
-                (light as any).target.updateMatrixWorld();
-              }
+              if ((light as any).target) (light as any).target.updateMatrixWorld();
+              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+              if (cfg && cfg.position) cfg.position[1] = v;
             });
 
           sub
@@ -374,25 +378,100 @@ export class SceneStudioGUI {
             .listen()
             .onChange((v: number) => {
               light.position.z = v;
-              if ((light as any).target) {
-                (light as any).target.updateMatrixWorld();
-              }
+              if ((light as any).target) (light as any).target.updateMatrixWorld();
+              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+              if (cfg && cfg.position) cfg.position[2] = v;
             });
         }
 
         if (light instanceof THREE.PointLight || light instanceof THREE.SpotLight) {
-          const extra = { distance: light.distance };
           sub
-            .add(extra, 'distance', 0, 200, 1)
+            .add(lightParams, 'distance', 0, 300, 1)
             .name('Distance Falloff')
             .listen()
             .onChange((v: number) => {
-              light.distance = v;
+              (light as any).distance = v;
+              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+              if (cfg) cfg.distance = v;
+            });
+
+          sub
+            .add(lightParams, 'decay', 0, 4.0, 0.1)
+            .name('Decay Exponent')
+            .listen()
+            .onChange((v: number) => {
+              (light as any).decay = v;
+              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+              if (cfg) cfg.decay = v;
             });
         }
       }
 
-      // Try populating materials immediately or on demand
+      // ─────────────────────────────────────────────────────────────────────────
+      // 3. Dedicated Shadows Controller
+      // ─────────────────────────────────────────────────────────────────────────
+      const shadowFolder = this.gui.addFolder('Shadows Controller');
+
+      for (const [id, light] of this.lightsMap.entries()) {
+        const shadowObj = (light as any).shadow;
+        if (!shadowObj) continue;
+
+        const sub = shadowFolder.addFolder(id);
+
+        const shadowParams = {
+          castShadow: light.castShadow,
+          radius: shadowObj.radius ?? 2.27,
+          bias: shadowObj.bias ?? -0.0001,
+          mapSize: shadowObj.mapSize?.width ?? 2048,
+        };
+
+        sub
+          .add(shadowParams, 'castShadow')
+          .name('Enable Shadow')
+          .listen()
+          .onChange((v: boolean) => {
+            light.castShadow = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.castShadow = v;
+          });
+
+        sub
+          .add(shadowParams, 'radius', 0, 20, 0.1)
+          .name('Soft Shadow Radius')
+          .listen()
+          .onChange((v: number) => {
+            shadowObj.radius = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.radius = v;
+          });
+
+        sub
+          .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
+          .name('Shadow Bias')
+          .listen()
+          .onChange((v: number) => {
+            shadowObj.bias = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.shadowBias = v;
+          });
+
+        sub
+          .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
+          .name('Shadow Map Resolution')
+          .onChange((v: number) => {
+            const size = parseInt(String(v), 10);
+            shadowObj.mapSize.width = size;
+            shadowObj.mapSize.height = size;
+            if (shadowObj.map) {
+              shadowObj.map.dispose();
+              shadowObj.map = null;
+            }
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.shadowMapSize = size;
+          });
+      }
+
+      // Populate materials
       this.populateMaterials();
 
       // ─────────────────────────────────────────────────────────────────────────
@@ -428,10 +507,38 @@ export class SceneStudioGUI {
         });
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 5. Export JSON Tools
+      // 5. Apply & Save directly to Source Code + Export JSON Tools
       // ─────────────────────────────────────────────────────────────────────────
-      const exportFolder = this.gui.addFolder('Export Tools');
+      const exportFolder = this.gui.addFolder('Save & Export Tools');
       const exportParams = {
+        applyAndSaveToCode: async () => {
+          try {
+            const payload = {
+              cameraStops: SCENE_CONFIG.stops,
+              lights: LIGHTS_CONFIG,
+              environment: {
+                backgroundColor: '#' + (this.scene.background as THREE.Color).getHexString(),
+                fogStart: SCENE_CONFIG.environment.fogStart,
+                fogEnd: SCENE_CONFIG.environment.fogEnd,
+              },
+            };
+
+            const res = await fetch('/api/save-studio-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+              alert('✅ Success! Your 3D camera, lighting, and shadow edits have been written directly to your local TypeScript source files (sceneConfig.ts & lightingConfig.ts)!');
+            } else {
+              alert(`⚠️ Error saving config: ${data.error || 'Unknown error'}`);
+            }
+          } catch (e: any) {
+            alert(`⚠️ Error saving config: ${e.message}`);
+          }
+        },
         exportSceneJSON: () => {
           if (!this.scene) return;
           const json = this.scene.toJSON();
@@ -448,6 +555,7 @@ export class SceneStudioGUI {
         },
       };
 
+      exportFolder.add(exportParams, 'applyAndSaveToCode').name('💾 Apply & Save directly to Code');
       exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
@@ -476,55 +584,48 @@ export class SceneStudioGUI {
     const matFolder = this.gui.addFolder('Materials Controller');
     this.materialsFolderPopulated = true;
 
-    const uniqueMaterials = new Map<string, THREE.MeshStandardMaterial>();
+    const buildingMeshes: { name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }[] = [];
 
     worldGroup.traverse((child: any) => {
       if (child.isMesh && child.material) {
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach((m: any) => {
           if (m && (m.isMeshStandardMaterial || m.isMeshBasicMaterial || m.isMeshPhysicalMaterial)) {
-            const key = m.name || `Material_${m.id}`;
-            if (!uniqueMaterials.has(key)) {
-              uniqueMaterials.set(key, m);
-            }
+            const meshName = child.name || `Building_${child.id}`;
+            buildingMeshes.push({ name: meshName, mesh: child, mat: m });
           }
         });
       }
     });
 
-    if (uniqueMaterials.size === 0) return;
+    if (buildingMeshes.length === 0) return;
 
-    const lightMats: THREE.MeshStandardMaterial[] = [];
-    const darkMats: THREE.MeshStandardMaterial[] = [];
-
-    uniqueMaterials.forEach((m) => {
-      if (m.color) {
-        const lightness = (m.color.r + m.color.g + m.color.b) / 3;
-        if (lightness >= 0.5) lightMats.push(m);
-        else darkMats.push(m);
-      }
+    const lightBuildingMeshes = buildingMeshes.filter((b) => {
+      if (!b.mat.color) return false;
+      const l = (b.mat.color.r + b.mat.color.g + b.mat.color.b) / 3;
+      return l >= 0.5;
     });
 
-    // Group 1: Light Color Materials
-    if (lightMats.length > 0) {
-      const lightGroupSub = matFolder.addFolder('💡 Light Color Materials (Group)');
-      const defaultLightHex = '#' + lightMats[0].color.getHexString();
+    // Group 1: Light Color Materials (Batch Control)
+    if (lightBuildingMeshes.length > 0) {
+      const lightGroupSub = matFolder.addFolder('💡 ALL Light Buildings (Batch)');
+      const defaultLightHex = '#' + lightBuildingMeshes[0].mat.color.getHexString();
 
       const lightParams = {
         color: defaultLightHex,
-        roughness: lightMats[0].roughness ?? 0.6,
-        metalness: lightMats[0].metalness ?? 0.1,
+        roughness: lightBuildingMeshes[0].mat.roughness ?? 0.6,
+        metalness: lightBuildingMeshes[0].mat.metalness ?? 0.1,
       };
 
       lightGroupSub
         .addColor(lightParams, 'color')
-        .name('Light Color')
+        .name('All Light Buildings Color')
         .listen()
         .onChange((hex: string) => {
           const col = new THREE.Color(hex);
-          lightMats.forEach((m) => {
-            m.color.copy(col);
-            m.needsUpdate = true;
+          lightBuildingMeshes.forEach((b) => {
+            b.mat.color.copy(col);
+            b.mat.needsUpdate = true;
           });
         });
 
@@ -533,9 +634,9 @@ export class SceneStudioGUI {
         .name('Roughness')
         .listen()
         .onChange((v: number) => {
-          lightMats.forEach((m) => {
-            m.roughness = v;
-            m.needsUpdate = true;
+          lightBuildingMeshes.forEach((b) => {
+            b.mat.roughness = v;
+            b.mat.needsUpdate = true;
           });
         });
 
@@ -544,113 +645,64 @@ export class SceneStudioGUI {
         .name('Metalness')
         .listen()
         .onChange((v: number) => {
-          lightMats.forEach((m) => {
-            m.metalness = v;
-            m.needsUpdate = true;
+          lightBuildingMeshes.forEach((b) => {
+            b.mat.metalness = v;
+            b.mat.needsUpdate = true;
           });
         });
     }
 
-    // Group 2: Dark Color Materials
-    if (darkMats.length > 0) {
-      const darkGroupSub = matFolder.addFolder('🕶️ Dark Color Materials (Group)');
-      const defaultDarkHex = '#' + darkMats[0].color.getHexString();
+    // Group 2: Individual Building Colors
+    const indBldgSub = matFolder.addFolder('🏢 Individual Building Colors');
 
-      const darkParams = {
-        color: defaultDarkHex,
-        roughness: darkMats[0].roughness ?? 0.6,
-        metalness: darkMats[0].metalness ?? 0.1,
+    buildingMeshes.forEach((b) => {
+      const sub = indBldgSub.addFolder(b.name);
+
+      const defaultColorHex = '#' + new THREE.Color(tokens.experimentalScene.keyLight).getHexString();
+
+      const bldgParams = {
+        color: b.mat.color ? '#' + b.mat.color.getHexString() : defaultColorHex,
+        roughness: b.mat.roughness ?? 0.6,
+        metalness: b.mat.metalness ?? 0.1,
+        wireframe: b.mat.wireframe ?? false,
       };
 
-      darkGroupSub
-        .addColor(darkParams, 'color')
-        .name('Dark Color')
-        .listen()
-        .onChange((hex: string) => {
-          const col = new THREE.Color(hex);
-          darkMats.forEach((m) => {
-            m.color.copy(col);
-            m.needsUpdate = true;
-          });
-        });
-
-      darkGroupSub
-        .add(darkParams, 'roughness', 0.0, 1.0, 0.02)
-        .name('Roughness')
-        .listen()
-        .onChange((v: number) => {
-          darkMats.forEach((m) => {
-            m.roughness = v;
-            m.needsUpdate = true;
-          });
-        });
-
-      darkGroupSub
-        .add(darkParams, 'metalness', 0.0, 1.0, 0.02)
-        .name('Metalness')
-        .listen()
-        .onChange((v: number) => {
-          darkMats.forEach((m) => {
-            m.metalness = v;
-            m.needsUpdate = true;
-          });
-        });
-    }
-
-    // Group 3: All Individual Materials
-    const indSub = matFolder.addFolder('Individual Materials');
-    const defaultColorHex = '#' + new THREE.Color(tokens.experimentalScene.keyLight).getHexString();
-
-    uniqueMaterials.forEach((mat, name) => {
-      const sub = indSub.addFolder(name);
-
-      const matParams = {
-        roughness: (mat as any).roughness ?? 0.5,
-        metalness: (mat as any).metalness ?? 0.1,
-        color: mat.color ? '#' + mat.color.getHexString() : defaultColorHex,
-        wireframe: mat.wireframe ?? false,
-      };
-
-      if (typeof (mat as any).roughness === 'number') {
+      if (b.mat.color) {
         sub
-          .add(matParams, 'roughness', 0.0, 1.0, 0.02)
-          .name('Roughness')
+          .addColor(bldgParams, 'color')
+          .name('Building Color')
           .listen()
-          .onChange((v: number) => {
-            (mat as any).roughness = v;
-            mat.needsUpdate = true;
-          });
-      }
-
-      if (typeof (mat as any).metalness === 'number') {
-        sub
-          .add(matParams, 'metalness', 0.0, 1.0, 0.02)
-          .name('Metalness')
-          .listen()
-          .onChange((v: number) => {
-            (mat as any).metalness = v;
-            mat.needsUpdate = true;
-          });
-      }
-
-      if (mat.color) {
-        sub
-          .addColor(matParams, 'color')
-          .name('Color')
-          .listen()
-          .onChange((v: string) => {
-            mat.color.set(new THREE.Color(v));
-            mat.needsUpdate = true;
+          .onChange((hex: string) => {
+            b.mat.color.set(new THREE.Color(hex));
+            b.mat.needsUpdate = true;
           });
       }
 
       sub
-        .add(matParams, 'wireframe')
+        .add(bldgParams, 'roughness', 0.0, 1.0, 0.02)
+        .name('Roughness')
+        .listen()
+        .onChange((v: number) => {
+          b.mat.roughness = v;
+          b.mat.needsUpdate = true;
+        });
+
+      sub
+        .add(bldgParams, 'metalness', 0.0, 1.0, 0.02)
+        .name('Metalness')
+        .listen()
+        .onChange((v: number) => {
+          b.mat.metalness = v;
+          b.mat.needsUpdate = true;
+        });
+
+      sub
+        .add(bldgParams, 'wireframe')
         .name('Wireframe')
         .listen()
         .onChange((v: boolean) => {
-          mat.wireframe = v;
-          mat.needsUpdate = true;
+          b.mat.wireframe = v;
+          b.mat.needsUpdate = true;
         });
     });
   }
