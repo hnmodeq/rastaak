@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { tokens } from '@/tokens/design-tokens';
-import { SCENE_CONFIG } from './sceneConfig';
+import { SCENE_CONFIG, CameraStop } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 
 function downloadJSON(filename: string, data: any) {
@@ -20,11 +20,17 @@ export class SceneStudioGUI {
   private toggleButton: HTMLButtonElement | null = null;
   private isOpen = false;
 
+  // Real-time camera override state
+  public isManualMode = false;
+  public manualCamPos = new THREE.Vector3();
+  public manualLookAt = new THREE.Vector3();
+
   constructor(
     private scene: THREE.Scene,
     private camera: THREE.PerspectiveCamera,
     private renderer: THREE.WebGLRenderer,
     private lightsMap: Map<string, THREE.Light>,
+    private worldGroupSupplier: () => THREE.Group | null,
     private onProgressChange?: (t: number) => void,
   ) {
     if (typeof window === 'undefined') return;
@@ -90,34 +96,107 @@ export class SceneStudioGUI {
       const { GUI } = await import('lil-gui');
       this.gui = new GUI({ title: 'Rastaak 3D Studio' });
 
-      // Position GUI at top right below site header
       this.gui.domElement.style.zIndex = '999999';
       this.gui.domElement.style.position = 'fixed';
       this.gui.domElement.style.top = '90px';
       this.gui.domElement.style.right = '24px';
 
+      this.manualCamPos.copy(this.camera.position);
+      this.manualLookAt.set(14.0, 2.0, 0.0);
+
       // ─────────────────────────────────────────────────────────────────────────
-      // 1. Live Camera & Stop Points
+      // 1. Camera & Stop Points Editor
       // ─────────────────────────────────────────────────────────────────────────
       const camFolder = this.gui.addFolder('Camera & Stop Points');
 
+      let currentStopIndex = 0;
+      const stopNames = SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
+
       const camParams = {
-        progressT: 0.0,
+        mode: 'Scroll Journey',
+        selectedStop: stopNames[0],
+        scrollT: 0.0,
         camX: this.camera.position.x,
         camY: this.camera.position.y,
         camZ: this.camera.position.z,
+        targetX: 14.0,
+        targetY: 2.0,
+        targetZ: 0.0,
         fov: this.camera.fov,
-        copyCamConfig: () => {
-          const text = `camera: [${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)}], target: [14.0, 2.0, 0.0]`;
+
+        addNewStop: () => {
+          const newId = `stop_${SCENE_CONFIG.stops.length + 1}_custom`;
+          const newStop: CameraStop = {
+            id: newId,
+            progress: 1.0,
+            camera: [
+              parseFloat(this.manualCamPos.x.toFixed(1)),
+              parseFloat(this.manualCamPos.y.toFixed(1)),
+              parseFloat(this.manualCamPos.z.toFixed(1)),
+            ],
+            target: [
+              parseFloat(this.manualLookAt.x.toFixed(1)),
+              parseFloat(this.manualLookAt.y.toFixed(1)),
+              parseFloat(this.manualLookAt.z.toFixed(1)),
+            ],
+            fov: this.camera.fov,
+          };
+          SCENE_CONFIG.stops.push(newStop);
+          alert(`Added new stop point '${newId}'!`);
+        },
+
+        copyStopsConfig: () => {
+          const text = JSON.stringify(SCENE_CONFIG.stops, null, 2);
           if (navigator.clipboard) {
             navigator.clipboard.writeText(text);
-            alert(`Copied camera coordinates to clipboard:\n${text}`);
+            alert(`Copied all stop points to clipboard!`);
           }
         },
       };
 
       camFolder
-        .add(camParams, 'progressT', 0.0, 1.0, 0.01)
+        .add(camParams, 'mode', ['Scroll Journey', 'Manual Live Camera'])
+        .name('Mode')
+        .onChange((v: string) => {
+          this.isManualMode = v === 'Manual Live Camera';
+          if (this.isManualMode) {
+            this.manualCamPos.copy(this.camera.position);
+            camParams.camX = this.manualCamPos.x;
+            camParams.camY = this.manualCamPos.y;
+            camParams.camZ = this.manualCamPos.z;
+          }
+        });
+
+      camFolder
+        .add(camParams, 'selectedStop', stopNames)
+        .name('Edit Stop Point')
+        .onChange((name: string) => {
+          const idx = stopNames.indexOf(name);
+          if (idx >= 0 && idx < SCENE_CONFIG.stops.length) {
+            currentStopIndex = idx;
+            const stop = SCENE_CONFIG.stops[idx];
+            camParams.scrollT = stop.progress;
+            camParams.camX = stop.camera[0];
+            camParams.camY = stop.camera[1];
+            camParams.camZ = stop.camera[2];
+            camParams.targetX = stop.target[0];
+            camParams.targetY = stop.target[1];
+            camParams.targetZ = stop.target[2];
+            camParams.fov = stop.fov ?? 45;
+
+            this.manualCamPos.set(...stop.camera);
+            this.manualLookAt.set(...stop.target);
+            this.camera.position.copy(this.manualCamPos);
+            this.camera.lookAt(this.manualLookAt);
+            this.camera.fov = camParams.fov;
+            this.camera.updateProjectionMatrix();
+
+            if (this.onProgressChange) this.onProgressChange(stop.progress);
+          }
+        });
+
+      camFolder
+        .add(camParams, 'scrollT', 0.0, 1.0, 0.01)
         .name('Scroll t')
         .onChange((val: number) => {
           if (this.onProgressChange) this.onProgressChange(val);
@@ -125,37 +204,86 @@ export class SceneStudioGUI {
 
       camFolder
         .add(camParams, 'camX', -100, 100, 0.5)
-        .name('Camera X')
+        .name('Cam X')
         .onChange((v: number) => {
+          this.manualCamPos.x = v;
           this.camera.position.x = v;
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].camera[0] = v;
+          }
         });
 
       camFolder
         .add(camParams, 'camY', 0, 100, 0.5)
-        .name('Camera Y')
+        .name('Cam Y')
         .onChange((v: number) => {
+          this.manualCamPos.y = v;
           this.camera.position.y = v;
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].camera[1] = v;
+          }
         });
 
       camFolder
         .add(camParams, 'camZ', -100, 100, 0.5)
-        .name('Camera Z')
+        .name('Cam Z')
         .onChange((v: number) => {
+          this.manualCamPos.z = v;
           this.camera.position.z = v;
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].camera[2] = v;
+          }
+        });
+
+      camFolder
+        .add(camParams, 'targetX', -100, 100, 0.5)
+        .name('Target X')
+        .onChange((v: number) => {
+          this.manualLookAt.x = v;
+          this.camera.lookAt(this.manualLookAt);
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].target[0] = v;
+          }
+        });
+
+      camFolder
+        .add(camParams, 'targetY', -50, 100, 0.5)
+        .name('Target Y')
+        .onChange((v: number) => {
+          this.manualLookAt.y = v;
+          this.camera.lookAt(this.manualLookAt);
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].target[1] = v;
+          }
+        });
+
+      camFolder
+        .add(camParams, 'targetZ', -100, 100, 0.5)
+        .name('Target Z')
+        .onChange((v: number) => {
+          this.manualLookAt.z = v;
+          this.camera.lookAt(this.manualLookAt);
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].target[2] = v;
+          }
         });
 
       camFolder
         .add(camParams, 'fov', 15, 90, 1)
-        .name('Field of View (FOV)')
+        .name('FOV Zoom')
         .onChange((v: number) => {
           this.camera.fov = v;
           this.camera.updateProjectionMatrix();
+          if (SCENE_CONFIG.stops[currentStopIndex]) {
+            SCENE_CONFIG.stops[currentStopIndex].fov = v;
+          }
         });
 
-      camFolder.add(camParams, 'copyCamConfig').name('📋 Copy Camera Config');
+      camFolder.add(camParams, 'addNewStop').name('➕ Add Current View as Stop');
+      camFolder.add(camParams, 'copyStopsConfig').name('📋 Copy Stops JSON');
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 2. Live Light Controls
+      // 2. Real-time Lights Controller
       // ─────────────────────────────────────────────────────────────────────────
       const lightFolder = this.gui.addFolder('Lighting Controller');
 
@@ -165,14 +293,14 @@ export class SceneStudioGUI {
         const lightParams = {
           intensity: light.intensity,
           color: '#' + light.color.getHexString(),
-          posX: light.position.x,
-          posY: light.position.y,
-          posZ: light.position.z,
+          posX: light.position ? light.position.x : 0,
+          posY: light.position ? light.position.y : 0,
+          posZ: light.position ? light.position.z : 0,
         };
 
         sub
           .add(lightParams, 'intensity', 0, 3000, 10)
-          .name('Intensity / Power')
+          .name('Power / Intensity')
           .onChange((v: number) => {
             light.intensity = v;
           });
@@ -187,13 +315,19 @@ export class SceneStudioGUI {
             .name('Position X')
             .onChange((v: number) => {
               light.position.x = v;
+              if ((light as any).target) {
+                (light as any).target.updateMatrixWorld();
+              }
             });
 
           sub
-            .add(lightParams, 'posY', 0, 100, 0.5)
+            .add(lightParams, 'posY', -10, 100, 0.5)
             .name('Position Y')
             .onChange((v: number) => {
               light.position.y = v;
+              if ((light as any).target) {
+                (light as any).target.updateMatrixWorld();
+              }
             });
 
           sub
@@ -201,6 +335,9 @@ export class SceneStudioGUI {
             .name('Position Z')
             .onChange((v: number) => {
               light.position.z = v;
+              if ((light as any).target) {
+                (light as any).target.updateMatrixWorld();
+              }
             });
         }
 
@@ -216,12 +353,81 @@ export class SceneStudioGUI {
       }
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 3. Environment & Atmosphere
+      // 3. Real-time Materials Controller
       // ─────────────────────────────────────────────────────────────────────────
-      const envFolder = this.gui.addFolder('Environment & Tone');
+      const matFolder = this.gui.addFolder('Materials Controller');
+      const worldGroup = this.worldGroupSupplier();
+
+      if (worldGroup) {
+        const uniqueMaterials = new Set<THREE.MeshStandardMaterial>();
+        worldGroup.traverse((child: any) => {
+          if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((m: any) => {
+              if (m.isMeshStandardMaterial || m.isMeshBasicMaterial) {
+                uniqueMaterials.add(m);
+              }
+            });
+          }
+        });
+
+        let matIdx = 1;
+        const defaultColorHex = '#' + new THREE.Color(tokens.experimentalScene.keyLight).getHexString();
+
+        uniqueMaterials.forEach((mat) => {
+          const matName = mat.name ? mat.name : `Material_${matIdx++}`;
+          const sub = matFolder.addFolder(matName);
+
+          const matParams = {
+            roughness: (mat as any).roughness ?? 0.5,
+            metalness: (mat as any).metalness ?? 0.1,
+            color: mat.color ? '#' + mat.color.getHexString() : defaultColorHex,
+            wireframe: mat.wireframe ?? false,
+          };
+
+          if (typeof (mat as any).roughness === 'number') {
+            sub
+              .add(matParams, 'roughness', 0.0, 1.0, 0.02)
+              .name('Roughness')
+              .onChange((v: number) => {
+                (mat as any).roughness = v;
+                mat.needsUpdate = true;
+              });
+          }
+
+          if (typeof (mat as any).metalness === 'number') {
+            sub
+              .add(matParams, 'metalness', 0.0, 1.0, 0.02)
+              .name('Metalness')
+              .onChange((v: number) => {
+                (mat as any).metalness = v;
+                mat.needsUpdate = true;
+              });
+          }
+
+          if (mat.color) {
+            sub.addColor(matParams, 'color').name('Color').onChange((v: string) => {
+              mat.color.set(v);
+              mat.needsUpdate = true;
+            });
+          }
+
+          sub.add(matParams, 'wireframe').name('Wireframe').onChange((v: boolean) => {
+            mat.wireframe = v;
+            mat.needsUpdate = true;
+          });
+        });
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      // 4. Atmosphere & Background (Unified Top Header Color Control)
+      // ─────────────────────────────────────────────────────────────────────────
+      const envFolder = this.gui.addFolder('Environment & Atmosphere');
+      const currentBgHex = '#' + (this.scene.background as THREE.Color).getHexString();
+
       const envParams = {
         exposure: this.renderer.toneMappingExposure,
-        bgColor: '#' + (this.scene.background as THREE.Color).getHexString(),
+        bgColor: currentBgHex,
       };
 
       envFolder
@@ -233,16 +439,19 @@ export class SceneStudioGUI {
 
       envFolder
         .addColor(envParams, 'bgColor')
-        .name('Background Color')
+        .name('Unified Background Color')
         .onChange((v: string) => {
-          this.scene.background = new THREE.Color(v);
+          const col = new THREE.Color(v);
+          this.scene.background = col;
           if (this.scene.fog) {
-            this.scene.fog.color = new THREE.Color(v);
+            this.scene.fog.color = col;
           }
+          // Unified document body background color to eliminate top bar seam
+          document.body.style.backgroundColor = v;
         });
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 4. Export JSON Tools
+      // 5. Export JSON Tools
       // ─────────────────────────────────────────────────────────────────────────
       const exportFolder = this.gui.addFolder('Export Tools');
       const exportParams = {

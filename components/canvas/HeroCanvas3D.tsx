@@ -24,6 +24,9 @@ export const HeroCanvas3D: React.FC = () => {
     const env = SCENE_CONFIG.environment;
     const camConfig = SCENE_CONFIG.camera;
 
+    // Unified initial body background color to avoid header dark bar seam
+    document.body.style.backgroundColor = '#' + new THREE.Color(tokens.experimentalScene.canvasBackground).getHexString();
+
     // ─────────────────────────────────────────────────────────────────────
     //  Scene / Camera / Renderer
     // ─────────────────────────────────────────────────────────────────────
@@ -223,13 +226,14 @@ export const HeroCanvas3D: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Interactive Studio GUI (Active in Dev mode / ?studio=1)
+    //  Interactive Studio GUI (Real-time Camera, Light & Material Controls)
     // ─────────────────────────────────────────────────────────────────────
     const studioGUI = new SceneStudioGUI(
       scene,
       camera,
       renderer,
       lightsMap,
+      () => world,
       (forcedT: number) => {
         targetScrollProgress = forcedT;
       }
@@ -253,30 +257,34 @@ export const HeroCanvas3D: React.FC = () => {
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      // Smooth framerate-independent camera damping
-      const damping = 1 - Math.exp(-delta * SCENE_CONFIG.scroll.cameraDamping);
-      currentScrollProgress += (targetScrollProgress - currentScrollProgress) * damping;
-      const t = currentScrollProgress;
+      if (studioGUI && studioGUI.isManualMode) {
+        // Real-time manual camera mode driven live by GUI sliders!
+        camera.position.copy(studioGUI.manualCamPos);
+        camera.lookAt(studioGUI.manualLookAt);
+      } else {
+        // Scroll journey mode
+        const damping = 1 - Math.exp(-delta * SCENE_CONFIG.scroll.cameraDamping);
+        currentScrollProgress += (targetScrollProgress - currentScrollProgress) * damping;
+        const t = currentScrollProgress;
 
-      // Sample scene journey parameters from controller config
-      sampleSceneJourney(t, sample);
+        sampleSceneJourney(t, sample);
 
-      camPos.set(sample.camera[0], sample.camera[1], sample.camera[2]);
+        camPos.set(sample.camera[0], sample.camera[1], sample.camera[2]);
 
-      // Subtle natural breathing float
-      if (SCENE_CONFIG.scroll.idleFloatAmount > 0) {
-        camPos.y +=
-          Math.sin(elapsed * SCENE_CONFIG.scroll.idleFloatSpeed) *
-          SCENE_CONFIG.scroll.idleFloatAmount;
-      }
-      camera.position.copy(camPos);
+        if (SCENE_CONFIG.scroll.idleFloatAmount > 0) {
+          camPos.y +=
+            Math.sin(elapsed * SCENE_CONFIG.scroll.idleFloatSpeed) *
+            SCENE_CONFIG.scroll.idleFloatAmount;
+        }
+        camera.position.copy(camPos);
 
-      lookAt.set(sample.target[0], sample.target[1], sample.target[2]);
-      camera.lookAt(lookAt);
+        lookAt.set(sample.target[0], sample.target[1], sample.target[2]);
+        camera.lookAt(lookAt);
 
-      if (camera.fov !== sample.fov) {
-        camera.fov = sample.fov;
-        camera.updateProjectionMatrix();
+        if (camera.fov !== sample.fov) {
+          camera.fov = sample.fov;
+          camera.updateProjectionMatrix();
+        }
       }
 
       renderer.render(scene, camera);
