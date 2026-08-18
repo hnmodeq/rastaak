@@ -1,6 +1,10 @@
 /**
- * RASTAAK 3D SCENE CONTROLLER CONFIG
- * Saved automatically from 3D Studio
+ * ─────────────────────────────────────────────────────────────────────────────
+ *  RASTAAK 3D SCENE CONTROLLER CONFIG
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Edit this file or click "💾 Apply & Save directly to Code" in 3D Studio
+ * to save camera, lighting, atmosphere, AND building materials!
  */
 
 import { tokens } from '@/tokens/design-tokens';
@@ -31,97 +35,42 @@ export interface MaterialsConfig {
 
 export const SCENE_CONFIG = {
   stops: [
-  {
-    "id": "stop_1_overview",
-    "progress": 0,
-    "camera": [
-      0,
-      22,
-      -18
-    ],
-    "target": [
-      14,
-      2,
-      -1
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_2_approach",
-    "progress": 0.25,
-    "camera": [
-      6,
-      7,
-      -6
-    ],
-    "target": [
-      15.9,
-      2,
-      2.6
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_3_ascent",
-    "progress": 0.5,
-    "camera": [
-      26,
-      14,
-      6
-    ],
-    "target": [
-      15.9,
-      8,
-      2.6
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_4_spire",
-    "progress": 0.75,
-    "camera": [
-      20,
-      22,
-      10
-    ],
-    "target": [
-      12,
-      2,
-      -2
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_5_logo_finale",
-    "progress": 1,
-    "camera": [
-      8,
-      24,
-      -6
-    ],
-    "target": [
-      16,
-      3.8,
-      2.2
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_6_custom",
-    "progress": 1,
-    "camera": [
-      0,
-      21.8,
-      -18
-    ],
-    "target": [
-      14,
-      2,
-      0
-    ],
-    "fov": 45
-  }
-] as CameraStop[],
+    {
+      id: 'stop_1_overview',
+      progress: 0.0,
+      camera: [0.0, 22.0, -18.0],
+      target: [14.0, 2.0, -1.0],
+      fov: 45,
+    },
+    {
+      id: 'stop_2_approach',
+      progress: 0.25,
+      camera: [6.0, 7.0, -6.0],
+      target: [15.9, 2.0, 2.6],
+      fov: 45,
+    },
+    {
+      id: 'stop_3_ascent',
+      progress: 0.5,
+      camera: [26.0, 14.0, 6.0],
+      target: [15.9, 8.0, 2.6],
+      fov: 45,
+    },
+    {
+      id: 'stop_4_spire',
+      progress: 0.75,
+      camera: [20.0, 22.0, 10.0],
+      target: [12.0, 2.0, -2.0],
+      fov: 45,
+    },
+    {
+      id: 'stop_5_logo_finale',
+      progress: 1.0,
+      camera: [8.0, 24.0, -6.0],
+      target: [16.0, 3.8, 2.2],
+      fov: 45,
+    },
+  ] as CameraStop[],
 
   scroll: {
     headerScrollMultiplier: 2.5,
@@ -139,204 +88,23 @@ export const SCENE_CONFIG = {
   lights: LIGHTS_CONFIG,
 
   environment: {
-    backgroundColor: 0x1c1d22,
+    backgroundColor: tokens.experimentalScene.canvasBackground,
     fogStart: 15,
     fogEnd: 110,
   },
 
   materials: {
-  "lightFacades": {
-    "color": 0xffffff,
-    "roughness": 0.6,
-    "metalness": 0
-  },
-  "windowInsets": {
-    "color": 0x222222,
-    "roughness": 0.6
-  },
-  "buildings": {
-    "Scene": {
-      "color": "#ffffff",
-      "roughness": 0.6,
-      "metalness": 0
+    lightFacades: {
+      color: tokens.experimentalScene.lightFacadeDefault,
+      roughness: 0.6,
+      metalness: 0.0,
     },
-    "Grounds": {
-      "color": "#bbbbbb",
-      "roughness": 0.6,
-      "metalness": 0
+    windowInsets: {
+      color: tokens.experimentalScene.windowInsetDefault,
+      roughness: 0.6,
     },
-    "Building_9": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_11": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_25": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_8": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_22": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_4": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_23": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_12": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_5": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_18": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_19": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_20": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_26": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_27": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_28": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_29": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_10": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Hyper_Market_Building": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_30": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_36": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_17": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_14": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_16": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_7": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_3": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Rastaak_Building": {
-      "color": "#e8e8e8",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_1": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_2": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_32": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_24": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_35": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_34": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    },
-    "Building_33": {
-      "color": "#626262",
-      "roughness": 0.3,
-      "metalness": 0
-    },
-    "Building_6": {
-      "color": "#626262",
-      "roughness": 0.6,
-      "metalness": 0
-    }
-  }
-} as MaterialsConfig,
+    buildings: {},
+  } as MaterialsConfig,
 };
 
 function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): number {

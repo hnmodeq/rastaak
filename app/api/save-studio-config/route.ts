@@ -100,6 +100,19 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
           )
         : 'tokens.experimentalScene.canvasBackground';
 
+      const sanitizedBuildings: Record<string, any> = {};
+      if (materials?.buildings && typeof materials.buildings === 'object') {
+        for (const [key, bldg] of Object.entries(materials.buildings)) {
+          if (bldg && typeof bldg === 'object') {
+            const bObj = { ...(bldg as any) };
+            if (bObj.color) {
+              bObj.color = sanitizeHex(bObj.color, hexFacade);
+            }
+            sanitizedBuildings[key] = bObj;
+          }
+        }
+      }
+
       const sanitizedMaterials = {
         lightFacades: {
           color: materials?.lightFacades?.color
@@ -114,7 +127,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
             : hexInset,
           roughness: materials?.windowInsets?.roughness ?? 0.6,
         },
-        buildings: materials?.buildings ?? {},
+        buildings: sanitizedBuildings,
       };
 
       const materialsString = JSON.stringify(sanitizedMaterials, null, 2).replace(
@@ -256,7 +269,7 @@ export function sampleSceneJourney(
 
     return NextResponse.json({
       success: true,
-      message: 'Config saved directly to local TypeScript source files (including materials, lights, and camera)!',
+      message: 'Config saved directly to local TypeScript source files!',
     });
   } catch (error: any) {
     console.error('Failed to save studio config:', error);

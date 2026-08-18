@@ -171,6 +171,79 @@ export const HeroCanvas3D: React.FC = () => {
       }
     );
 
+    // Apply saved materials directly to the loaded GLTF world meshes
+    const applySavedMaterials = (worldGroup: THREE.Group) => {
+      const savedMats = SCENE_CONFIG.materials;
+      if (!savedMats) return;
+
+      const isValidNamedObject = (name: string) => {
+        if (!name) return false;
+        const lower = name.toLowerCase().trim();
+        if (
+          lower.startsWith('cube') ||
+          lower.startsWith('plane') ||
+          lower.startsWith('mesh') ||
+          lower.startsWith('object')
+        ) {
+          return false;
+        }
+        return true;
+      };
+
+      worldGroup.traverse((child: any) => {
+        let displayName = child.name;
+        if (child.parent && child.parent.name && isValidNamedObject(child.parent.name)) {
+          displayName = child.parent.name;
+        }
+
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+
+          // 1. Light facades batch override
+          if (mats[0] && savedMats.lightFacades) {
+            if (savedMats.lightFacades.color !== undefined) {
+              mats[0].color.set(new THREE.Color(savedMats.lightFacades.color));
+            }
+            if (savedMats.lightFacades.roughness !== undefined) {
+              mats[0].roughness = savedMats.lightFacades.roughness;
+            }
+            if (savedMats.lightFacades.metalness !== undefined) {
+              mats[0].metalness = savedMats.lightFacades.metalness;
+            }
+            mats[0].needsUpdate = true;
+          }
+
+          // 2. Window insets batch override
+          if (mats[1] && savedMats.windowInsets) {
+            if (savedMats.windowInsets.color !== undefined) {
+              mats[1].color.set(new THREE.Color(savedMats.windowInsets.color));
+            }
+            if (savedMats.windowInsets.roughness !== undefined) {
+              mats[1].roughness = savedMats.windowInsets.roughness;
+            }
+            mats[1].needsUpdate = true;
+          }
+
+          // 3. Individual building material override
+          if (savedMats.buildings && savedMats.buildings[displayName]) {
+            const savedBldg = savedMats.buildings[displayName];
+            if (mats[0]) {
+              if (savedBldg.color !== undefined) {
+                mats[0].color.set(new THREE.Color(savedBldg.color));
+              }
+              if (savedBldg.roughness !== undefined) {
+                mats[0].roughness = savedBldg.roughness;
+              }
+              if (savedBldg.metalness !== undefined) {
+                mats[0].metalness = savedBldg.metalness;
+              }
+              mats[0].needsUpdate = true;
+            }
+          }
+        }
+      });
+    };
+
     // ─────────────────────────────────────────────────────────────────────
     //  3D Model Loading (Rastaak-3D-Scene-Ver-V.glb)
     // ─────────────────────────────────────────────────────────────────────
@@ -187,7 +260,6 @@ export const HeroCanvas3D: React.FC = () => {
         world = gltf.scene as THREE.Group;
 
         world.traverse((child: any) => {
-          // Transfer Blender custom node name to child mesh if parent is named
           if (child.parent && child.parent.name && !child.parent.name.toLowerCase().startsWith('scene')) {
             const pName = child.parent.name;
             if (!pName.toLowerCase().startsWith('cube') && !pName.toLowerCase().startsWith('plane')) {
@@ -220,6 +292,9 @@ export const HeroCanvas3D: React.FC = () => {
             }
           }
         });
+
+        // Apply saved material colors & properties from sceneConfig.ts
+        applySavedMaterials(world);
 
         scene.add(world);
 
