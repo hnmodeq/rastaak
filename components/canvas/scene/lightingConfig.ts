@@ -28,7 +28,7 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     "id": "blender_single_point_light",
     "type": "point",
     "color": 0xffffff,
-    "intensity": 5000,
+    "intensity": 300,
     "position": [
       10.5,
       10,

@@ -105,6 +105,21 @@ export const SCENE_CONFIG = {
       2.2
     ],
     "fov": 45
+  },
+  {
+    "id": "stop_6_custom",
+    "progress": 1,
+    "camera": [
+      0,
+      21.8,
+      -18
+    ],
+    "target": [
+      14,
+      2,
+      0
+    ],
+    "fov": 45
   }
 ] as CameraStop[],
 
@@ -131,7 +146,7 @@ export const SCENE_CONFIG = {
 
   materials: {
   "lightFacades": {
-    "color": 0x8c8c8c,
+    "color": 0xffffff,
     "roughness": 0.6,
     "metalness": 0
   },
@@ -139,7 +154,188 @@ export const SCENE_CONFIG = {
     "color": 0x222222,
     "roughness": 0.6
   },
-  "buildings": {}
+  "buildings": {
+    "Scene": {
+      "color": "#ffffff",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Grounds": {
+      "color": "#bbbbbb",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_9": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_11": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_25": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_8": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_22": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_4": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_23": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_12": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_5": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_18": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_19": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_20": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_26": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_27": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_28": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_29": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_10": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Hyper_Market_Building": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_30": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_36": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_17": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_14": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_16": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_7": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_3": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Rastaak_Building": {
+      "color": "#e8e8e8",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_1": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_2": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_32": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_24": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_35": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_34": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    },
+    "Building_33": {
+      "color": "#626262",
+      "roughness": 0.3,
+      "metalness": 0
+    },
+    "Building_6": {
+      "color": "#626262",
+      "roughness": 0.6,
+      "metalness": 0
+    }
+  }
 } as MaterialsConfig,
 };
 
