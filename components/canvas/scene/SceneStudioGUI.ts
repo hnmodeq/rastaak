@@ -1,4 +1,18 @@
 import * as THREE from 'three';
+import { SCENE_CONFIG } from './sceneConfig';
+import { LIGHTS_CONFIG } from './lightingConfig';
+
+function downloadJSON(filename: string, data: any) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export class SceneStudioGUI {
   private gui: any = null;
@@ -173,6 +187,30 @@ export class SceneStudioGUI {
             this.scene.fog.color = new THREE.Color(v);
           }
         });
+
+      // ─────────────────────────────────────────────────────────────────────────
+      // 4. Export JSON Tools
+      // ─────────────────────────────────────────────────────────────────────────
+      const exportFolder = this.gui.addFolder('Export Tools');
+      const exportParams = {
+        exportSceneJSON: () => {
+          if (!this.scene) return;
+          const json = this.scene.toJSON();
+          downloadJSON('rastaak-threejs-scene.json', json);
+        },
+        exportConfigJSON: () => {
+          const configData = {
+            cameraStops: SCENE_CONFIG.stops,
+            lights: LIGHTS_CONFIG,
+            scroll: SCENE_CONFIG.scroll,
+            environment: SCENE_CONFIG.environment,
+          };
+          downloadJSON('rastaak-scene-config.json', configData);
+        },
+      };
+
+      exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
+      exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
       this.gui.close();
     } catch (e) {
