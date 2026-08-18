@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 
@@ -16,6 +17,8 @@ function downloadJSON(filename: string, data: any) {
 
 export class SceneStudioGUI {
   private gui: any = null;
+  private toggleButton: HTMLButtonElement | null = null;
+  private isOpen = false;
 
   constructor(
     private scene: THREE.Scene,
@@ -25,23 +28,73 @@ export class SceneStudioGUI {
     private onProgressChange?: (t: number) => void,
   ) {
     if (typeof window === 'undefined') return;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const isStudioMode =
-      urlParams.has('studio') ||
-      urlParams.has('debug') ||
-      process.env.NODE_ENV === 'development';
-
-    if (!isStudioMode) return;
-
+    this.createToggleButton();
     this.initGUI();
   }
 
-  private async initGUI() {
+  private createToggleButton() {
+    if (document.getElementById('rastaak-studio-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'rastaak-studio-btn';
+    btn.innerHTML = '🎛️ 3D Studio';
+    btn.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      background: ${tokens.colors.debugPanelBg};
+      color: ${tokens.colors.textLight};
+      border: 1px solid ${tokens.colors.borderDarkSubtle};
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-family: monospace;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: ${tokens.shadows.glass};
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      pointer-events: auto;
+    `;
+
+    btn.addEventListener('click', () => {
+      if (!this.gui) {
+        this.initGUI(true);
+      } else {
+        this.isOpen = !this.isOpen;
+        if (this.isOpen) {
+          this.gui.show();
+          this.gui.open();
+        } else {
+          this.gui.hide();
+        }
+      }
+    });
+
+    document.body.appendChild(btn);
+    this.toggleButton = btn;
+  }
+
+  private async initGUI(forceOpen = false) {
+    if (this.gui) {
+      if (forceOpen) {
+        this.isOpen = true;
+        this.gui.show();
+        this.gui.open();
+      }
+      return;
+    }
+
     try {
       const { GUI } = await import('lil-gui');
       this.gui = new GUI({ title: 'Rastaak 3D Studio' });
-      this.gui.domElement.style.zIndex = '99999';
+
+      // Position GUI at top right below site header
+      this.gui.domElement.style.zIndex = '999999';
+      this.gui.domElement.style.position = 'fixed';
+      this.gui.domElement.style.top = '90px';
+      this.gui.domElement.style.right = '24px';
 
       // ─────────────────────────────────────────────────────────────────────────
       // 1. Live Camera & Stop Points
@@ -212,13 +265,27 @@ export class SceneStudioGUI {
       exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
-      this.gui.close();
+      const urlParams = new URLSearchParams(window.location.search);
+      const startOpen =
+        forceOpen || urlParams.has('studio') || urlParams.has('debug');
+
+      this.isOpen = startOpen;
+      if (startOpen) {
+        this.gui.show();
+        this.gui.open();
+      } else {
+        this.gui.hide();
+      }
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
   }
 
   public destroy() {
+    if (this.toggleButton) {
+      this.toggleButton.remove();
+      this.toggleButton = null;
+    }
     if (this.gui) {
       this.gui.destroy();
       this.gui = null;
