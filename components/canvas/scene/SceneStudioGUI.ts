@@ -152,7 +152,7 @@ export class SceneStudioGUI {
         (e: WheelEvent) => {
           e.stopPropagation();
         },
-        { passive: false },
+        { capture: true, passive: false },
       );
 
       guiEl.addEventListener(
@@ -160,7 +160,7 @@ export class SceneStudioGUI {
         (e: TouchEvent) => {
           e.stopPropagation();
         },
-        { passive: false },
+        { capture: true, passive: false },
       );
 
       this.manualCamPos.copy(this.camera.position);
@@ -585,7 +585,12 @@ export class SceneStudioGUI {
           });
       }
 
-      if (light instanceof THREE.PointLight || light instanceof THREE.SpotLight) {
+      if (
+        light instanceof THREE.PointLight ||
+        light instanceof THREE.SpotLight ||
+        (light as any).isPointLight ||
+        (light as any).isSpotLight
+      ) {
         sub
           .add(lightParams, 'distance', 0, 300, 1)
           .name('Distance Falloff')
@@ -609,19 +614,24 @@ export class SceneStudioGUI {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 3. Dedicated Shadows Controller
+    // 3. Dedicated Shadows Controller (Duck-typing check)
     // ─────────────────────────────────────────────────────────────────────────
     const shadowFolder = this.gui.addFolder('Shadows Controller');
 
     for (const [id, light] of this.lightsMap.entries()) {
-      if (
-        light instanceof THREE.DirectionalLight ||
-        light instanceof THREE.PointLight ||
-        light instanceof THREE.SpotLight
-      ) {
+      const shadowObj = (light as any).shadow;
+      const isShadowCapable =
+        shadowObj ||
+        (light as any).isPointLight ||
+        (light as any).isDirectionalLight ||
+        (light as any).isSpotLight ||
+        light.type === 'PointLight' ||
+        light.type === 'DirectionalLight' ||
+        light.type === 'SpotLight';
+
+      if (isShadowCapable) {
         const sub = shadowFolder.addFolder(id);
 
-        const shadowObj = (light as any).shadow;
         const shadowParams = {
           castShadow: light.castShadow ?? true,
           radius: shadowObj ? shadowObj.radius ?? 2.27 : 2.27,
@@ -644,7 +654,7 @@ export class SceneStudioGUI {
           .name('Soft Shadow Radius')
           .listen()
           .onChange((v: number) => {
-            if (light.shadow) light.shadow.radius = v;
+            if ((light as any).shadow) (light as any).shadow.radius = v;
             const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
             if (cfg) cfg.radius = v;
           });
@@ -654,7 +664,7 @@ export class SceneStudioGUI {
           .name('Shadow Bias')
           .listen()
           .onChange((v: number) => {
-            if (light.shadow) light.shadow.bias = v;
+            if ((light as any).shadow) (light as any).shadow.bias = v;
             const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
             if (cfg) cfg.shadowBias = v;
           });
@@ -664,12 +674,13 @@ export class SceneStudioGUI {
           .name('Shadow Resolution')
           .onChange((v: number) => {
             const size = parseInt(String(v), 10);
-            if (light.shadow && light.shadow.mapSize) {
-              light.shadow.mapSize.width = size;
-              light.shadow.mapSize.height = size;
-              if (light.shadow.map) {
-                light.shadow.map.dispose();
-                light.shadow.map = null;
+            const sh = (light as any).shadow;
+            if (sh && sh.mapSize) {
+              sh.mapSize.width = size;
+              sh.mapSize.height = size;
+              if (sh.map) {
+                sh.map.dispose();
+                sh.map = null;
               }
             }
             const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
