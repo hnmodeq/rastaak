@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
 
+function sanitizeHex(val: any, fallback = '0x' + '1c1d22'): string {
+  if (typeof val === 'number') {
+    return '0x' + val.toString(16);
+  }
+  if (typeof val === 'string') {
+    const clean = val.trim().replace('#', '').replace('0x', '');
+    if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
+      return '0x' + clean;
+    }
+  }
+  return fallback;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -9,8 +22,22 @@ export async function POST(req: Request) {
 
     const rootDir = process.cwd();
 
-    // 1. Write updated lightingConfig.ts
+    const hexWhite = '0x' + 'ffffff';
+    const hexDark = '0x' + '101114';
+
+    // 1. Sanitize and write updated lightingConfig.ts
     if (Array.isArray(lights)) {
+      const sanitizedLights = lights.map((l: any) => {
+        const item = { ...l };
+        if (item.color !== undefined) {
+          item.color = sanitizeHex(item.color, hexWhite);
+        }
+        if (item.groundColor !== undefined) {
+          item.groundColor = sanitizeHex(item.groundColor, hexDark);
+        }
+        return item;
+      });
+
       const lightingPath = path.join(
         rootDir,
         'components',
@@ -18,6 +45,12 @@ export async function POST(req: Request) {
         'scene',
         'lightingConfig.ts',
       );
+
+      const lightsArrayString = JSON.stringify(sanitizedLights, null, 2).replace(
+        /"(0x[0-9a-fA-F]+)"/g,
+        '$1',
+      );
+
       const lightingCode = `/**
  * RASTAAK 3D LIGHTING CONTROLLER CONFIG
  * Saved automatically from 3D Studio
@@ -43,12 +76,12 @@ export interface LightConfig {
   shadowBias?: number;
 }
 
-export const LIGHTS_CONFIG: LightConfig[] = ${JSON.stringify(lights, null, 2)};
+export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
 `;
       fs.writeFileSync(lightingPath, lightingCode, 'utf8');
     }
 
-    // 2. Write updated sceneConfig.ts
+    // 2. Sanitize and write updated sceneConfig.ts
     if (Array.isArray(cameraStops)) {
       const sceneConfigPath = path.join(
         rootDir,
@@ -57,6 +90,14 @@ export const LIGHTS_CONFIG: LightConfig[] = ${JSON.stringify(lights, null, 2)};
         'scene',
         'sceneConfig.ts',
       );
+
+      const bgHexCode = environment?.backgroundColor
+        ? sanitizeHex(
+            environment.backgroundColor,
+            'tokens.experimentalScene.canvasBackground',
+          )
+        : 'tokens.experimentalScene.canvasBackground';
+
       const sceneConfigCode = `/**
  * RASTAAK 3D SCENE CONTROLLER CONFIG
  * Saved automatically from 3D Studio
@@ -95,10 +136,7 @@ export const SCENE_CONFIG = {
   lights: LIGHTS_CONFIG,
 
   environment: {
-    backgroundColor: ${
-      environment?.backgroundColor ??
-      'tokens.experimentalScene.canvasBackground'
-    },
+    backgroundColor: ${bgHexCode},
     fogStart: ${environment?.fogStart ?? 100},
     fogEnd: ${environment?.fogEnd ?? 380},
   },
