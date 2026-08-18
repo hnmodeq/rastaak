@@ -1,6 +1,10 @@
 /**
- * RASTAAK 3D SCENE CONTROLLER CONFIG
- * Saved automatically from 3D Studio
+ * ─────────────────────────────────────────────────────────────────────────────
+ *  RASTAAK 3D SCENE CONTROLLER CONFIG
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Edit this file or click "💾 Apply & Save directly to Code" in 3D Studio
+ * to save camera, lighting, atmosphere, AND building materials!
  */
 
 import { tokens } from '@/tokens/design-tokens';
@@ -17,84 +21,56 @@ export interface CameraStop {
   fov?: number;
 }
 
+export interface BuildingMaterialConfig {
+  color?: number;
+  roughness?: number;
+  metalness?: number;
+}
+
+export interface MaterialsConfig {
+  lightFacades?: BuildingMaterialConfig;
+  windowInsets?: BuildingMaterialConfig;
+  buildings?: Record<string, BuildingMaterialConfig>;
+}
+
 export const SCENE_CONFIG = {
   stops: [
-  {
-    "id": "stop_1_overview",
-    "progress": 0,
-    "camera": [
-      0,
-      22,
-      -18
-    ],
-    "target": [
-      14,
-      2,
-      -1
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_2_approach",
-    "progress": 0.25,
-    "camera": [
-      6,
-      7,
-      -6
-    ],
-    "target": [
-      15.9,
-      2,
-      2.6
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_3_ascent",
-    "progress": 0.5,
-    "camera": [
-      26,
-      14,
-      6
-    ],
-    "target": [
-      15.9,
-      8,
-      2.6
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_4_spire",
-    "progress": 0.75,
-    "camera": [
-      20,
-      22,
-      10
-    ],
-    "target": [
-      12,
-      2,
-      -2
-    ],
-    "fov": 45
-  },
-  {
-    "id": "stop_5_logo_finale",
-    "progress": 1,
-    "camera": [
-      8,
-      24,
-      -6
-    ],
-    "target": [
-      16,
-      3.8,
-      2.2
-    ],
-    "fov": 45
-  }
-] as CameraStop[],
+    {
+      id: 'stop_1_overview',
+      progress: 0.0,
+      camera: [0.0, 22.0, -18.0],
+      target: [14.0, 2.0, -1.0],
+      fov: 45,
+    },
+    {
+      id: 'stop_2_approach',
+      progress: 0.25,
+      camera: [6.0, 7.0, -6.0],
+      target: [15.9, 2.0, 2.6],
+      fov: 45,
+    },
+    {
+      id: 'stop_3_ascent',
+      progress: 0.5,
+      camera: [26.0, 14.0, 6.0],
+      target: [15.9, 8.0, 2.6],
+      fov: 45,
+    },
+    {
+      id: 'stop_4_spire',
+      progress: 0.75,
+      camera: [20.0, 22.0, 10.0],
+      target: [12.0, 2.0, -2.0],
+      fov: 45,
+    },
+    {
+      id: 'stop_5_logo_finale',
+      progress: 1.0,
+      camera: [8.0, 24.0, -6.0],
+      target: [16.0, 3.8, 2.2],
+      fov: 45,
+    },
+  ] as CameraStop[],
 
   scroll: {
     headerScrollMultiplier: 2.5,
@@ -112,10 +88,23 @@ export const SCENE_CONFIG = {
   lights: LIGHTS_CONFIG,
 
   environment: {
-    backgroundColor: 0x000000,
-    fogStart: 33,
-    fogEnd: 166,
+    backgroundColor: tokens.experimentalScene.canvasBackground,
+    fogStart: 15,
+    fogEnd: 110,
   },
+
+  materials: {
+    lightFacades: {
+      color: tokens.experimentalScene.lightFacadeDefault,
+      roughness: 0.6,
+      metalness: 0.0,
+    },
+    windowInsets: {
+      color: tokens.experimentalScene.windowInsetDefault,
+      roughness: 0.6,
+    },
+    buildings: {},
+  } as MaterialsConfig,
 };
 
 function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): number {

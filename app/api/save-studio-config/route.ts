@@ -18,12 +18,14 @@ function sanitizeHex(val: any, fallback = '0x' + '1c1d22'): string {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { cameraStops, lights, environment } = body;
+    const { cameraStops, lights, environment, materials } = body;
 
     const rootDir = process.cwd();
 
     const hexWhite = '0x' + 'ffffff';
     const hexDark = '0x' + '101114';
+    const hexFacade = '0x' + '8c8c8c';
+    const hexInset = '0x' + '222222';
 
     // 1. Sanitize and write updated lightingConfig.ts
     if (Array.isArray(lights)) {
@@ -81,7 +83,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
       fs.writeFileSync(lightingPath, lightingCode, 'utf8');
     }
 
-    // 2. Sanitize and write updated sceneConfig.ts
+    // 2. Sanitize materials and write updated sceneConfig.ts
     if (Array.isArray(cameraStops)) {
       const sceneConfigPath = path.join(
         rootDir,
@@ -97,6 +99,28 @@ export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
             'tokens.experimentalScene.canvasBackground',
           )
         : 'tokens.experimentalScene.canvasBackground';
+
+      const sanitizedMaterials = {
+        lightFacades: {
+          color: materials?.lightFacades?.color
+            ? sanitizeHex(materials.lightFacades.color, hexFacade)
+            : hexFacade,
+          roughness: materials?.lightFacades?.roughness ?? 0.6,
+          metalness: materials?.lightFacades?.metalness ?? 0.0,
+        },
+        windowInsets: {
+          color: materials?.windowInsets?.color
+            ? sanitizeHex(materials.windowInsets.color, hexInset)
+            : hexInset,
+          roughness: materials?.windowInsets?.roughness ?? 0.6,
+        },
+        buildings: materials?.buildings ?? {},
+      };
+
+      const materialsString = JSON.stringify(sanitizedMaterials, null, 2).replace(
+        /"(0x[0-9a-fA-F]+)"/g,
+        '$1',
+      );
 
       const sceneConfigCode = `/**
  * RASTAAK 3D SCENE CONTROLLER CONFIG
@@ -115,6 +139,18 @@ export interface CameraStop {
   camera: [number, number, number];
   target: [number, number, number];
   fov?: number;
+}
+
+export interface BuildingMaterialConfig {
+  color?: number;
+  roughness?: number;
+  metalness?: number;
+}
+
+export interface MaterialsConfig {
+  lightFacades?: BuildingMaterialConfig;
+  windowInsets?: BuildingMaterialConfig;
+  buildings?: Record<string, BuildingMaterialConfig>;
 }
 
 export const SCENE_CONFIG = {
@@ -137,9 +173,11 @@ export const SCENE_CONFIG = {
 
   environment: {
     backgroundColor: ${bgHexCode},
-    fogStart: ${environment?.fogStart ?? 100},
-    fogEnd: ${environment?.fogEnd ?? 380},
+    fogStart: ${environment?.fogStart ?? 15},
+    fogEnd: ${environment?.fogEnd ?? 110},
   },
+
+  materials: ${materialsString} as MaterialsConfig,
 };
 
 function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): number {
@@ -218,7 +256,7 @@ export function sampleSceneJourney(
 
     return NextResponse.json({
       success: true,
-      message: 'Config saved directly to local TypeScript source files!',
+      message: 'Config saved directly to local TypeScript source files (including materials, lights, and camera)!',
     });
   } catch (error: any) {
     console.error('Failed to save studio config:', error);

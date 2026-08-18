@@ -127,6 +127,70 @@ export class SceneStudioGUI {
     window.addEventListener('pointerdown', onPointerDown);
   }
 
+  private collectCurrentMaterials() {
+    const worldGroup = this.worldGroupSupplier();
+    if (!worldGroup) return null;
+
+    let lightFacadeColor = '#' + new THREE.Color(tokens.experimentalScene.lightFacadeDefault).getHexString();
+    let lightFacadeRoughness = 0.6;
+    let lightFacadeMetalness = 0.0;
+
+    let windowColor = '#' + new THREE.Color(tokens.experimentalScene.windowInsetDefault).getHexString();
+    let windowRoughness = 0.6;
+
+    const buildings: Record<string, { color: string; roughness: number; metalness: number }> = {};
+
+    const isValidNamedObject = (name: string) => {
+      if (!name) return false;
+      const lower = name.toLowerCase().trim();
+      if (
+        lower.startsWith('cube') ||
+        lower.startsWith('plane') ||
+        lower.startsWith('mesh') ||
+        lower.startsWith('object')
+      ) {
+        return false;
+      }
+      return true;
+    };
+
+    worldGroup.traverse((child: any) => {
+      let displayName = child.name;
+      if (child.parent && child.parent.name && isValidNamedObject(child.parent.name)) {
+        displayName = child.parent.name;
+      }
+
+      if (child.isMesh && child.material && isValidNamedObject(displayName)) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        if (mats[0] && mats[0].color) {
+          lightFacadeColor = '#' + mats[0].color.getHexString();
+          lightFacadeRoughness = mats[0].roughness ?? 0.6;
+          lightFacadeMetalness = mats[0].metalness ?? 0.0;
+
+          buildings[displayName] = {
+            color: '#' + mats[0].color.getHexString(),
+            roughness: mats[0].roughness ?? 0.6,
+            metalness: mats[0].metalness ?? 0.0,
+          };
+        }
+        if (mats[1] && mats[1].color) {
+          windowColor = '#' + mats[1].color.getHexString();
+          windowRoughness = mats[1].roughness ?? 0.6;
+        }
+      }
+    });
+
+    return {
+      lightFacades: {
+        color: lightFacadeColor,
+        roughness: lightFacadeRoughness,
+        metalness: lightFacadeMetalness,
+      },
+      windowInsets: { color: windowColor, roughness: windowRoughness },
+      buildings,
+    };
+  }
+
   private async initGUI(forceOpen = false) {
     if (this.gui) {
       if (forceOpen) {
@@ -458,6 +522,7 @@ export class SceneStudioGUI {
                 fogStart: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
                 fogEnd: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
               },
+              materials: this.collectCurrentMaterials(),
             };
 
             const res = await fetch('/api/save-studio-config', {
@@ -469,7 +534,7 @@ export class SceneStudioGUI {
             const data = await res.json();
             if (res.ok) {
               alert(
-                '✅ Success! Your 3D camera, lighting, shadow, and fog edits have been written directly to your local TypeScript source files (sceneConfig.ts & lightingConfig.ts)!',
+                '✅ Success! Your 3D camera, lighting, shadow, fog, AND building material edits have been saved directly to your local TypeScript source files (sceneConfig.ts & lightingConfig.ts)!',
               );
             } else {
               alert(`⚠️ Error saving config: ${data.error || 'Unknown error'}`);
@@ -489,6 +554,7 @@ export class SceneStudioGUI {
             lights: LIGHTS_CONFIG,
             scroll: SCENE_CONFIG.scroll,
             environment: SCENE_CONFIG.environment,
+            materials: this.collectCurrentMaterials(),
           };
           downloadJSON('rastaak-scene-config.json', configData);
         },
@@ -536,7 +602,7 @@ export class SceneStudioGUI {
         posX: light.position ? light.position.x : 0,
         posY: light.position ? light.position.y : 0,
         posZ: light.position ? light.position.z : 0,
-        distance: (light as any).distance ?? 50,
+        distance: (light as any).distance ?? 40,
         decay: (light as any).decay ?? 1.8,
       };
 
@@ -627,7 +693,7 @@ export class SceneStudioGUI {
           });
       }
 
-      // Add Shadow Settings directly inside each light subfolder
+      // Add Shadow Controls directly under Shadows Controller folder
       const shadowSub = sub.addFolder('Shadows Settings');
       const sh = (light as any).shadow;
 
