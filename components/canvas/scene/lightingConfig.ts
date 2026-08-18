@@ -30,15 +30,15 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     "color": 0x2607d8,
     "intensity": 1200,
     "position": [
-      13.5,
+      4.5,
       18,
       -4
     ],
     "distance": 50,
     "decay": 1.8,
-    "radius": 2.27,
+    "radius": 20,
     "castShadow": true,
     "shadowMapSize": 2048,
-    "shadowBias": -0.0001
+    "shadowBias": -0.0005
   }
 ];
