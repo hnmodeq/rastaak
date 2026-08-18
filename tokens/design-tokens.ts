@@ -19,7 +19,7 @@ export const tokens = {
     primaryHoverGlow: 'oklch(30.52% 0.154 279.05 / 0.45)',
 
     bgLight: 'oklch(99.11% 0 89.88)',
-    bgHero: 'oklch(15% 0.005 260)',
+    bgHero: 'oklch(20% 0.005 260)',
     bgAlt: 'oklch(92.24% 0.0202 233.86)',
     bgMuted: 'oklch(96.34% 0.0053 197.07)',
     bgDark: 'oklch(12.78% 0.0477 280.42)',
