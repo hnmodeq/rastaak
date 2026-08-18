@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG, CameraStop } from './sceneConfig';
-import { LIGHTS_CONFIG, LightConfig } from './lightingConfig';
+import { LIGHTS_CONFIG } from './lightingConfig';
 
 function downloadJSON(filename: string, data: any) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -20,6 +20,7 @@ export class SceneStudioGUI {
   private toggleButton: HTMLButtonElement | null = null;
   private isOpen = false;
   private materialsFolderPopulated = false;
+  private lightsFolderPopulated = false;
 
   // Real-time camera override state
   public isManualMode = false;
@@ -135,14 +136,32 @@ export class SceneStudioGUI {
       const { GUI } = await import('lil-gui');
       this.gui = new GUI({ title: 'Rastaak 3D Studio' });
 
-      // Enable smooth vertical mouse wheel scrolling on the Studio GUI panel
-      this.gui.domElement.style.zIndex = '999999';
-      this.gui.domElement.style.position = 'fixed';
-      this.gui.domElement.style.top = '90px';
-      this.gui.domElement.style.right = '24px';
-      this.gui.domElement.style.maxHeight = '80vh';
-      this.gui.domElement.style.overflowY = 'auto';
-      this.gui.domElement.style.pointerEvents = 'auto';
+      // Enable smooth vertical mouse wheel scrolling on GUI panel
+      const guiEl = this.gui.domElement;
+      guiEl.style.zIndex = '999999';
+      guiEl.style.position = 'fixed';
+      guiEl.style.top = '90px';
+      guiEl.style.right = '24px';
+      guiEl.style.maxHeight = '80vh';
+      guiEl.style.overflowY = 'auto';
+      guiEl.style.pointerEvents = 'auto';
+
+      // Prevent wheel event propagation to page scroll
+      guiEl.addEventListener(
+        'wheel',
+        (e: WheelEvent) => {
+          e.stopPropagation();
+        },
+        { passive: false },
+      );
+
+      guiEl.addEventListener(
+        'touchmove',
+        (e: TouchEvent) => {
+          e.stopPropagation();
+        },
+        { passive: false },
+      );
 
       this.manualCamPos.copy(this.camera.position);
       this.manualLookAt.set(14.0, 2.0, 0.0);
@@ -361,167 +380,8 @@ export class SceneStudioGUI {
         fovCtrl.updateDisplay();
       };
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // 2. Real-time Lights Controller
-      // ─────────────────────────────────────────────────────────────────────────
-      const lightFolder = this.gui.addFolder('Lighting Controller');
-
-      for (const [id, light] of this.lightsMap.entries()) {
-        const sub = lightFolder.addFolder(id);
-
-        const lightParams = {
-          intensity: light.intensity,
-          color: '#' + light.color.getHexString(),
-          posX: light.position ? light.position.x : 0,
-          posY: light.position ? light.position.y : 0,
-          posZ: light.position ? light.position.z : 0,
-          distance: (light as any).distance ?? 40,
-          decay: (light as any).decay ?? 1.8,
-        };
-
-        sub
-          .add(lightParams, 'intensity', 0, 5000, 10)
-          .name('Power / Intensity')
-          .listen()
-          .onChange((v: number) => {
-            light.intensity = v;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.intensity = v;
-          });
-
-        sub
-          .addColor(lightParams, 'color')
-          .name('Color')
-          .listen()
-          .onChange((v: string) => {
-            light.color.set(new THREE.Color(v));
-          });
-
-        if (light.position) {
-          sub
-            .add(lightParams, 'posX', -100, 100, 0.5)
-            .name('Position X')
-            .listen()
-            .onChange((v: number) => {
-              light.position.x = v;
-              if ((light as any).target) (light as any).target.updateMatrixWorld();
-              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-              if (cfg && cfg.position) cfg.position[0] = v;
-            });
-
-          sub
-            .add(lightParams, 'posY', -10, 100, 0.5)
-            .name('Position Y')
-            .listen()
-            .onChange((v: number) => {
-              light.position.y = v;
-              if ((light as any).target) (light as any).target.updateMatrixWorld();
-              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-              if (cfg && cfg.position) cfg.position[1] = v;
-            });
-
-          sub
-            .add(lightParams, 'posZ', -100, 100, 0.5)
-            .name('Position Z')
-            .listen()
-            .onChange((v: number) => {
-              light.position.z = v;
-              if ((light as any).target) (light as any).target.updateMatrixWorld();
-              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-              if (cfg && cfg.position) cfg.position[2] = v;
-            });
-        }
-
-        if (light instanceof THREE.PointLight || light instanceof THREE.SpotLight) {
-          sub
-            .add(lightParams, 'distance', 0, 300, 1)
-            .name('Distance Falloff')
-            .listen()
-            .onChange((v: number) => {
-              (light as any).distance = v;
-              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-              if (cfg) cfg.distance = v;
-            });
-
-          sub
-            .add(lightParams, 'decay', 0, 4.0, 0.1)
-            .name('Decay Exponent')
-            .listen()
-            .onChange((v: number) => {
-              (light as any).decay = v;
-              const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-              if (cfg) cfg.decay = v;
-            });
-        }
-      }
-
-      // ─────────────────────────────────────────────────────────────────────────
-      // 3. Real-time Shadows Controller
-      // ─────────────────────────────────────────────────────────────────────────
-      const shadowFolder = this.gui.addFolder('Shadows Controller');
-
-      for (const [id, light] of this.lightsMap.entries()) {
-        const shadowObj = (light as any).shadow;
-        if (!shadowObj) continue;
-
-        const sub = shadowFolder.addFolder(id);
-
-        const shadowParams = {
-          castShadow: light.castShadow ?? true,
-          radius: shadowObj.radius ?? 2.27,
-          bias: shadowObj.bias ?? -0.0001,
-          mapSize: shadowObj.mapSize?.width ?? 2048,
-        };
-
-        sub
-          .add(shadowParams, 'castShadow')
-          .name('Enable Shadow')
-          .listen()
-          .onChange((v: boolean) => {
-            light.castShadow = v;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.castShadow = v;
-          });
-
-        sub
-          .add(shadowParams, 'radius', 0, 20, 0.1)
-          .name('Soft Shadow Radius')
-          .listen()
-          .onChange((v: number) => {
-            shadowObj.radius = v;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.radius = v;
-          });
-
-        sub
-          .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
-          .name('Shadow Bias')
-          .listen()
-          .onChange((v: number) => {
-            shadowObj.bias = v;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.shadowBias = v;
-          });
-
-        sub
-          .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
-          .name('Shadow Map Resolution')
-          .onChange((v: number) => {
-            const size = parseInt(String(v), 10);
-            if (shadowObj.mapSize) {
-              shadowObj.mapSize.width = size;
-              shadowObj.mapSize.height = size;
-              if (shadowObj.map) {
-                shadowObj.map.dispose();
-                shadowObj.map = null;
-              }
-            }
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.shadowMapSize = size;
-          });
-      }
-
-      // Populate materials
+      // Populate lights, shadows, and materials
+      this.populateLightsAndShadows();
       this.populateMaterials();
 
       // ─────────────────────────────────────────────────────────────────────────
@@ -646,6 +506,176 @@ export class SceneStudioGUI {
       }
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
+    }
+  }
+
+  public populateLightsAndShadows() {
+    if (!this.gui || this.lightsFolderPopulated) return;
+    this.lightsFolderPopulated = true;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. Real-time Lights Controller
+    // ─────────────────────────────────────────────────────────────────────────
+    const lightFolder = this.gui.addFolder('Lighting Controller');
+
+    for (const [id, light] of this.lightsMap.entries()) {
+      const sub = lightFolder.addFolder(id);
+
+      const lightParams = {
+        type: light.type,
+        intensity: light.intensity,
+        color: '#' + light.color.getHexString(),
+        posX: light.position ? light.position.x : 0,
+        posY: light.position ? light.position.y : 0,
+        posZ: light.position ? light.position.z : 0,
+        distance: (light as any).distance ?? 40,
+        decay: (light as any).decay ?? 1.8,
+      };
+
+      sub
+        .add(lightParams, 'intensity', 0, 5000, 10)
+        .name('Power / Intensity')
+        .listen()
+        .onChange((v: number) => {
+          light.intensity = v;
+          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+          if (cfg) cfg.intensity = v;
+        });
+
+      sub
+        .addColor(lightParams, 'color')
+        .name('Color')
+        .listen()
+        .onChange((v: string) => {
+          light.color.set(new THREE.Color(v));
+        });
+
+      if (light.position) {
+        sub
+          .add(lightParams, 'posX', -100, 100, 0.5)
+          .name('Position X')
+          .listen()
+          .onChange((v: number) => {
+            light.position.x = v;
+            if ((light as any).target) (light as any).target.updateMatrixWorld();
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg && cfg.position) cfg.position[0] = v;
+          });
+
+        sub
+          .add(lightParams, 'posY', -10, 100, 0.5)
+          .name('Position Y')
+          .listen()
+          .onChange((v: number) => {
+            light.position.y = v;
+            if ((light as any).target) (light as any).target.updateMatrixWorld();
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg && cfg.position) cfg.position[1] = v;
+          });
+
+        sub
+          .add(lightParams, 'posZ', -100, 100, 0.5)
+          .name('Position Z')
+          .listen()
+          .onChange((v: number) => {
+            light.position.z = v;
+            if ((light as any).target) (light as any).target.updateMatrixWorld();
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg && cfg.position) cfg.position[2] = v;
+          });
+      }
+
+      if (light instanceof THREE.PointLight || light instanceof THREE.SpotLight) {
+        sub
+          .add(lightParams, 'distance', 0, 300, 1)
+          .name('Distance Falloff')
+          .listen()
+          .onChange((v: number) => {
+            (light as any).distance = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.distance = v;
+          });
+
+        sub
+          .add(lightParams, 'decay', 0, 4.0, 0.1)
+          .name('Decay Exponent')
+          .listen()
+          .onChange((v: number) => {
+            (light as any).decay = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.decay = v;
+          });
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. Dedicated Shadows Controller
+    // ─────────────────────────────────────────────────────────────────────────
+    const shadowFolder = this.gui.addFolder('Shadows Controller');
+
+    for (const [id, light] of this.lightsMap.entries()) {
+      if (
+        light instanceof THREE.DirectionalLight ||
+        light instanceof THREE.PointLight ||
+        light instanceof THREE.SpotLight
+      ) {
+        const sub = shadowFolder.addFolder(id);
+
+        const shadowObj = (light as any).shadow;
+        const shadowParams = {
+          castShadow: light.castShadow ?? true,
+          radius: shadowObj ? shadowObj.radius ?? 2.27 : 2.27,
+          bias: shadowObj ? shadowObj.bias ?? -0.0001 : -0.0001,
+          mapSize: shadowObj?.mapSize?.width ?? 2048,
+        };
+
+        sub
+          .add(shadowParams, 'castShadow')
+          .name('Enable Shadow')
+          .listen()
+          .onChange((v: boolean) => {
+            light.castShadow = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.castShadow = v;
+          });
+
+        sub
+          .add(shadowParams, 'radius', 0, 20, 0.1)
+          .name('Soft Shadow Radius')
+          .listen()
+          .onChange((v: number) => {
+            if (light.shadow) light.shadow.radius = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.radius = v;
+          });
+
+        sub
+          .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
+          .name('Shadow Bias')
+          .listen()
+          .onChange((v: number) => {
+            if (light.shadow) light.shadow.bias = v;
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.shadowBias = v;
+          });
+
+        sub
+          .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
+          .name('Shadow Resolution')
+          .onChange((v: number) => {
+            const size = parseInt(String(v), 10);
+            if (light.shadow && light.shadow.mapSize) {
+              light.shadow.mapSize.width = size;
+              light.shadow.mapSize.height = size;
+              if (light.shadow.map) {
+                light.shadow.map.dispose();
+                light.shadow.map = null;
+              }
+            }
+            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+            if (cfg) cfg.shadowMapSize = size;
+          });
+      }
     }
   }
 

@@ -61,3 +61,16 @@ body{margin:0;touch-action:manipulation}:root{--app-height: 100vh}:before,:after
   position: relative;
   z-index: 2;
 }
+
+/* Only lower sections below hero/flow have solid backgrounds so hero/flow 3D scene is 100% clear */
+.standards, .faq {
+  background-color: var(--color-bg);
+  position: relative;
+  z-index: 2;
+}
+
+.cta-section, .footer {
+  background-color: var(--color-dark);
+  position: relative;
+  z-index: 2;
+}
