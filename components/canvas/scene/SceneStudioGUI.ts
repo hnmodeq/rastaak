@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG, CameraStop } from './sceneConfig';
-import { LIGHTS_CONFIG } from './lightingConfig';
+import { LIGHTS_CONFIG, LightConfig } from './lightingConfig';
 
 function downloadJSON(filename: string, data: any) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -92,7 +92,10 @@ export class SceneStudioGUI {
 
     const onPointerDown = (e: MouseEvent) => {
       if (!this.isOpen && !this.isManualMode && !this.isOrbitMode) return;
-      if ((e.target as HTMLElement)?.closest('.lil-gui') || (e.target as HTMLElement)?.id === 'rastaak-studio-btn') {
+      if (
+        (e.target as HTMLElement)?.closest('.lil-gui') ||
+        (e.target as HTMLElement)?.id === 'rastaak-studio-btn'
+      ) {
         return;
       }
 
@@ -132,10 +135,14 @@ export class SceneStudioGUI {
       const { GUI } = await import('lil-gui');
       this.gui = new GUI({ title: 'Rastaak 3D Studio' });
 
+      // Enable smooth vertical mouse wheel scrolling on the Studio GUI panel
       this.gui.domElement.style.zIndex = '999999';
       this.gui.domElement.style.position = 'fixed';
       this.gui.domElement.style.top = '90px';
       this.gui.domElement.style.right = '24px';
+      this.gui.domElement.style.maxHeight = '80vh';
+      this.gui.domElement.style.overflowY = 'auto';
+      this.gui.domElement.style.pointerEvents = 'auto';
 
       this.manualCamPos.copy(this.camera.position);
       this.manualLookAt.set(14.0, 2.0, 0.0);
@@ -449,7 +456,7 @@ export class SceneStudioGUI {
       }
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 3. Dedicated Shadows Controller
+      // 3. Real-time Shadows Controller
       // ─────────────────────────────────────────────────────────────────────────
       const shadowFolder = this.gui.addFolder('Shadows Controller');
 
@@ -460,7 +467,7 @@ export class SceneStudioGUI {
         const sub = shadowFolder.addFolder(id);
 
         const shadowParams = {
-          castShadow: light.castShadow,
+          castShadow: light.castShadow ?? true,
           radius: shadowObj.radius ?? 2.27,
           bias: shadowObj.bias ?? -0.0001,
           mapSize: shadowObj.mapSize?.width ?? 2048,
@@ -501,11 +508,13 @@ export class SceneStudioGUI {
           .name('Shadow Map Resolution')
           .onChange((v: number) => {
             const size = parseInt(String(v), 10);
-            shadowObj.mapSize.width = size;
-            shadowObj.mapSize.height = size;
-            if (shadowObj.map) {
-              shadowObj.map.dispose();
-              shadowObj.map = null;
+            if (shadowObj.mapSize) {
+              shadowObj.mapSize.width = size;
+              shadowObj.mapSize.height = size;
+              if (shadowObj.map) {
+                shadowObj.map.dispose();
+                shadowObj.map = null;
+              }
             }
             const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
             if (cfg) cfg.shadowMapSize = size;
@@ -516,14 +525,16 @@ export class SceneStudioGUI {
       this.populateMaterials();
 
       // ─────────────────────────────────────────────────────────────────────────
-      // 4. Atmosphere & Background
+      // 4. Atmosphere & Background & Fog
       // ─────────────────────────────────────────────────────────────────────────
-      const envFolder = this.gui.addFolder('Environment & Atmosphere');
+      const envFolder = this.gui.addFolder('Environment & Fog');
       const currentBgHex = '#' + (this.scene.background as THREE.Color).getHexString();
 
       const envParams = {
         exposure: this.renderer.toneMappingExposure,
         bgColor: currentBgHex,
+        fogNear: (this.scene.fog as THREE.Fog)?.near ?? 100,
+        fogFar: (this.scene.fog as THREE.Fog)?.far ?? 380,
       };
 
       envFolder
@@ -547,6 +558,26 @@ export class SceneStudioGUI {
           document.body.style.backgroundColor = v;
         });
 
+      if (this.scene.fog) {
+        envFolder
+          .add(envParams, 'fogNear', 0, 300, 5)
+          .name('Fog Clear Distance')
+          .listen()
+          .onChange((v: number) => {
+            (this.scene.fog as THREE.Fog).near = v;
+            SCENE_CONFIG.environment.fogStart = v;
+          });
+
+        envFolder
+          .add(envParams, 'fogFar', 50, 1000, 10)
+          .name('Fog Max Distance')
+          .listen()
+          .onChange((v: number) => {
+            (this.scene.fog as THREE.Fog).far = v;
+            SCENE_CONFIG.environment.fogEnd = v;
+          });
+      }
+
       // ─────────────────────────────────────────────────────────────────────────
       // 5. Apply & Save directly to Source Code + Export JSON Tools
       // ─────────────────────────────────────────────────────────────────────────
@@ -559,8 +590,8 @@ export class SceneStudioGUI {
               lights: LIGHTS_CONFIG,
               environment: {
                 backgroundColor: '#' + (this.scene.background as THREE.Color).getHexString(),
-                fogStart: SCENE_CONFIG.environment.fogStart,
-                fogEnd: SCENE_CONFIG.environment.fogEnd,
+                fogStart: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
+                fogEnd: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
               },
             };
 
@@ -572,7 +603,9 @@ export class SceneStudioGUI {
 
             const data = await res.json();
             if (res.ok) {
-              alert('✅ Success! Your 3D camera, lighting, and shadow edits have been written directly to your local TypeScript source files (sceneConfig.ts & lightingConfig.ts)!');
+              alert(
+                '✅ Success! Your 3D camera, lighting, shadow, and fog edits have been written directly to your local TypeScript source files (sceneConfig.ts & lightingConfig.ts)!',
+              );
             } else {
               alert(`⚠️ Error saving config: ${data.error || 'Unknown error'}`);
             }
@@ -639,86 +672,117 @@ export class SceneStudioGUI {
       return true;
     };
 
-    const buildingMeshes: { name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }[] = [];
+    const facadeMaterials: { name: string; mat: THREE.MeshStandardMaterial }[] = [];
+    const windowMaterials: { name: string; mat: THREE.MeshStandardMaterial }[] = [];
 
     worldGroup.traverse((child: any) => {
-      if (child.isMesh && child.material && isValidNamedObject(child.name)) {
+      let displayName = child.name;
+      if (child.parent && child.parent.name && isValidNamedObject(child.parent.name)) {
+        displayName = child.parent.name;
+      }
+
+      if (child.isMesh && child.material && isValidNamedObject(displayName)) {
         const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((m: any) => {
-          if (m && (m.isMeshStandardMaterial || m.isMeshBasicMaterial || m.isMeshPhysicalMaterial)) {
-            buildingMeshes.push({ name: child.name, mesh: child, mat: m });
-          }
-        });
+        if (mats[0] && (mats[0].isMeshStandardMaterial || mats[0].isMeshBasicMaterial)) {
+          facadeMaterials.push({ name: `${displayName} (Facade)`, mat: mats[0] });
+        }
+        if (mats[1] && (mats[1].isMeshStandardMaterial || mats[1].isMeshBasicMaterial)) {
+          windowMaterials.push({ name: `${displayName} (Windows/Insets)`, mat: mats[1] });
+        }
       }
     });
 
-    if (buildingMeshes.length === 0) return;
+    if (facadeMaterials.length === 0 && windowMaterials.length === 0) return;
 
-    // Sort named objects (Earth, Grounds, Rastaak Building, Building 1...36, Logo)
-    buildingMeshes.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    // Group 1: Light Building Facades (Main Body Color)
+    if (facadeMaterials.length > 0) {
+      const facadeGroupSub = matFolder.addFolder('💡 Light Building Facades (Main Body)');
+      const defaultLightHex = '#' + (facadeMaterials[0].mat.color ? facadeMaterials[0].mat.color.getHexString() : 'ffffff');
 
-    const lightBuildingMeshes = buildingMeshes.filter((b) => {
-      if (!b.mat.color) return false;
-      const l = (b.mat.color.r + b.mat.color.g + b.mat.color.b) / 3;
-      return l >= 0.5;
-    });
-
-    // Group 1: Light Color Materials (Batch Control)
-    if (lightBuildingMeshes.length > 0) {
-      const lightGroupSub = matFolder.addFolder('💡 ALL Light Buildings (Batch)');
-      const defaultLightHex = '#' + lightBuildingMeshes[0].mat.color.getHexString();
-
-      const lightParams = {
+      const facadeParams = {
         color: defaultLightHex,
-        roughness: lightBuildingMeshes[0].mat.roughness ?? 0.6,
-        metalness: lightBuildingMeshes[0].mat.metalness ?? 0.1,
+        roughness: facadeMaterials[0].mat.roughness ?? 0.6,
+        metalness: facadeMaterials[0].mat.metalness ?? 0.1,
       };
 
-      lightGroupSub
-        .addColor(lightParams, 'color')
-        .name('All Light Buildings Color')
+      facadeGroupSub
+        .addColor(facadeParams, 'color')
+        .name('Light Facades Color')
         .listen()
         .onChange((hex: string) => {
           const col = new THREE.Color(hex);
-          lightBuildingMeshes.forEach((b) => {
-            b.mat.color.copy(col);
+          facadeMaterials.forEach((b) => {
+            if (b.mat.color) b.mat.color.copy(col);
             b.mat.needsUpdate = true;
           });
         });
 
-      lightGroupSub
-        .add(lightParams, 'roughness', 0.0, 1.0, 0.02)
+      facadeGroupSub
+        .add(facadeParams, 'roughness', 0.0, 1.0, 0.02)
         .name('Roughness')
         .listen()
         .onChange((v: number) => {
-          lightBuildingMeshes.forEach((b) => {
+          facadeMaterials.forEach((b) => {
             b.mat.roughness = v;
             b.mat.needsUpdate = true;
           });
         });
 
-      lightGroupSub
-        .add(lightParams, 'metalness', 0.0, 1.0, 0.02)
+      facadeGroupSub
+        .add(facadeParams, 'metalness', 0.0, 1.0, 0.02)
         .name('Metalness')
         .listen()
         .onChange((v: number) => {
-          lightBuildingMeshes.forEach((b) => {
+          facadeMaterials.forEach((b) => {
             b.mat.metalness = v;
             b.mat.needsUpdate = true;
           });
         });
     }
 
-    // Group 2: Named Buildings & Scene Objects Only (Filters out default Cubes/Planes)
-    const indBldgSub = matFolder.addFolder('🏢 Named Objects & Buildings');
+    // Group 2: Building Windows & Insets (Dark Accents)
+    if (windowMaterials.length > 0) {
+      const windowGroupSub = matFolder.addFolder('🪟 Building Windows & Insets (Dark Accents)');
+      const defaultWindowHex = '#' + (windowMaterials[0].mat.color ? windowMaterials[0].mat.color.getHexString() : '222222');
 
-    buildingMeshes.forEach((b) => {
+      const windowParams = {
+        color: defaultWindowHex,
+        roughness: windowMaterials[0].mat.roughness ?? 0.6,
+      };
+
+      windowGroupSub
+        .addColor(windowParams, 'color')
+        .name('Windows & Insets Color')
+        .listen()
+        .onChange((hex: string) => {
+          const col = new THREE.Color(hex);
+          windowMaterials.forEach((b) => {
+            if (b.mat.color) b.mat.color.copy(col);
+            b.mat.needsUpdate = true;
+          });
+        });
+
+      windowGroupSub
+        .add(windowParams, 'roughness', 0.0, 1.0, 0.02)
+        .name('Roughness')
+        .listen()
+        .onChange((v: number) => {
+          windowMaterials.forEach((b) => {
+            b.mat.roughness = v;
+            b.mat.needsUpdate = true;
+          });
+        });
+    }
+
+    // Group 3: Individual Building Main Body Colors
+    const indBldgSub = matFolder.addFolder('🏢 Individual Building Facades');
+
+    facadeMaterials.forEach((b) => {
       const sub = indBldgSub.addFolder(b.name);
-
-      const defaultColorHex = '#' + new THREE.Color(tokens.experimentalScene.keyLight).getHexString();
+      const defaultColorHex = '#' + (b.mat.color ? b.mat.color.getHexString() : 'ffffff');
 
       const bldgParams = {
-        color: b.mat.color ? '#' + b.mat.color.getHexString() : defaultColorHex,
+        color: defaultColorHex,
         roughness: b.mat.roughness ?? 0.6,
         metalness: b.mat.metalness ?? 0.1,
         wireframe: b.mat.wireframe ?? false,
@@ -727,7 +791,7 @@ export class SceneStudioGUI {
       if (b.mat.color) {
         sub
           .addColor(bldgParams, 'color')
-          .name('Color')
+          .name('Main Body Color')
           .listen()
           .onChange((hex: string) => {
             b.mat.color.set(new THREE.Color(hex));
