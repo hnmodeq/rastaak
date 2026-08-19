@@ -56,7 +56,8 @@ export async function POST(request: Request) {
 
   const section = source.slice(start, end);
   const value = update.collection === 'colors' ? `'${update.value}'` : update.value.toLowerCase();
-  const property = new RegExp(`^(\\s*)${update.name}:\\s*[^,\\n]+,`, 'm');
+  const escapedName = update.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const property = new RegExp(`^(\\s*)${escapedName}:\\s*[^,\\n]+,`, 'm');
   if (!property.test(section)) {
     return NextResponse.json({ error: 'Unable to locate the requested token.' }, { status: 500 });
   }

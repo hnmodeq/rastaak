@@ -42,7 +42,7 @@ export const PrivacyRequestContent: React.FC = () => {
                 <small>Include &quot;Privacy Request&quot; in the subject line.</small>
               </li>
               <li>
-                <strong>Mail:</strong> Rastaak, Inc.., 480 N Orlando Ave, Suite 236, Winter Park, FL 32789, United States
+                <strong>Mail:</strong> Rastaak, Inc., 480 N Orlando Ave, Suite 236, Winter Park, FL 32789, United States
               </li>
             </ul>
             <p className="form__disclaimer">

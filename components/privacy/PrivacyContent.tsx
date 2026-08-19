@@ -10,7 +10,7 @@ export const PrivacyContent: React.FC = () => {
           <div className="sub-hero__content">
             <div className="sub-hero__body">
               <p className="sub-hero__text">
-                This Privacy Policy explains how Rastaak, Inc.. (&quot;Rastaak,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, discloses, and protects your personal information when you use our website.
+                This Privacy Policy explains how Rastaak, Inc. (&quot;Rastaak,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, discloses, and protects your personal information when you use our website.
               </p>
             </div>
           </div>

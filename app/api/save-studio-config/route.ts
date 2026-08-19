@@ -1,274 +1,257 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { LightConfig, StudioSavePayload } from '@/components/canvas/scene/sceneTypes';
 
-function toHexLiteral(val: any, fallback = '0x' + '1c1d22'): string {
-  if (typeof val === 'number') {
-    return '0x' + val.toString(16);
+export const runtime = 'nodejs';
+
+const LIGHT_TYPES = new Set(['directional', 'point', 'spot', 'ambient', 'hemisphere']);
+
+function asFinite(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function asHexNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value >>> 0;
   }
-  if (typeof val === 'string') {
-    const clean = val.trim().replace('#', '').replace('0x', '');
+  if (typeof value === 'string') {
+    const clean = value.trim().replace(/^#/, '').replace(/^0x/i, '');
     if (/^[0-9a-fA-F]{1,8}$/.test(clean)) {
-      return '0x' + clean;
+      return Number.parseInt(clean, 16) >>> 0;
     }
   }
-  return fallback;
+  return fallback >>> 0;
+}
+
+function hexLit(value: number): string {
+  return '0x' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+function asVec3(value: unknown, fallback: [number, number, number]): [number, number, number] {
+  if (!Array.isArray(value) || value.length < 3) return fallback;
+  return [asFinite(value[0], fallback[0]), asFinite(value[1], fallback[1]), asFinite(value[2], fallback[2])];
+}
+
+function sanitizeId(value: unknown, fallback: string): string {
+  const raw = typeof value === 'string' ? value : fallback;
+  const cleaned = raw.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80);
+  return cleaned || fallback;
+}
+
+function sanitizeOverrideKey(value: string): string | null {
+  const cleaned = value.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 160);
+  return cleaned || null;
+}
+
+function emit(value: unknown, indent: number): string {
+  const pad = '  '.repeat(indent);
+  const inner = '  '.repeat(indent + 1);
+
+  if (typeof value === 'string' && /^0x[0-9a-f]{6}$/.test(value)) {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(6)));
+  }
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'string') return JSON.stringify(value);
+  if (value === null || value === undefined) return 'undefined';
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]';
+    const primitive = value.every((item) => typeof item !== 'object' || item === null);
+    if (primitive) {
+      return `[${value.map((item) => emit(item, indent)).join(', ')}]`;
+    }
+    return `[\n${value.map((item) => `${inner}${emit(item, indent + 1)}`).join(',\n')}\n${pad}]`;
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, item]) => item !== undefined,
+    );
+    if (entries.length === 0) return '{}';
+    return `{\n${entries
+      .map(([key, item]) => {
+        const safeKey = /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : JSON.stringify(key);
+        return `${inner}${safeKey}: ${emit(item, indent + 1)}`;
+      })
+      .join(',\n')}\n${pad}}`;
+  }
+
+  return 'undefined';
+}
+
+function sanitizeLight(raw: unknown, index: number): LightConfig | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const item = raw as Record<string, unknown>;
+  const type = typeof item.type === 'string' ? item.type.toLowerCase().replace('light', '') : '';
+  if (!LIGHT_TYPES.has(type)) return null;
+
+  const light: LightConfig = {
+    id: sanitizeId(item.id, `light_${index + 1}`),
+    type: type as LightConfig['type'],
+    color: asHexNumber(item.color, 0xffffff),
+    intensity: asFinite(item.intensity, 1),
+  };
+
+  if (item.groundColor !== undefined) light.groundColor = asHexNumber(item.groundColor, 0x101114);
+  if (item.position !== undefined) light.position = asVec3(item.position, [0, 0, 0]);
+  if (item.target !== undefined) light.target = asVec3(item.target, [0, 0, 0]);
+  if (item.distance !== undefined) light.distance = asFinite(item.distance, 0);
+  if (item.decay !== undefined) light.decay = asFinite(item.decay, 2);
+  if (item.radius !== undefined) light.radius = asFinite(item.radius, 1);
+  if (item.angle !== undefined) light.angle = asFinite(item.angle, 45);
+  if (item.penumbra !== undefined) light.penumbra = asFinite(item.penumbra, 0.5);
+  if (item.castShadow !== undefined) light.castShadow = Boolean(item.castShadow);
+  if (item.shadowMapSize !== undefined) light.shadowMapSize = asFinite(item.shadowMapSize, 2048);
+  if (item.shadowBias !== undefined) light.shadowBias = asFinite(item.shadowBias, -0.0001);
+
+  return light;
+}
+
+function withHexColors<T extends Record<string, unknown>>(value: T, keys: string[]): T {
+  const next = { ...value };
+  for (const key of keys) {
+    if (next[key] !== undefined) {
+      (next as Record<string, unknown>)[key] = hexLit(asHexNumber(next[key], 0xffffff));
+    }
+  }
+  return next;
 }
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { cameraStops, lights, environment, materials } = body;
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
+  try {
+    const body = (await req.json()) as Partial<StudioSavePayload>;
     const rootDir = process.cwd();
 
-    const hexWhite = '0x' + 'ffffff';
-    const hexDark = '0x' + '101114';
-    const hexFacade = '0x' + '8c8c8c';
-    const hexInset = '0x' + '222222';
+    if (Array.isArray(body.lights)) {
+      const lights = body.lights
+        .map((light, index) => sanitizeLight(light, index))
+        .filter((light): light is LightConfig => Boolean(light))
+        .map((light) =>
+          withHexColors(light as unknown as Record<string, unknown>, ['color', 'groundColor']),
+        );
 
-    // 1. Sanitize and write updated lightingConfig.ts
-    if (Array.isArray(lights)) {
-      const sanitizedLights = lights.map((l: any) => {
-        const item = { ...l };
-        if (item.color !== undefined) {
-          item.color = toHexLiteral(item.color, hexWhite);
-        }
-        if (item.groundColor !== undefined) {
-          item.groundColor = toHexLiteral(item.groundColor, hexDark);
-        }
-        return item;
-      });
-
-      const lightingPath = path.join(
-        rootDir,
-        'components',
-        'canvas',
-        'scene',
-        'lightingConfig.ts',
-      );
-
-      const lightsArrayString = JSON.stringify(sanitizedLights, null, 2).replace(
-        /"(0x[0-9a-fA-F]+)"/g,
-        '$1',
-      );
-
+      const lightingPath = path.join(rootDir, 'components', 'canvas', 'scene', 'lightingConfig.ts');
       const lightingCode = `/**
  * RASTAAK 3D LIGHTING CONTROLLER CONFIG
  * Saved automatically from 3D Studio
  */
 
-import { tokens } from '@/tokens/design-tokens';
+import type { LightConfig } from './sceneTypes';
 
-export interface LightConfig {
-  id: string;
-  type: 'directional' | 'point' | 'spot' | 'ambient' | 'hemisphere';
-  color: number;
-  groundColor?: number;
-  intensity: number;
-  position?: [number, number, number];
-  target?: [number, number, number];
-  distance?: number;
-  decay?: number;
-  radius?: number;
-  angle?: number;
-  penumbra?: number;
-  castShadow?: boolean;
-  shadowMapSize?: number;
-  shadowBias?: number;
-}
+export type { LightConfig };
 
-export const LIGHTS_CONFIG: LightConfig[] = ${lightsArrayString};
+export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 `;
       fs.writeFileSync(lightingPath, lightingCode, 'utf8');
     }
 
-    // 2. Sanitize materials and write updated sceneConfig.ts
-    if (Array.isArray(cameraStops)) {
-      const sceneConfigPath = path.join(
-        rootDir,
-        'components',
-        'canvas',
-        'scene',
-        'sceneConfig.ts',
-      );
+    const cameraStops = Array.isArray(body.cameraStops)
+      ? body.cameraStops.map((stop, index) => ({
+          id: sanitizeId(stop?.id, `stop_${index + 1}`),
+          progress: Math.min(1, Math.max(0, asFinite(stop?.progress, index / Math.max(1, body.cameraStops!.length - 1)))),
+          camera: asVec3(stop?.camera, [0, 10, 10]),
+          target: asVec3(stop?.target, [0, 0, 0]),
+          fov: asFinite(stop?.fov, 45),
+        }))
+      : null;
 
-      const bgHexCode = environment?.backgroundColor
-        ? toHexLiteral(
-            environment.backgroundColor,
-            'tokens.experimentalScene.canvasBackground',
-          )
-        : 'tokens.experimentalScene.canvasBackground';
-
-      const sanitizedOverrides: Record<string, any> = {};
-      if (materials?.overrides && typeof materials.overrides === 'object') {
-        for (const [key, obj] of Object.entries(materials.overrides)) {
-          if (obj && typeof obj === 'object') {
-            const item = { ...(obj as any) };
-            if (item.color) {
-              item.color = toHexLiteral(item.color, hexFacade);
-            }
-            sanitizedOverrides[key] = item;
-          }
+    if (cameraStops || body.environment || body.materials || body.renderer || body.scroll) {
+      const overrides: Record<string, Record<string, unknown>> = {};
+      const rawOverrides = body.materials?.overrides;
+      if (rawOverrides && typeof rawOverrides === 'object') {
+        for (const [rawKey, rawValue] of Object.entries(rawOverrides)) {
+          const key = sanitizeOverrideKey(rawKey);
+          if (!key || !rawValue || typeof rawValue !== 'object') continue;
+          const item = rawValue as Record<string, unknown>;
+          const entry: Record<string, unknown> = {};
+          if (item.color !== undefined) entry.color = hexLit(asHexNumber(item.color, 0x8c8c8c));
+          if (item.roughness !== undefined) entry.roughness = asFinite(item.roughness, 0.6);
+          if (item.metalness !== undefined) entry.metalness = asFinite(item.metalness, 0);
+          overrides[key] = entry;
         }
       }
 
-      const sanitizedMaterials = {
-        globalFacadeColor: materials?.globalFacadeColor
-          ? toHexLiteral(materials.globalFacadeColor, hexFacade)
-          : hexFacade,
-        globalWindowColor: materials?.globalWindowColor
-          ? toHexLiteral(materials.globalWindowColor, hexInset)
-          : hexInset,
-        overrides: sanitizedOverrides,
+      const materials = {
+        globalFacadeColor: hexLit(asHexNumber(body.materials?.globalFacadeColor, 0x8c8c8c)),
+        globalWindowColor: hexLit(asHexNumber(body.materials?.globalWindowColor, 0x222222)),
+        globalFacadeRoughness: asFinite(body.materials?.globalFacadeRoughness, 0.6),
+        globalFacadeMetalness: asFinite(body.materials?.globalFacadeMetalness, 0.12),
+        globalWindowRoughness: asFinite(body.materials?.globalWindowRoughness, 0.6),
+        globalWindowMetalness: asFinite(body.materials?.globalWindowMetalness, 0.12),
+        overrides,
       };
 
-      const materialsString = JSON.stringify(sanitizedMaterials, null, 2).replace(
-        /"(0x[0-9a-fA-F]+)"/g,
-        '$1',
-      );
+      const environment = {
+        backgroundColor: hexLit(asHexNumber(body.environment?.backgroundColor, 0x1c1d22)),
+        fogStart: asFinite(body.environment?.fogStart, 15),
+        fogEnd: asFinite(body.environment?.fogEnd, 110),
+      };
 
+      const renderer = {
+        toneMappingExposure: asFinite(body.renderer?.toneMappingExposure, 1.15),
+      };
+
+      const scroll = {
+        headerScrollMultiplier: asFinite(body.scroll?.headerScrollMultiplier, 2.5),
+        cameraDamping: asFinite(body.scroll?.cameraDamping, 3.71),
+        idleFloatAmount: asFinite(body.scroll?.idleFloatAmount, 0.2),
+        idleFloatSpeed: asFinite(body.scroll?.idleFloatSpeed, 0.4),
+      };
+
+      const camera = {
+        defaultFov: asFinite(body.camera?.defaultFov, 45),
+        near: asFinite(body.camera?.near, 0.1),
+        far: asFinite(body.camera?.far, 1000),
+      };
+
+      const stops = cameraStops ?? [];
+
+      const sceneConfigPath = path.join(rootDir, 'components', 'canvas', 'scene', 'sceneConfig.ts');
       const sceneConfigCode = `/**
  * RASTAAK 3D SCENE CONTROLLER CONFIG
  * Saved automatically from 3D Studio
  */
 
-import { tokens } from '@/tokens/design-tokens';
-import { LIGHTS_CONFIG, LightConfig } from './lightingConfig';
+import { LIGHTS_CONFIG } from './lightingConfig';
+import type { CameraStop, MaterialsConfig, SceneConfig } from './sceneTypes';
 
-export { LIGHTS_CONFIG };
-export type { LightConfig };
+export type { CameraStop, MaterialsConfig, LightConfig, SceneConfig } from './sceneTypes';
+export { LIGHTS_CONFIG } from './lightingConfig';
 
-export interface CameraStop {
-  id: string;
-  progress: number;
-  camera: [number, number, number];
-  target: [number, number, number];
-  fov?: number;
-}
+export const SCENE_CONFIG: SceneConfig = {
+  stops: ${emit(stops, 1)} as CameraStop[],
 
-export interface BuildingMaterialOverride {
-  color?: number;
-  roughness?: number;
-  metalness?: number;
-}
+  scroll: ${emit(scroll, 1)},
 
-export interface MaterialsConfig {
-  globalFacadeColor?: number;
-  globalWindowColor?: number;
-  overrides?: Record<string, BuildingMaterialOverride>;
-}
-
-export const SCENE_CONFIG = {
-  stops: ${JSON.stringify(cameraStops, null, 2)} as CameraStop[],
-
-  scroll: {
-    headerScrollMultiplier: 2.5,
-    cameraDamping: 3.71,
-    idleFloatAmount: 0.2,
-    idleFloatSpeed: 0.4,
-  },
-
-  camera: {
-    defaultFov: 45,
-    near: 0.1,
-    far: 1000,
-  },
+  camera: ${emit(camera, 1)},
 
   lights: LIGHTS_CONFIG,
 
-  environment: {
-    backgroundColor: ${bgHexCode},
-    fogStart: ${environment?.fogStart ?? 15},
-    fogEnd: ${environment?.fogEnd ?? 110},
-  },
+  environment: ${emit(environment, 1)},
 
-  materials: ${materialsString} as MaterialsConfig,
+  renderer: ${emit(renderer, 1)},
+
+  materials: ${emit(materials, 1)} as MaterialsConfig,
 };
-
-function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): number {
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return (
-    0.5 *
-    (2 * p1 +
-      (-p0 + p2) * t +
-      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
-      (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
-  );
-}
-
-export function sampleSceneJourney(
-  t: number,
-  out: { camera: [number, number, number]; target: [number, number, number]; fov: number },
-): void {
-  const stops = SCENE_CONFIG.stops;
-  if (!stops || stops.length === 0) return;
-
-  if (stops.length === 1) {
-    out.camera = [...stops[0].camera];
-    out.target = [...stops[0].target];
-    out.fov = stops[0].fov ?? SCENE_CONFIG.camera.defaultFov;
-    return;
-  }
-
-  const clamped = Math.max(0, Math.min(1, t));
-
-  let idx = 0;
-  while (idx < stops.length - 1 && stops[idx + 1].progress <= clamped) {
-    idx++;
-  }
-
-  if (idx >= stops.length - 1) {
-    const last = stops[stops.length - 1];
-    out.camera = [...last.camera];
-    out.target = [...last.target];
-    out.fov = last.fov ?? SCENE_CONFIG.camera.defaultFov;
-    return;
-  }
-
-  const p1 = stops[idx];
-  const p2 = stops[idx + 1];
-  const p0 = stops[Math.max(0, idx - 1)];
-  const p3 = stops[Math.min(stops.length - 1, idx + 2)];
-
-  const pRange = p2.progress - p1.progress;
-  const f = pRange > 0 ? (clamped - p1.progress) / pRange : 0;
-
-  for (let axis = 0; axis < 3; axis++) {
-    out.camera[axis] = catmullRom(
-      p0.camera[axis],
-      p1.camera[axis],
-      p2.camera[axis],
-      p3.camera[axis],
-      f,
-    );
-    out.target[axis] = catmullRom(
-      p0.target[axis],
-      p1.target[axis],
-      p2.target[axis],
-      p3.target[axis],
-      f,
-    );
-  }
-
-  const fov1 = p1.fov ?? SCENE_CONFIG.camera.defaultFov;
-  const fov2 = p2.fov ?? SCENE_CONFIG.camera.defaultFov;
-  out.fov = fov1 + (fov2 - fov1) * f;
-}
 `;
       fs.writeFileSync(sceneConfigPath, sceneConfigCode, 'utf8');
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Config saved directly to local TypeScript source files!',
+      message: 'Config saved to sceneConfig.ts and lightingConfig.ts',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to save config';
     console.error('Failed to save studio config:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to save config' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

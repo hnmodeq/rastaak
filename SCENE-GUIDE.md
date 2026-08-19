@@ -1,12 +1,21 @@
 # Controlling the Rastaak 3D scene
 
-Everything about the 3D scene lives in **two files**. Nothing else on the site
-touches it.
+The live homepage scene is driven by saved TypeScript config, not by hardcoded
+values inside the canvas.
 
 | File | What it controls |
 |---|---|
-| `components/canvas/scene/journeyPath.ts` | **The camera.** Where it stands, where it looks, at each point of the scroll. This is the file you'll edit 90% of the time. |
-| `components/canvas/HeroCanvas3D.tsx` | **Everything else.** Lights, fog, background colour, materials, how fast the camera reacts to scroll. |
+| `components/canvas/scene/sceneConfig.ts` | Camera stops, fog, background, exposure, materials. 3D Studio writes this file. |
+| `components/canvas/scene/lightingConfig.ts` | Lights and shadows. 3D Studio writes this file. |
+| `components/canvas/scene/journeyMath.ts` | Catmull-Rom sampling between camera stops. Do not overwrite this. |
+| `components/canvas/HeroCanvas3D.tsx` | Loads the GLB and applies the config above. |
+
+## Studio loop
+
+1. Refresh the homepage in development. The panel and the scene both read the config files.
+2. Move sliders. The scene updates immediately.
+3. Click **Apply & Save directly to Code**. The panel writes the live scene back to the two config files.
+4. Refresh. The same values load again. Building materials are keyed as `objectName_mat_slot` so they cannot swap.
 
 ---
 

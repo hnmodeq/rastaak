@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Loader } from '@/components/layout/Loader';
 import { ClientScripts } from '@/components/layout/ClientScripts';
+import { Providers } from '@/components/layout/Providers';
 import { tokens } from '@/tokens/design-tokens';
 
 export const metadata: Metadata = {
@@ -51,23 +52,25 @@ export default function RootLayout({
         />
       </head>
       <body style={{ backgroundColor: tokens.colors.bgHero }}>
-        <div className="transition-pages" />
-        <div className="mobile-nav__overlay" />
+        <Providers>
+          <div className="transition-pages" />
+          <div className="mobile-nav__overlay" />
 
-        {/* Site Header */}
-        <Header />
+          {/* Site Header */}
+          <Header />
 
-        {/* Dynamic Route View */}
-        <main data-taxi>{children}</main>
+          {/* Dynamic Route View */}
+          <main data-taxi>{children}</main>
 
-        {/* Site Footer */}
-        <Footer />
+          {/* Site Footer */}
+          <Footer />
 
-        {/* Introductory SVG Loader */}
-        <Loader />
+          {/* Introductory SVG Loader */}
+          <Loader />
 
-        {/* Client Initialization Scripts (3D Three.js, Draco, Shaders, SPA Taxi routing) */}
-        <ClientScripts />
+          {/* Client Initialization Scripts (3D Three.js, Draco, Shaders, SPA Taxi routing) */}
+          <ClientScripts />
+        </Providers>
       </body>
     </html>
   );

@@ -11,6 +11,7 @@ const ignored = new Set([
   // Scene controller files saved dynamically by 3D Studio
   'components/canvas/scene/sceneConfig.ts',
   'components/canvas/scene/lightingConfig.ts',
+  'app/api/save-studio-config/route.ts',
   // Third-party runtime bundles
   'public/_astro/vendor.BgqcyBjU.js',
   'public/_astro/vendor-BYisihw-.js',

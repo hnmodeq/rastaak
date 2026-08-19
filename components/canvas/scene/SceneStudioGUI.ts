@@ -1,9 +1,16 @@
 import * as THREE from 'three';
 import { tokens } from '@/tokens/design-tokens';
-import { SCENE_CONFIG, CameraStop } from './sceneConfig';
+import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
+import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
+import {
+  collectMaterialsConfig,
+  collectTrackedMaterials,
+  isValidNamedObject,
+  type TrackedMaterial,
+} from './materialKeys';
 
-function downloadJSON(filename: string, data: any) {
+function downloadJSON(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: 'application/json',
   });
@@ -15,10 +22,16 @@ function downloadJSON(filename: string, data: any) {
   URL.revokeObjectURL(url);
 }
 
-const isPointLight = (l: any) =>
-  l && (l.isPointLight || l.type === 'PointLight' || l.type === 'point');
-const isSpotLight = (l: any) =>
-  l && (l.isSpotLight || l.type === 'SpotLight' || l.type === 'spot');
+const isPointLight = (l: THREE.Light) =>
+  (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
+const isSpotLight = (l: THREE.Light) =>
+  (l as THREE.SpotLight).isSpotLight || l.type === 'SpotLight';
+const isHemisphereLight = (l: THREE.Light) =>
+  (l as THREE.HemisphereLight).isHemisphereLight || l.type === 'HemisphereLight';
+
+function colorToHexNumber(color: THREE.Color): number {
+  return color.getHex();
+}
 
 export class SceneStudioGUI {
   private gui: any = null;
@@ -26,8 +39,19 @@ export class SceneStudioGUI {
   private isOpen = false;
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
+  private pointerHandler: ((e: MouseEvent) => void) | null = null;
+  private trackedMaterials: TrackedMaterial[] = [];
+  private globalFacade = {
+    color: '#' + new THREE.Color(tokens.experimentalScene.lightFacadeDefault).getHexString(),
+    roughness: 0.6,
+    metalness: 0.12,
+  };
+  private globalWindow = {
+    color: '#' + new THREE.Color(tokens.experimentalScene.windowInsetDefault).getHexString(),
+    roughness: 0.6,
+    metalness: 0.0,
+  };
 
-  // Real-time camera override state
   public isManualMode = false;
   public isOrbitMode = false;
   public manualCamPos = new THREE.Vector3();
@@ -43,9 +67,24 @@ export class SceneStudioGUI {
     private onOrbitModeToggle?: (enabled: boolean) => void,
   ) {
     if (typeof window === 'undefined') return;
+    this.hydrateGlobalsFromConfig();
     this.createToggleButton();
     this.initGUI();
     this.initRaycaster();
+  }
+
+  private hydrateGlobalsFromConfig() {
+    const mats = SCENE_CONFIG.materials;
+    if (mats.globalFacadeColor !== undefined) {
+      this.globalFacade.color = '#' + new THREE.Color(mats.globalFacadeColor).getHexString();
+    }
+    if (mats.globalWindowColor !== undefined) {
+      this.globalWindow.color = '#' + new THREE.Color(mats.globalWindowColor).getHexString();
+    }
+    if (mats.globalFacadeRoughness !== undefined) this.globalFacade.roughness = mats.globalFacadeRoughness;
+    if (mats.globalFacadeMetalness !== undefined) this.globalFacade.metalness = mats.globalFacadeMetalness;
+    if (mats.globalWindowRoughness !== undefined) this.globalWindow.roughness = mats.globalWindowRoughness;
+    if (mats.globalWindowMetalness !== undefined) this.globalWindow.metalness = mats.globalWindowMetalness;
   }
 
   private createToggleButton() {
@@ -96,7 +135,7 @@ export class SceneStudioGUI {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    const onPointerDown = (e: MouseEvent) => {
+    this.pointerHandler = (e: MouseEvent) => {
       if (!this.isOpen && !this.isManualMode && !this.isOrbitMode) return;
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
@@ -115,20 +154,17 @@ export class SceneStudioGUI {
       const intersects = raycaster.intersectObjects(worldGroup.children, true);
       if (intersects.length > 0) {
         const clickedObj = intersects[0].object;
-        if (clickedObj && clickedObj.name) {
-          const name = clickedObj.name;
-          if (!name.toLowerCase().startsWith('cube') && !name.toLowerCase().startsWith('plane')) {
-            console.log(`[3D Studio] Clicked Object: '${name}'`);
-          }
+        if (clickedObj?.name && isValidNamedObject(clickedObj.name)) {
+          console.log(`[3D Studio] Clicked Object: '${clickedObj.name}'`);
         }
       }
     };
 
-    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointerdown', this.pointerHandler);
   }
 
-  private collectCurrentLights() {
-    const result: any[] = [];
+  private collectCurrentLights(): LightConfig[] {
+    const result: LightConfig[] = [];
 
     for (const [id, light] of this.lightsMap.entries()) {
       const origCfg = LIGHTS_CONFIG.find((l) => l.id === id);
@@ -136,44 +172,53 @@ export class SceneStudioGUI {
         origCfg?.type ||
         (light.type ? light.type.toLowerCase().replace('light', '') : 'point');
 
-      const item: any = {
+      const item: LightConfig = {
         id,
-        type: lightType,
-        color: '#' + light.color.getHexString(),
+        type: lightType as LightConfig['type'],
+        color: colorToHexNumber(light.color),
         intensity: light.intensity,
       };
 
+      if (isHemisphereLight(light)) {
+        item.groundColor = colorToHexNumber((light as THREE.HemisphereLight).groundColor);
+      }
+
       if (light.position) {
         item.position = [
-          parseFloat(light.position.x.toFixed(2)),
-          parseFloat(light.position.y.toFixed(2)),
-          parseFloat(light.position.z.toFixed(2)),
+          parseFloat(light.position.x.toFixed(4)),
+          parseFloat(light.position.y.toFixed(4)),
+          parseFloat(light.position.z.toFixed(4)),
         ];
       }
 
-      if ((light as any).target && (light as any).target.position) {
-        const tp = (light as any).target.position;
+      const targeted = light as THREE.DirectionalLight | THREE.SpotLight;
+      if (targeted.target?.position) {
+        const tp = targeted.target.position;
         item.target = [
-          parseFloat(tp.x.toFixed(2)),
-          parseFloat(tp.y.toFixed(2)),
-          parseFloat(tp.z.toFixed(2)),
+          parseFloat(tp.x.toFixed(4)),
+          parseFloat(tp.y.toFixed(4)),
+          parseFloat(tp.z.toFixed(4)),
         ];
       }
 
-      if ((light as any).distance !== undefined) {
-        item.distance = (light as any).distance;
+      if (isPointLight(light) || isSpotLight(light)) {
+        const ranged = light as THREE.PointLight | THREE.SpotLight;
+        item.distance = ranged.distance;
+        item.decay = ranged.decay;
       }
 
-      if ((light as any).decay !== undefined) {
-        item.decay = (light as any).decay;
+      if (isSpotLight(light)) {
+        const spot = light as THREE.SpotLight;
+        item.angle = THREE.MathUtils.radToDeg(spot.angle);
+        item.penumbra = spot.penumbra;
       }
 
-      const shadowObj = (light as any).shadow;
-      if (shadowObj || light.castShadow !== undefined) {
-        item.castShadow = light.castShadow ?? true;
+      const shadowObj = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
+      if (shadowObj || light.castShadow) {
+        item.castShadow = Boolean(light.castShadow);
         item.shadowMapSize = shadowObj?.mapSize?.width ?? 2048;
         item.shadowBias = shadowObj?.bias ?? -0.0001;
-        item.radius = shadowObj?.radius ?? 2.27;
+        item.radius = shadowObj?.radius ?? 1;
       }
 
       result.push(item);
@@ -184,66 +229,73 @@ export class SceneStudioGUI {
 
   private collectCurrentMaterials() {
     const worldGroup = this.worldGroupSupplier();
-    if (!worldGroup) return null;
+    if (!worldGroup) {
+      return {
+        globalFacadeColor: new THREE.Color(this.globalFacade.color).getHex(),
+        globalWindowColor: new THREE.Color(this.globalWindow.color).getHex(),
+        globalFacadeRoughness: this.globalFacade.roughness,
+        globalFacadeMetalness: this.globalFacade.metalness,
+        globalWindowRoughness: this.globalWindow.roughness,
+        globalWindowMetalness: this.globalWindow.metalness,
+        overrides: { ...SCENE_CONFIG.materials.overrides },
+      };
+    }
 
-    let lightFacadeColor = '#' + new THREE.Color(tokens.experimentalScene.lightFacadeDefault).getHexString();
-    let lightFacadeRoughness = 0.6;
-    let lightFacadeMetalness = 0.0;
-
-    let windowColor = '#' + new THREE.Color(tokens.experimentalScene.windowInsetDefault).getHexString();
-    let windowRoughness = 0.6;
-
-    const buildings: Record<string, { color: string; roughness: number; metalness: number }> = {};
-
-    const isValidNamedObject = (name: string) => {
-      if (!name) return false;
-      const lower = name.toLowerCase().trim();
-      if (
-        lower.startsWith('cube') ||
-        lower.startsWith('plane') ||
-        lower.startsWith('mesh') ||
-        lower.startsWith('object')
-      ) {
-        return false;
-      }
-      return true;
-    };
-
-    worldGroup.traverse((child: any) => {
-      let displayName = child.name;
-      if (child.parent && child.parent.name && isValidNamedObject(child.parent.name)) {
-        displayName = child.parent.name;
-      }
-
-      if (child.isMesh && child.material && isValidNamedObject(displayName)) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        if (mats[0] && mats[0].color) {
-          lightFacadeColor = '#' + mats[0].color.getHexString();
-          lightFacadeRoughness = mats[0].roughness ?? 0.6;
-          lightFacadeMetalness = mats[0].metalness ?? 0.0;
-
-          buildings[displayName] = {
-            color: '#' + mats[0].color.getHexString(),
-            roughness: mats[0].roughness ?? 0.6,
-            metalness: mats[0].metalness ?? 0.0,
-          };
-        }
-        if (mats[1] && mats[1].color) {
-          windowColor = '#' + mats[1].color.getHexString();
-          windowRoughness = mats[1].roughness ?? 0.6;
-        }
-      }
+    return collectMaterialsConfig(worldGroup, {
+      globalFacadeColor: new THREE.Color(this.globalFacade.color).getHex(),
+      globalWindowColor: new THREE.Color(this.globalWindow.color).getHex(),
+      globalFacadeRoughness: this.globalFacade.roughness,
+      globalFacadeMetalness: this.globalFacade.metalness,
+      globalWindowRoughness: this.globalWindow.roughness,
+      globalWindowMetalness: this.globalWindow.metalness,
     });
+  }
+
+  private buildSavePayload(): StudioSavePayload {
+    const bg = this.scene.background instanceof THREE.Color
+      ? this.scene.background
+      : new THREE.Color(SCENE_CONFIG.environment.backgroundColor);
+    const fog = this.scene.fog as THREE.Fog | null;
 
     return {
-      lightFacades: {
-        color: lightFacadeColor,
-        roughness: lightFacadeRoughness,
-        metalness: lightFacadeMetalness,
+      cameraStops: SCENE_CONFIG.stops.map((stop) => ({
+        id: stop.id,
+        progress: stop.progress,
+        camera: [...stop.camera] as [number, number, number],
+        target: [...stop.target] as [number, number, number],
+        fov: stop.fov ?? SCENE_CONFIG.camera.defaultFov,
+      })),
+      lights: this.collectCurrentLights(),
+      environment: {
+        backgroundColor: colorToHexNumber(bg),
+        fogStart: fog?.near ?? SCENE_CONFIG.environment.fogStart,
+        fogEnd: fog?.far ?? SCENE_CONFIG.environment.fogEnd,
       },
-      windowInsets: { color: windowColor, roughness: windowRoughness },
-      buildings,
+      renderer: {
+        toneMappingExposure: this.renderer.toneMappingExposure,
+      },
+      scroll: { ...SCENE_CONFIG.scroll },
+      camera: { ...SCENE_CONFIG.camera },
+      materials: this.collectCurrentMaterials(),
     };
+  }
+
+  private writePayloadIntoMemory(payload: StudioSavePayload) {
+    SCENE_CONFIG.stops.splice(0, SCENE_CONFIG.stops.length, ...payload.cameraStops);
+    SCENE_CONFIG.environment.backgroundColor = payload.environment.backgroundColor;
+    SCENE_CONFIG.environment.fogStart = payload.environment.fogStart;
+    SCENE_CONFIG.environment.fogEnd = payload.environment.fogEnd;
+    SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
+    SCENE_CONFIG.scroll.headerScrollMultiplier = payload.scroll.headerScrollMultiplier;
+    SCENE_CONFIG.scroll.cameraDamping = payload.scroll.cameraDamping;
+    SCENE_CONFIG.scroll.idleFloatAmount = payload.scroll.idleFloatAmount;
+    SCENE_CONFIG.scroll.idleFloatSpeed = payload.scroll.idleFloatSpeed;
+    SCENE_CONFIG.camera.defaultFov = payload.camera.defaultFov;
+    SCENE_CONFIG.camera.near = payload.camera.near;
+    SCENE_CONFIG.camera.far = payload.camera.far;
+    SCENE_CONFIG.materials = payload.materials;
+
+    LIGHTS_CONFIG.splice(0, LIGHTS_CONFIG.length, ...payload.lights);
   }
 
   private async initGUI(forceOpen = false) {
@@ -260,7 +312,6 @@ export class SceneStudioGUI {
       const { GUI } = await import('lil-gui');
       this.gui = new GUI({ title: 'Rastaak 3D Studio' });
 
-      // Enable smooth vertical mouse wheel scrolling on GUI panel
       const guiEl = this.gui.domElement;
       guiEl.style.zIndex = '999999';
       guiEl.style.position = 'fixed';
@@ -270,7 +321,6 @@ export class SceneStudioGUI {
       guiEl.style.overflowY = 'auto';
       guiEl.style.pointerEvents = 'auto';
 
-      // Prevent wheel event propagation to page scroll
       guiEl.addEventListener(
         'wheel',
         (e: WheelEvent) => {
@@ -288,11 +338,12 @@ export class SceneStudioGUI {
       );
 
       this.manualCamPos.copy(this.camera.position);
-      this.manualLookAt.set(14.0, 2.0, 0.0);
+      this.manualLookAt.set(
+        SCENE_CONFIG.stops[0]?.target[0] ?? 14,
+        SCENE_CONFIG.stops[0]?.target[1] ?? 2,
+        SCENE_CONFIG.stops[0]?.target[2] ?? 0,
+      );
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // 1. Camera & Stop Points Editor
-      // ─────────────────────────────────────────────────────────────────────────
       const camFolder = this.gui.addFolder('Camera & Stop Points');
 
       let currentStopIndex = 0;
@@ -316,14 +367,14 @@ export class SceneStudioGUI {
             id: newId,
             progress: 1.0,
             camera: [
-              parseFloat(this.camera.position.x.toFixed(1)),
-              parseFloat(this.camera.position.y.toFixed(1)),
-              parseFloat(this.camera.position.z.toFixed(1)),
+              parseFloat(this.camera.position.x.toFixed(2)),
+              parseFloat(this.camera.position.y.toFixed(2)),
+              parseFloat(this.camera.position.z.toFixed(2)),
             ],
             target: [
-              parseFloat(this.manualLookAt.x.toFixed(1)),
-              parseFloat(this.manualLookAt.y.toFixed(1)),
-              parseFloat(this.manualLookAt.z.toFixed(1)),
+              parseFloat(this.manualLookAt.x.toFixed(2)),
+              parseFloat(this.manualLookAt.y.toFixed(2)),
+              parseFloat(this.manualLookAt.z.toFixed(2)),
             ],
             fov: this.camera.fov,
           };
@@ -338,7 +389,7 @@ export class SceneStudioGUI {
           const text = JSON.stringify(SCENE_CONFIG.stops, null, 2);
           if (navigator.clipboard) {
             navigator.clipboard.writeText(text);
-            alert(`Copied all stop points to clipboard!`);
+            alert('Copied all stop points to clipboard!');
           }
         },
       };
@@ -504,21 +555,21 @@ export class SceneStudioGUI {
         fovCtrl.updateDisplay();
       };
 
-      // Populate lights, shadows, and materials
       this.populateLightsAndShadows();
       this.populateMaterials();
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // 4. Atmosphere & Background & Fog
-      // ─────────────────────────────────────────────────────────────────────────
       const envFolder = this.gui.addFolder('Environment & Fog');
-      const currentBgHex = '#' + (this.scene.background as THREE.Color).getHexString();
+      const currentBgHex = '#' + (
+        this.scene.background instanceof THREE.Color
+          ? this.scene.background.getHexString()
+          : new THREE.Color(SCENE_CONFIG.environment.backgroundColor).getHexString()
+      );
 
       const envParams = {
         exposure: this.renderer.toneMappingExposure,
         bgColor: currentBgHex,
-        fogNear: (this.scene.fog as THREE.Fog)?.near ?? 15,
-        fogFar: (this.scene.fog as THREE.Fog)?.far ?? 110,
+        fogNear: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
+        fogFar: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
       };
 
       envFolder
@@ -527,6 +578,7 @@ export class SceneStudioGUI {
         .listen()
         .onChange((v: number) => {
           this.renderer.toneMappingExposure = v;
+          SCENE_CONFIG.renderer.toneMappingExposure = v;
         });
 
       envFolder
@@ -540,6 +592,7 @@ export class SceneStudioGUI {
             this.scene.fog.color = col;
           }
           document.body.style.backgroundColor = v;
+          SCENE_CONFIG.environment.backgroundColor = col.getHex();
         });
 
       if (this.scene.fog) {
@@ -562,23 +615,12 @@ export class SceneStudioGUI {
           });
       }
 
-      // ─────────────────────────────────────────────────────────────────────────
-      // 5. Apply & Save directly to Source Code + Export JSON Tools
-      // ─────────────────────────────────────────────────────────────────────────
       const exportFolder = this.gui.addFolder('Save & Export Tools');
       const exportParams = {
         applyAndSaveToCode: async () => {
           try {
-            const payload = {
-              cameraStops: SCENE_CONFIG.stops,
-              lights: this.collectCurrentLights(),
-              environment: {
-                backgroundColor: '#' + (this.scene.background as THREE.Color).getHexString(),
-                fogStart: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
-                fogEnd: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
-              },
-              materials: this.collectCurrentMaterials(),
-            };
+            const payload = this.buildSavePayload();
+            this.writePayloadIntoMemory(payload);
 
             const res = await fetch('/api/save-studio-config', {
               method: 'POST',
@@ -589,13 +631,14 @@ export class SceneStudioGUI {
             const data = await res.json();
             if (res.ok) {
               alert(
-                '✅ Success! Your 3D camera, lighting, shadow, fog, AND building material edits have been saved directly to your local TypeScript source files (sceneConfig.ts & lightingConfig.ts)!',
+                'Saved. Camera, lights, shadows, fog, exposure, and every building material were written to sceneConfig.ts and lightingConfig.ts. Refresh will restore this exact scene.',
               );
             } else {
-              alert(`⚠️ Error saving config: ${data.error || 'Unknown error'}`);
+              alert(`Error saving config: ${data.error || 'Unknown error'}`);
             }
-          } catch (e: any) {
-            alert(`⚠️ Error saving config: ${e.message}`);
+          } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : 'Unknown error';
+            alert(`Error saving config: ${message}`);
           }
         },
         exportSceneJSON: () => {
@@ -604,14 +647,7 @@ export class SceneStudioGUI {
           downloadJSON('rastaak-threejs-scene.json', json);
         },
         exportConfigJSON: () => {
-          const configData = {
-            cameraStops: SCENE_CONFIG.stops,
-            lights: this.collectCurrentLights(),
-            scroll: SCENE_CONFIG.scroll,
-            environment: SCENE_CONFIG.environment,
-            materials: this.collectCurrentMaterials(),
-          };
-          downloadJSON('rastaak-scene-config.json', configData);
+          downloadJSON('rastaak-scene-config.json', this.buildSavePayload());
         },
       };
 
@@ -639,14 +675,10 @@ export class SceneStudioGUI {
     if (!this.gui || this.lightsFolderPopulated) return;
     this.lightsFolderPopulated = true;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 2. Real-time Lights & Shadows Controller
-    // ─────────────────────────────────────────────────────────────────────────
     const lightFolder = this.gui.addFolder('Lighting Controller');
 
     for (const [id, light] of this.lightsMap.entries()) {
       const sub = lightFolder.addFolder(id);
-
       const isPt = isPointLight(light);
       const isSpot = isSpotLight(light);
 
@@ -657,8 +689,29 @@ export class SceneStudioGUI {
         posX: light.position ? light.position.x : 0,
         posY: light.position ? light.position.y : 0,
         posZ: light.position ? light.position.z : 0,
-        distance: (light as any).distance ?? 40,
-        decay: (light as any).decay ?? 1.8,
+        distance: (light as THREE.PointLight).distance ?? 40,
+        decay: (light as THREE.PointLight).decay ?? 1.8,
+      };
+
+      const persistLight = () => {
+        const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
+        if (!cfg) return;
+        cfg.intensity = light.intensity;
+        cfg.color = colorToHexNumber(light.color);
+        if (light.position) {
+          cfg.position = [light.position.x, light.position.y, light.position.z];
+        }
+        if (isPt || isSpot) {
+          cfg.distance = (light as THREE.PointLight).distance;
+          cfg.decay = (light as THREE.PointLight).decay;
+        }
+        cfg.castShadow = light.castShadow;
+        const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
+        if (sh) {
+          cfg.radius = sh.radius;
+          cfg.shadowBias = sh.bias;
+          cfg.shadowMapSize = sh.mapSize?.width;
+        }
       };
 
       sub
@@ -667,8 +720,7 @@ export class SceneStudioGUI {
         .listen()
         .onChange((v: number) => {
           light.intensity = v;
-          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-          if (cfg) cfg.intensity = v;
+          persistLight();
         });
 
       sub
@@ -676,7 +728,8 @@ export class SceneStudioGUI {
         .name('Color')
         .listen()
         .onChange((v: string) => {
-          light.color.set(new THREE.Color(v));
+          light.color.set(v);
+          persistLight();
         });
 
       if (light.position) {
@@ -685,45 +738,29 @@ export class SceneStudioGUI {
           light.updateMatrix();
           light.updateMatrixWorld(true);
 
-          if ((light as any).target) {
-            (light as any).target.updateMatrixWorld(true);
+          const targeted = light as THREE.DirectionalLight;
+          if (targeted.target) {
+            targeted.target.updateMatrixWorld(true);
           }
 
-          const sh = (light as any).shadow;
+          const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
           if (sh) {
             sh.needsUpdate = true;
             if (sh.camera) {
               sh.camera.updateMatrixWorld(true);
-              sh.camera.updateProjectionMatrix();
+              const shadowCam = sh.camera as THREE.PerspectiveCamera;
+              if (typeof shadowCam.updateProjectionMatrix === 'function') {
+                shadowCam.updateProjectionMatrix();
+              }
             }
           }
           this.renderer.shadowMap.needsUpdate = true;
-
-          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-          if (cfg && cfg.position) {
-            cfg.position[0] = lightParams.posX;
-            cfg.position[1] = lightParams.posY;
-            cfg.position[2] = lightParams.posZ;
-          }
+          persistLight();
         };
 
-        sub
-          .add(lightParams, 'posX', -100, 100, 0.5)
-          .name('Position X')
-          .listen()
-          .onChange(() => updateLightPos());
-
-        sub
-          .add(lightParams, 'posY', -10, 100, 0.5)
-          .name('Position Y')
-          .listen()
-          .onChange(() => updateLightPos());
-
-        sub
-          .add(lightParams, 'posZ', -100, 100, 0.5)
-          .name('Position Z')
-          .listen()
-          .onChange(() => updateLightPos());
+        sub.add(lightParams, 'posX', -100, 100, 0.5).name('Position X').listen().onChange(updateLightPos);
+        sub.add(lightParams, 'posY', -10, 100, 0.5).name('Position Y').listen().onChange(updateLightPos);
+        sub.add(lightParams, 'posZ', -100, 100, 0.5).name('Position Z').listen().onChange(updateLightPos);
       }
 
       if (isPt || isSpot) {
@@ -732,9 +769,8 @@ export class SceneStudioGUI {
           .name('Distance Falloff')
           .listen()
           .onChange((v: number) => {
-            (light as any).distance = v;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.distance = v;
+            (light as THREE.PointLight).distance = v;
+            persistLight();
           });
 
         sub
@@ -742,16 +778,13 @@ export class SceneStudioGUI {
           .name('Decay Exponent')
           .listen()
           .onChange((v: number) => {
-            (light as any).decay = v;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.decay = v;
+            (light as THREE.PointLight).decay = v;
+            persistLight();
           });
       }
 
-      // Add Shadow Controls directly under Shadows Settings subfolder
       const shadowSub = sub.addFolder('Shadows Settings');
-      const sh = (light as any).shadow;
-
+      const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
       const shadowParams = {
         castShadow: light.castShadow ?? true,
         radius: sh ? sh.radius ?? 2.27 : 2.27,
@@ -766,8 +799,7 @@ export class SceneStudioGUI {
         .onChange((v: boolean) => {
           light.castShadow = v;
           this.renderer.shadowMap.needsUpdate = true;
-          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-          if (cfg) cfg.castShadow = v;
+          persistLight();
         });
 
       shadowSub
@@ -775,13 +807,12 @@ export class SceneStudioGUI {
         .name('Soft Shadow Radius')
         .listen()
         .onChange((v: number) => {
-          if ((light as any).shadow) {
-            (light as any).shadow.radius = v;
-            (light as any).shadow.needsUpdate = true;
+          if (sh) {
+            sh.radius = v;
+            sh.needsUpdate = true;
           }
           this.renderer.shadowMap.needsUpdate = true;
-          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-          if (cfg) cfg.radius = v;
+          persistLight();
         });
 
       shadowSub
@@ -789,13 +820,12 @@ export class SceneStudioGUI {
         .name('Shadow Bias')
         .listen()
         .onChange((v: number) => {
-          if ((light as any).shadow) {
-            (light as any).shadow.bias = v;
-            (light as any).shadow.needsUpdate = true;
+          if (sh) {
+            sh.bias = v;
+            sh.needsUpdate = true;
           }
           this.renderer.shadowMap.needsUpdate = true;
-          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-          if (cfg) cfg.shadowBias = v;
+          persistLight();
         });
 
       shadowSub
@@ -803,107 +833,18 @@ export class SceneStudioGUI {
         .name('Shadow Resolution')
         .onChange((v: number) => {
           const size = parseInt(String(v), 10);
-          const shadowObj = (light as any).shadow;
-          if (shadowObj && shadowObj.mapSize) {
-            shadowObj.mapSize.width = size;
-            shadowObj.mapSize.height = size;
-            if (shadowObj.map) {
-              shadowObj.map.dispose();
-              shadowObj.map = null;
+          if (sh?.mapSize) {
+            sh.mapSize.width = size;
+            sh.mapSize.height = size;
+            if (sh.map) {
+              sh.map.dispose();
+              sh.map = null as unknown as THREE.WebGLRenderTarget;
             }
-            shadowObj.needsUpdate = true;
+            sh.needsUpdate = true;
           }
           this.renderer.shadowMap.needsUpdate = true;
-          const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-          if (cfg) cfg.shadowMapSize = size;
+          persistLight();
         });
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 3. Dedicated Shadows Controller (Duck-typing check)
-    // ─────────────────────────────────────────────────────────────────────────
-    const shadowFolder = this.gui.addFolder('Shadows Controller');
-
-    for (const [id, light] of this.lightsMap.entries()) {
-      const shadowObj = (light as any).shadow;
-      const isShadowCapable =
-        shadowObj ||
-        (light as any).isPointLight ||
-        (light as any).isDirectionalLight ||
-        (light as any).isSpotLight ||
-        light.type === 'PointLight' ||
-        light.type === 'DirectionalLight' ||
-        light.type === 'SpotLight';
-
-      if (isShadowCapable) {
-        const sub = shadowFolder.addFolder(id);
-
-        const shadowParams = {
-          castShadow: light.castShadow ?? true,
-          radius: shadowObj ? shadowObj.radius ?? 2.27 : 2.27,
-          bias: shadowObj ? shadowObj.bias ?? -0.0001 : -0.0001,
-          mapSize: shadowObj?.mapSize?.width ?? 2048,
-        };
-
-        sub
-          .add(shadowParams, 'castShadow')
-          .name('Enable Shadows')
-          .listen()
-          .onChange((v: boolean) => {
-            light.castShadow = v;
-            this.renderer.shadowMap.needsUpdate = true;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.castShadow = v;
-          });
-
-        sub
-          .add(shadowParams, 'radius', 0, 20, 0.1)
-          .name('Soft Shadow Radius')
-          .listen()
-          .onChange((v: number) => {
-            if ((light as any).shadow) {
-              (light as any).shadow.radius = v;
-              (light as any).shadow.needsUpdate = true;
-            }
-            this.renderer.shadowMap.needsUpdate = true;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.radius = v;
-          });
-
-        sub
-          .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
-          .name('Shadow Bias')
-          .listen()
-          .onChange((v: number) => {
-            if ((light as any).shadow) {
-              (light as any).shadow.bias = v;
-              (light as any).shadow.needsUpdate = true;
-            }
-            this.renderer.shadowMap.needsUpdate = true;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.shadowBias = v;
-          });
-
-        sub
-          .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
-          .name('Shadow Resolution')
-          .onChange((v: number) => {
-            const size = parseInt(String(v), 10);
-            const sh = (light as any).shadow;
-            if (sh && sh.mapSize) {
-              sh.mapSize.width = size;
-              sh.mapSize.height = size;
-              if (sh.map) {
-                sh.map.dispose();
-                sh.map = null;
-              }
-              sh.needsUpdate = true;
-            }
-            this.renderer.shadowMap.needsUpdate = true;
-            const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
-            if (cfg) cfg.shadowMapSize = size;
-          });
-      }
     }
   }
 
@@ -913,175 +854,108 @@ export class SceneStudioGUI {
     const worldGroup = this.worldGroupSupplier();
     if (!worldGroup) return;
 
+    this.trackedMaterials = collectTrackedMaterials(worldGroup);
+    if (this.trackedMaterials.length === 0) return;
+
     const matFolder = this.gui.addFolder('Materials Controller');
     this.materialsFolderPopulated = true;
 
-    const isValidNamedObject = (name: string) => {
-      if (!name) return false;
-      const lower = name.toLowerCase().trim();
-      if (
-        lower.startsWith('cube') ||
-        lower.startsWith('plane') ||
-        lower.startsWith('mesh') ||
-        lower.startsWith('object')
-      ) {
-        return false;
-      }
-      return true;
+    const facades = this.trackedMaterials.filter((entry) => entry.slot === 0);
+    const windows = this.trackedMaterials.filter((entry) => entry.slot === 1);
+
+    const applyGroup = (
+      entries: TrackedMaterial[],
+      patch: Partial<{ color: string; roughness: number; metalness: number }>,
+    ) => {
+      const col = patch.color ? new THREE.Color(patch.color) : null;
+      entries.forEach((entry) => {
+        if (col) {
+          entry.mat.color.copy(col);
+          entry.params.color = patch.color!;
+        }
+        if (patch.roughness !== undefined && 'roughness' in entry.mat) {
+          entry.mat.roughness = patch.roughness;
+          entry.params.roughness = patch.roughness;
+        }
+        if (patch.metalness !== undefined && 'metalness' in entry.mat) {
+          entry.mat.metalness = patch.metalness;
+          entry.params.metalness = patch.metalness;
+        }
+        entry.mat.needsUpdate = true;
+      });
     };
 
-    const facadeMaterials: { name: string; mat: THREE.MeshStandardMaterial }[] = [];
-    const windowMaterials: { name: string; mat: THREE.MeshStandardMaterial }[] = [];
-
-    worldGroup.traverse((child: any) => {
-      let displayName = child.name;
-      if (child.parent && child.parent.name && isValidNamedObject(child.parent.name)) {
-        displayName = child.parent.name;
+    if (facades.length > 0) {
+      if (!SCENE_CONFIG.materials.globalFacadeColor) {
+        this.globalFacade.color = facades[0].params.color;
+        this.globalFacade.roughness = facades[0].params.roughness;
+        this.globalFacade.metalness = facades[0].params.metalness;
       }
 
-      if (child.isMesh && child.material && isValidNamedObject(displayName)) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        if (mats[0] && (mats[0].isMeshStandardMaterial || mats[0].isMeshBasicMaterial)) {
-          facadeMaterials.push({ name: `${displayName} (Facade)`, mat: mats[0] });
-        }
-        if (mats[1] && (mats[1].isMeshStandardMaterial || mats[1].isMeshBasicMaterial)) {
-          windowMaterials.push({ name: `${displayName} (Windows/Insets)`, mat: mats[1] });
-        }
-      }
-    });
-
-    if (facadeMaterials.length === 0 && windowMaterials.length === 0) return;
-
-    // Group 1: Light Building Facades (Main Body Color)
-    if (facadeMaterials.length > 0) {
-      const facadeGroupSub = matFolder.addFolder('💡 Light Building Facades (Main Body)');
-      const defaultLightHex = '#' + (facadeMaterials[0].mat.color ? facadeMaterials[0].mat.color.getHexString() : 'ffffff');
-
-      const facadeParams = {
-        color: defaultLightHex,
-        roughness: facadeMaterials[0].mat.roughness ?? 0.6,
-        metalness: facadeMaterials[0].mat.metalness ?? 0.1,
-      };
-
+      const facadeGroupSub = matFolder.addFolder('Light Building Facades (Main Body)');
       facadeGroupSub
-        .addColor(facadeParams, 'color')
+        .addColor(this.globalFacade, 'color')
         .name('Light Facades Color')
         .listen()
-        .onChange((hex: string) => {
-          const col = new THREE.Color(hex);
-          facadeMaterials.forEach((b) => {
-            if (b.mat.color) b.mat.color.copy(col);
-            b.mat.needsUpdate = true;
-          });
-        });
-
+        .onChange((hex: string) => applyGroup(facades, { color: hex }));
       facadeGroupSub
-        .add(facadeParams, 'roughness', 0.0, 1.0, 0.02)
+        .add(this.globalFacade, 'roughness', 0.0, 1.0, 0.02)
         .name('Roughness')
         .listen()
-        .onChange((v: number) => {
-          facadeMaterials.forEach((b) => {
-            b.mat.roughness = v;
-            b.mat.needsUpdate = true;
-          });
-        });
-
+        .onChange((v: number) => applyGroup(facades, { roughness: v }));
       facadeGroupSub
-        .add(facadeParams, 'metalness', 0.0, 1.0, 0.02)
+        .add(this.globalFacade, 'metalness', 0.0, 1.0, 0.02)
         .name('Metalness')
         .listen()
-        .onChange((v: number) => {
-          facadeMaterials.forEach((b) => {
-            b.mat.metalness = v;
-            b.mat.needsUpdate = true;
-          });
-        });
+        .onChange((v: number) => applyGroup(facades, { metalness: v }));
     }
 
-    // Group 2: Building Windows & Insets (Dark Accents)
-    if (windowMaterials.length > 0) {
-      const windowGroupSub = matFolder.addFolder('🪟 Building Windows & Insets (Dark Accents)');
-      const defaultWindowHex = '#' + (windowMaterials[0].mat.color ? windowMaterials[0].mat.color.getHexString() : '222222');
-
-      const windowParams = {
-        color: defaultWindowHex,
-        roughness: windowMaterials[0].mat.roughness ?? 0.6,
-      };
-
-      windowGroupSub
-        .addColor(windowParams, 'color')
-        .name('Windows & Insets Color')
-        .listen()
-        .onChange((hex: string) => {
-          const col = new THREE.Color(hex);
-          windowMaterials.forEach((b) => {
-            if (b.mat.color) b.mat.color.copy(col);
-            b.mat.needsUpdate = true;
-          });
-        });
-
-      windowGroupSub
-        .add(windowParams, 'roughness', 0.0, 1.0, 0.02)
-        .name('Roughness')
-        .listen()
-        .onChange((v: number) => {
-          windowMaterials.forEach((b) => {
-            b.mat.roughness = v;
-            b.mat.needsUpdate = true;
-          });
-        });
-    }
-
-    // Group 3: Individual Building Main Body Colors
-    const indBldgSub = matFolder.addFolder('🏢 Individual Building Facades');
-
-    facadeMaterials.forEach((b) => {
-      const sub = indBldgSub.addFolder(b.name);
-      const defaultColorHex = '#' + (b.mat.color ? b.mat.color.getHexString() : 'ffffff');
-
-      const bldgParams = {
-        color: defaultColorHex,
-        roughness: b.mat.roughness ?? 0.6,
-        metalness: b.mat.metalness ?? 0.1,
-        wireframe: b.mat.wireframe ?? false,
-      };
-
-      if (b.mat.color) {
-        sub
-          .addColor(bldgParams, 'color')
-          .name('Main Body Color')
-          .listen()
-          .onChange((hex: string) => {
-            b.mat.color.set(new THREE.Color(hex));
-            b.mat.needsUpdate = true;
-          });
+    if (windows.length > 0) {
+      if (!SCENE_CONFIG.materials.globalWindowColor) {
+        this.globalWindow.color = windows[0].params.color;
+        this.globalWindow.roughness = windows[0].params.roughness;
+        this.globalWindow.metalness = windows[0].params.metalness;
       }
 
+      const windowGroupSub = matFolder.addFolder('Building Windows & Insets (Dark Accents)');
+      windowGroupSub
+        .addColor(this.globalWindow, 'color')
+        .name('Windows & Insets Color')
+        .listen()
+        .onChange((hex: string) => applyGroup(windows, { color: hex }));
+      windowGroupSub
+        .add(this.globalWindow, 'roughness', 0.0, 1.0, 0.02)
+        .name('Roughness')
+        .listen()
+        .onChange((v: number) => applyGroup(windows, { roughness: v }));
+    }
+
+    const indBldgSub = matFolder.addFolder('Individual Building Facades');
+    facades.forEach((entry) => {
+      const sub = indBldgSub.addFolder(`${entry.displayName} (Facade)`);
       sub
-        .add(bldgParams, 'roughness', 0.0, 1.0, 0.02)
+        .addColor(entry.params, 'color')
+        .name('Main Body Color')
+        .listen()
+        .onChange((hex: string) => {
+          entry.mat.color.set(hex);
+          entry.mat.needsUpdate = true;
+        });
+      sub
+        .add(entry.params, 'roughness', 0.0, 1.0, 0.02)
         .name('Roughness')
         .listen()
         .onChange((v: number) => {
-          b.mat.roughness = v;
-          b.mat.needsUpdate = true;
+          entry.mat.roughness = v;
+          entry.mat.needsUpdate = true;
         });
-
       sub
-        .add(bldgParams, 'metalness', 0.0, 1.0, 0.02)
+        .add(entry.params, 'metalness', 0.0, 1.0, 0.02)
         .name('Metalness')
         .listen()
         .onChange((v: number) => {
-          b.mat.metalness = v;
-          b.mat.needsUpdate = true;
-        });
-
-      sub
-        .add(bldgParams, 'wireframe')
-        .name('Wireframe')
-        .listen()
-        .onChange((v: boolean) => {
-          b.mat.wireframe = v;
-          b.mat.needsUpdate = true;
+          entry.mat.metalness = v;
+          entry.mat.needsUpdate = true;
         });
     });
   }
@@ -1089,6 +963,10 @@ export class SceneStudioGUI {
   private refreshCamDisplay = () => {};
 
   public destroy() {
+    if (this.pointerHandler) {
+      window.removeEventListener('pointerdown', this.pointerHandler);
+      this.pointerHandler = null;
+    }
     if (this.toggleButton) {
       this.toggleButton.remove();
       this.toggleButton = null;

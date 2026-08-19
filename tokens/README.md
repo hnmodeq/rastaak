@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | UI colors, surfaces, text, borders, state, overlays | `tokens.colors.*` | CSS custom properties, Tailwind utilities, React inline styles |
 | Active homepage WebGL colors | `tokens.scene.*` | Legacy WebGL renderer and its worker; separate fill and glow controls for end-story elements |
-| Optional React Three.js renderer | `tokens.experimentalScene.*` | `HeroCanvas3D` only; this renderer is not mounted on the homepage |
+| Homepage Three.js renderer defaults | `tokens.experimentalScene.*` | Initial values for `HeroCanvas3D` / `sceneConfig.ts` until 3D Studio saves overrides |
 
 `scene` contains only active homepage elements and is the 3D palette shown in Token Studio. Its values are numeric because Three.js consumes numeric color representations. `experimentalScene` stays outside the Studio because changing it does not affect the visible homepage.
 
@@ -74,4 +74,4 @@ They are intentionally not committed and are overwritten by every generator run.
        └── React / Three.js imports tokens directly
 ```
 
-`/token-studio` is a local development tool only. It deliberately has no write API and returns 404 in a production build, so visual edits remain version-controlled code changes.
+`/token-studio` is a local development tool only. In development it can write the selected token back to `tokens/design-tokens.ts` through `POST /api/token-studio`. That route returns 404 in production, so visual edits remain version-controlled code changes.

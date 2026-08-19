@@ -9,9 +9,13 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { tokens } from '@/tokens/design-tokens';
-import { SCENE_CONFIG, sampleSceneJourney } from './scene/sceneConfig';
+import { SCENE_CONFIG } from './scene/sceneConfig';
+import { sampleSceneJourney } from './scene/journeyMath';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
+import { applyMaterialsConfig, prepareMeshNames } from './scene/materialKeys';
+
+const studioEnabled = process.env.NODE_ENV === 'development';
 
 export const HeroCanvas3D: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,20 +29,13 @@ export const HeroCanvas3D: React.FC = () => {
 
     const env = SCENE_CONFIG.environment;
     const camConfig = SCENE_CONFIG.camera;
+    const backgroundColor = new THREE.Color(env.backgroundColor);
 
-    // Unified initial body background color to avoid header dark bar seam
-    document.body.style.backgroundColor = '#' + new THREE.Color(tokens.experimentalScene.canvasBackground).getHexString();
+    document.body.style.backgroundColor = '#' + backgroundColor.getHexString();
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Scene / Camera / Renderer
-    // ─────────────────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(tokens.experimentalScene.canvasBackground);
-    scene.fog = new THREE.Fog(
-      tokens.experimentalScene.canvasBackground,
-      env.fogStart,
-      env.fogEnd,
-    );
+    scene.background = backgroundColor;
+    scene.fog = new THREE.Fog(backgroundColor, env.fogStart, env.fogEnd);
 
     const camera = new THREE.PerspectiveCamera(
       camConfig.defaultFov,
@@ -51,7 +48,7 @@ export const HeroCanvas3D: React.FC = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = SCENE_CONFIG.renderer.toneMappingExposure ?? 1.15;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -60,15 +57,11 @@ export const HeroCanvas3D: React.FC = () => {
     renderer.domElement.style.zIndex = '0';
     containerRef.current.appendChild(renderer.domElement);
 
-    // OrbitControls for Free Orbit Camera Studio Mode
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enabled = false;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Dynamic Lights Setup from LIGHTS_CONFIG
-    // ─────────────────────────────────────────────────────────────────────
     const lightsMap = new Map<string, THREE.Light>();
 
     for (const cfg of LIGHTS_CONFIG) {
@@ -107,7 +100,12 @@ export const HeroCanvas3D: React.FC = () => {
         }
         light = dirLight;
       } else if (cfg.type === 'point') {
-        const ptLight = new THREE.PointLight(cfg.color, cfg.intensity, cfg.distance ?? 0);
+        const ptLight = new THREE.PointLight(
+          cfg.color,
+          cfg.intensity,
+          cfg.distance ?? 0,
+          cfg.decay ?? 2,
+        );
         if (cfg.position) ptLight.position.set(...cfg.position);
         if (cfg.castShadow) {
           ptLight.castShadow = true;
@@ -127,6 +125,7 @@ export const HeroCanvas3D: React.FC = () => {
           cfg.distance ?? 0,
           THREE.MathUtils.degToRad(cfg.angle ?? 45),
           cfg.penumbra ?? 0.5,
+          cfg.decay ?? 2,
         );
         if (cfg.position) spotLight.position.set(...cfg.position);
         if (cfg.target) {
@@ -152,81 +151,25 @@ export const HeroCanvas3D: React.FC = () => {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Interactive Studio GUI
-    // ─────────────────────────────────────────────────────────────────────
     let world: THREE.Group | null = null;
+    let studioGUI: SceneStudioGUI | null = null;
 
-    const studioGUI = new SceneStudioGUI(
-      scene,
-      camera,
-      renderer,
-      lightsMap,
-      () => world,
-      (forcedT: number) => {
-        targetScrollProgress = forcedT;
-      },
-      (orbitEnabled: boolean) => {
-        controls.enabled = orbitEnabled;
-      }
-    );
+    if (studioEnabled) {
+      studioGUI = new SceneStudioGUI(
+        scene,
+        camera,
+        renderer,
+        lightsMap,
+        () => world,
+        (forcedT: number) => {
+          targetScrollProgress = forcedT;
+        },
+        (orbitEnabled: boolean) => {
+          controls.enabled = orbitEnabled;
+        },
+      );
+    }
 
-    // Apply saved materials directly to the loaded GLTF world meshes using unique slot keys
-    const applySavedMaterials = (worldGroup: THREE.Group) => {
-      const savedMats = SCENE_CONFIG.materials;
-      if (!savedMats) return;
-
-      const isValidNamedObject = (name: string) => {
-        if (!name) return false;
-        const lower = name.toLowerCase().trim();
-        if (
-          lower.startsWith('cube') ||
-          lower.startsWith('plane') ||
-          lower.startsWith('mesh') ||
-          lower.startsWith('object')
-        ) {
-          return false;
-        }
-        return true;
-      };
-
-      worldGroup.traverse((child: any) => {
-        let displayName = child.name;
-        if (child.parent && child.parent.name && isValidNamedObject(child.parent.name)) {
-          displayName = child.parent.name;
-        }
-
-        if (child.isMesh && child.material && isValidNamedObject(displayName)) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-
-          mats.forEach((mat: THREE.MeshStandardMaterial, index: number) => {
-            const key = `${displayName}_mat_${index}`;
-
-            // Check if a specific slot override exists in SCENE_CONFIG.materials.overrides
-            if (savedMats.overrides && savedMats.overrides[key]) {
-              const ov = savedMats.overrides[key];
-              if (ov.color !== undefined) mat.color.set(new THREE.Color(ov.color));
-              if (ov.roughness !== undefined) mat.roughness = ov.roughness;
-              if (ov.metalness !== undefined) mat.metalness = ov.metalness;
-              mat.needsUpdate = true;
-            } else {
-              // Global defaults: slot 0 = facade, slot 1 = window
-              if (index === 0 && savedMats.globalFacadeColor !== undefined) {
-                mat.color.set(new THREE.Color(savedMats.globalFacadeColor));
-                mat.needsUpdate = true;
-              } else if (index === 1 && savedMats.globalWindowColor !== undefined) {
-                mat.color.set(new THREE.Color(savedMats.globalWindowColor));
-                mat.needsUpdate = true;
-              }
-            }
-          });
-        }
-      });
-    };
-
-    // ─────────────────────────────────────────────────────────────────────
-    //  3D Model Loading (Rastaak-3D-Scene-Ver-V.glb)
-    // ─────────────────────────────────────────────────────────────────────
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
 
@@ -235,55 +178,43 @@ export const HeroCanvas3D: React.FC = () => {
 
     gltfLoader.load(
       '/glb/Rastaak-3D-Scene-Ver-V.glb',
-      (gltf: any) => {
+      (gltf: { scene: THREE.Group }) => {
         if (isDisposed) return;
-        world = gltf.scene as THREE.Group;
+        world = gltf.scene;
 
-        world.traverse((child: any) => {
-          if (child.parent && child.parent.name && !child.parent.name.toLowerCase().startsWith('scene')) {
-            const pName = child.parent.name;
-            if (!pName.toLowerCase().startsWith('cube') && !pName.toLowerCase().startsWith('plane')) {
-              if (!child.name || child.name.toLowerCase().startsWith('cube') || child.name.toLowerCase().startsWith('plane')) {
-                child.name = pName;
-              }
-            }
-          }
+        prepareMeshNames(world);
 
-          if (!child.isMesh) return;
-          child.castShadow = true;
-          child.receiveShadow = true;
+        world.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh) return;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
 
-          // Programmatically clone materials so each building mesh gets its own unique, independent material copy
-          if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material = child.material.map((m: any, idx: number) => {
-                const cloned = m.clone();
-                cloned.name = `${child.name || 'Building'}_Mat_${idx}`;
-                cloned.metalness = Math.min(cloned.metalness, 0.12);
-                cloned.roughness = Math.max(cloned.roughness, 0.60);
+          if (mesh.material) {
+            if (Array.isArray(mesh.material)) {
+              mesh.material = mesh.material.map((m, idx) => {
+                const cloned = m.clone() as THREE.MeshStandardMaterial;
+                cloned.name = `${mesh.name || 'Building'}_Mat_${idx}`;
+                if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.12);
+                if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 1, 0.6);
                 return cloned;
               });
             } else {
-              const cloned = child.material.clone();
-              cloned.name = `${child.name || 'Building'}_Mat_0`;
-              cloned.metalness = Math.min(cloned.metalness, 0.12);
-              cloned.roughness = Math.max(cloned.roughness, 0.60);
-              child.material = cloned;
+              const cloned = mesh.material.clone() as THREE.MeshStandardMaterial;
+              cloned.name = `${mesh.name || 'Building'}_Mat_0`;
+              if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.12);
+              if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 1, 0.6);
+              mesh.material = cloned;
             }
           }
         });
 
-        // Apply saved material colors & properties from sceneConfig.ts
-        applySavedMaterials(world);
-
+        applyMaterialsConfig(world, SCENE_CONFIG.materials);
         scene.add(world);
+        studioGUI?.populateMaterials();
 
-        // Populate materials in studio panel now that GLTF is ready
-        studioGUI.populateMaterials();
-
-        // Notify loader of 100% completion
         window.dispatchEvent(
-          new CustomEvent('rastaak-load-progress', { detail: { progress: 100 } })
+          new CustomEvent('rastaak-load-progress', { detail: { progress: 100 } }),
         );
         setIsLoaded(true);
       },
@@ -291,22 +222,19 @@ export const HeroCanvas3D: React.FC = () => {
         if (xhr.total > 0) {
           const percent = Math.round((xhr.loaded / xhr.total) * 100);
           window.dispatchEvent(
-            new CustomEvent('rastaak-load-progress', { detail: { progress: percent } })
+            new CustomEvent('rastaak-load-progress', { detail: { progress: percent } }),
           );
         }
       },
       (error: unknown) => {
         console.error('[HeroCanvas3D] failed to load world model', error);
         window.dispatchEvent(
-          new CustomEvent('rastaak-load-progress', { detail: { progress: 100 } })
+          new CustomEvent('rastaak-load-progress', { detail: { progress: 100 } }),
         );
         setIsLoaded(true);
-      }
+      },
     );
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Scroll Progress Calculation
-    // ─────────────────────────────────────────────────────────────────────
     let targetScrollProgress = 0;
     let currentScrollProgress = 0;
 
@@ -327,9 +255,6 @@ export const HeroCanvas3D: React.FC = () => {
     };
     window.addEventListener('resize', handleResize);
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Render Loop
-    // ─────────────────────────────────────────────────────────────────────
     const clock = new THREE.Clock();
     const sample = {
       camera: [0, 0, 0] as [number, number, number],
@@ -345,13 +270,12 @@ export const HeroCanvas3D: React.FC = () => {
       const delta = clock.getDelta();
       const elapsed = clock.getElapsedTime();
 
-      if (studioGUI && studioGUI.isOrbitMode) {
+      if (studioGUI?.isOrbitMode) {
         controls.update();
-      } else if (studioGUI && studioGUI.isManualMode) {
+      } else if (studioGUI?.isManualMode) {
         camera.position.copy(studioGUI.manualCamPos);
         camera.lookAt(studioGUI.manualLookAt);
       } else {
-        // Scroll journey mode
         const damping = 1 - Math.exp(-delta * SCENE_CONFIG.scroll.cameraDamping);
         currentScrollProgress += (targetScrollProgress - currentScrollProgress) * damping;
         const t = currentScrollProgress;
@@ -382,29 +306,25 @@ export const HeroCanvas3D: React.FC = () => {
 
     animate();
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Cleanup
-    // ─────────────────────────────────────────────────────────────────────
     return () => {
       isDisposed = true;
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
       controls.dispose();
-      studioGUI.destroy();
+      studioGUI?.destroy();
 
       if (world) {
-        world.traverse((child: any) => {
-          if (!child.isMesh) return;
-          child.geometry?.dispose();
-          const materials = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
+        world.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh) return;
+          mesh.geometry?.dispose();
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           for (const m of materials) {
             if (!m) continue;
             for (const key of Object.keys(m)) {
-              const value = (m as any)[key];
-              if (value && value.isTexture) value.dispose();
+              const value = (m as unknown as Record<string, { isTexture?: boolean; dispose?: () => void }>)[key];
+              if (value && value.isTexture) value.dispose?.();
             }
             m.dispose();
           }

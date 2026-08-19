@@ -1,9 +1,10 @@
 /**
  * journeyPath.ts
- * Re-exports from sceneConfig.ts for backward compatibility.
+ * Re-exports from sceneConfig / journeyMath for backward compatibility.
  */
 
-import { SCENE_CONFIG, sampleSceneJourney } from './sceneConfig';
+import { SCENE_CONFIG } from './sceneConfig';
+import { sampleSceneJourney } from './journeyMath';
 
 export { SCENE_CONFIG, sampleSceneJourney };
 
@@ -18,9 +19,13 @@ export const FINALE = SCENE_CONFIG.stops[SCENE_CONFIG.stops.length - 1];
 
 export const sampleJourney = (
   t: number,
-  out: { camera: [number, number, number]; target: [number, number, number] }
+  out: { camera: [number, number, number]; target: [number, number, number] },
 ) => {
-  const sampled = { camera: [0, 0, 0] as [number, number, number], target: [0, 0, 0] as [number, number, number], fov: 45 };
+  const sampled = {
+    camera: [0, 0, 0] as [number, number, number],
+    target: [0, 0, 0] as [number, number, number],
+    fov: 45,
+  };
   sampleSceneJourney(t, sampled);
   out.camera[0] = sampled.camera[0];
   out.camera[1] = sampled.camera[1];

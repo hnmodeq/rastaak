@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { ApplyNowButton } from '@/components/forms/ApplyNowButton';
 
 export const ApplyContent: React.FC = () => {
   return (
@@ -17,9 +18,7 @@ export const ApplyContent: React.FC = () => {
                 We continuously source top industry talent, from engineers to precision millwrights. So when work begins, the right team is already in place.
               </p>
               <div className="flx sub-hero__cta">
-                <button type="button" className="pill-btn pill-btn--dark" data-apply-trigger="true">
-                  <span className="pill-btn-span">Apply Now to Rastaak</span>
-                </button>
+                <ApplyNowButton>Apply Now to Rastaak</ApplyNowButton>
               </div>
             </div>
           </div>

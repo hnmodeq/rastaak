@@ -1,6 +1,4 @@
-# Example: Allow all bots to scan and index your site.
-# Full syntax: https://developers.google.com/search/docs/advanced/robots/create-robots-txt
 User-agent: *
 Allow: /
 
-Sitemap: https://www.vectrfl.com/sitemap-index.xml
+Sitemap: https://rastaak.com/sitemap-index.xml
