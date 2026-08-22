@@ -103,6 +103,15 @@ export interface StudioStorySave {
   captionFadeIn: number;
   packetIntensity: number;
   packetDistance: number;
+  packetGlow: number;
+  packetGlowSize: number;
+  packetCoreSize: number;
+  packetTrail: number;
+  chipBorder: number;
+  chipBorderOpacity: number;
+  chipBackground: number;
+  chipBackgroundOpacity: number;
+  chipText: number;
 }
 
 export interface StudioFlowStepSave {
@@ -111,6 +120,29 @@ export interface StudioFlowStepSave {
   subtitle: string;
   caption: string;
   progressRange: [number, number];
+}
+
+export interface StudioHeroCopySave {
+  titleLine1: string;
+  titleLine2: string;
+  titleColor: number;
+  subtitleLine1: string;
+  subtitleLine2: string;
+  subtitleColor: number;
+  scrollHint: string;
+  scrollHintColor: number;
+}
+
+export interface StudioFlowChromeSave {
+  align: 'left' | 'right';
+  dir: 'ltr' | 'rtl';
+  titleColor: number;
+  numberColor: number;
+  numberActiveColor: number;
+  numberBg: number;
+  descriptionColor: number;
+  trackColor: number;
+  trackFillColor: number;
 }
 
 export interface StudioSavePayload {
@@ -123,4 +155,6 @@ export interface StudioSavePayload {
   materials: MaterialsConfig;
   story?: StudioStorySave;
   flowSteps?: StudioFlowStepSave[];
+  heroCopy?: StudioHeroCopySave;
+  flowChrome?: StudioFlowChromeSave;
 }

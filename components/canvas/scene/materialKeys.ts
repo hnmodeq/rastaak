@@ -166,12 +166,23 @@ export function collectMaterialsConfig(
 ): MaterialsConfig {
   const overrides: Record<string, BuildingMaterialOverride> = {};
 
-  forEachStudioMaterial(root, ({ mat, key }) => {
-    overrides[key] = {
-      color: mat.color.getHex(),
-      roughness: typeof mat.roughness === 'number' ? mat.roughness : undefined,
-      metalness: typeof mat.metalness === 'number' ? mat.metalness : undefined,
-    };
+  forEachStudioMaterial(root, ({ mat, key, role }) => {
+    const globalColor = role === 'window' ? globals.globalWindowColor : globals.globalFacadeColor;
+    const globalRoughness = role === 'window' ? globals.globalWindowRoughness : globals.globalFacadeRoughness;
+    const globalMetalness = role === 'window' ? globals.globalWindowMetalness : globals.globalFacadeMetalness;
+    const color = mat.color.getHex();
+    const roughness = typeof mat.roughness === 'number' ? mat.roughness : undefined;
+    const metalness = typeof mat.metalness === 'number' ? mat.metalness : undefined;
+    const colorDiffers = globalColor === undefined || color !== (globalColor >>> 0);
+    const roughnessDiffers =
+      roughness !== undefined &&
+      (globalRoughness === undefined || Math.abs(roughness - globalRoughness) > 0.001);
+    const metalnessDiffers =
+      metalness !== undefined &&
+      (globalMetalness === undefined || Math.abs(metalness - globalMetalness) > 0.001);
+    if (!colorDiffers && !roughnessDiffers && !metalnessDiffers) return;
+
+    overrides[key] = { color, roughness, metalness };
   });
 
   return {

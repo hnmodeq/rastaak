@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronDown, FeatureIcon } from '../ui/Icons';
-import { FLOW_CONFIG } from './flowConfig';
+import { FLOW_CONFIG, FLOW_CHROME } from './flowConfig';
+import { HERO_COPY } from './heroCopy';
 
 export const HomeContent: React.FC = () => {
   return (
@@ -13,33 +14,31 @@ export const HomeContent: React.FC = () => {
               className="hero__title"
               style={{
                 opacity: 0,
-                transform: 'perspective(1000px) translateX(50%) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
+                transform: 'perspective(1000px) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
               }}
             >
-              <span>The New Standard </span>
-              <span>in Staffing</span>
+              <span>{HERO_COPY.titleLine1}</span>
+              <span>{HERO_COPY.titleLine2}</span>
             </h1>
             <p
               className="hero__subtitle"
               style={{
                 opacity: 0,
-                transform: 'perspective(1000px) translateX(50%) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
+                transform: 'perspective(1000px) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
               }}
             >
               <span>
-                AI driven speed. Expert curation.
+                {HERO_COPY.subtitleLine1}
                 <br className="sp" />
               </span>
-              <span>
-                We mobilize verified crews to protect your schedule and your bottom line in high-consequence environments.
-              </span>
+              <span>{HERO_COPY.subtitleLine2}</span>
             </p>
           </div>
           <div className="hero__scroll-btn">
             <span>
               <span className="hsbtn-in" style={{ transform: 'translate3d(0, calc(100% + 7px), 0)' }}>
                 {' '}
-                scroll to discover our process{' '}
+                {HERO_COPY.scrollHint}{' '}
               </span>
             </span>
           </div>
@@ -48,7 +47,7 @@ export const HomeContent: React.FC = () => {
         <div className="hero-spacer" />
 
         {/* Process Flow Section preserving 100% authentic HTML DOM for legacy Astro animations */}
-        <section className="flow">
+        <section className="flow" data-align={FLOW_CHROME.align} data-dir={FLOW_CHROME.dir}>
           <div className="flow__wrapper">
             <div className="flow__steps">
               {FLOW_CONFIG.map((step, idx) => (

@@ -4,11 +4,11 @@ import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
 import { STORY_CONFIG, applyStoryTheme } from './storyConfig';
-import { FLOW_CONFIG } from '@/components/home/flowConfig';
+import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
+import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
 import {
   collectMaterialsConfig,
   collectTrackedMaterials,
-  countMaterialOverrides,
   isSiteMesh,
   type TrackedMaterial,
 } from './materialKeys';
@@ -34,24 +34,6 @@ const isHemisphereLight = (l: THREE.Light) =>
 
 function colorToHexNumber(color: THREE.Color): number {
   return color.getHex();
-}
-
-function syncFlowDom() {
-  if (typeof document === 'undefined') return;
-  document.querySelectorAll<HTMLElement>('.flow__step').forEach((el, index) => {
-    const step = FLOW_CONFIG[index];
-    if (!step) return;
-    const title = el.querySelector('.flow__title');
-    const description = el.querySelector('.flow__description');
-    if (title) title.textContent = step.title;
-    if (description) {
-      description.textContent = '';
-      if (step.subtitle) {
-        description.append(step.subtitle, document.createElement('br'));
-      }
-      description.append(step.caption);
-    }
-  });
 }
 
 export class SceneStudioGUI {
@@ -319,11 +301,18 @@ export class SceneStudioGUI {
         packetGlowSize: STORY_CONFIG.packetGlowSize,
         packetCoreSize: STORY_CONFIG.packetCoreSize,
         packetTrail: STORY_CONFIG.packetTrail,
+        chipBorder: STORY_CONFIG.chipBorder,
+        chipBorderOpacity: STORY_CONFIG.chipBorderOpacity,
+        chipBackground: STORY_CONFIG.chipBackground,
+        chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity,
+        chipText: STORY_CONFIG.chipText,
       },
       flowSteps: FLOW_CONFIG.map((step) => ({
         ...step,
         progressRange: [...step.progressRange] as [number, number],
       })),
+      heroCopy: { ...HERO_COPY },
+      flowChrome: { ...FLOW_CHROME },
     };
   }
 
@@ -681,7 +670,7 @@ export class SceneStudioGUI {
             if (res.ok) {
               window.dispatchEvent(new CustomEvent('rastaak-studio-after-save'));
               alert(
-                'Saved. Camera, lights, story colors, timeline titles, and materials were written to code. Refresh will restore this exact scene.',
+                'Saved. Camera, lights, story, hero copy, timeline, chip box, and materials were written to code. Refresh will restore this exact scene.',
               );
             } else {
               alert(`Error saving config: ${data.error || 'Unknown error'}`);
@@ -724,8 +713,44 @@ export class SceneStudioGUI {
   private populateStoryControls() {
     if (!this.gui) return;
     applyStoryTheme();
+    applyHeroCopy();
+    applyFlowChrome();
 
     const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+
+    const heroFolder = this.gui.addFolder('Hero copy');
+    const heroParams = {
+      titleLine1: HERO_COPY.titleLine1,
+      titleLine2: HERO_COPY.titleLine2,
+      titleColor: hex(HERO_COPY.titleColor),
+      subtitleLine1: HERO_COPY.subtitleLine1,
+      subtitleLine2: HERO_COPY.subtitleLine2,
+      subtitleColor: hex(HERO_COPY.subtitleColor),
+      scrollHint: HERO_COPY.scrollHint,
+      scrollHintColor: hex(HERO_COPY.scrollHintColor),
+    };
+    const applyHeroField = <K extends keyof typeof HERO_COPY>(key: K, value: (typeof HERO_COPY)[K]) => {
+      HERO_COPY[key] = value;
+      applyHeroCopy();
+    };
+    heroFolder.add(heroParams, 'titleLine1').name('Title line 1').onChange((value: string) => applyHeroField('titleLine1', value));
+    heroFolder.add(heroParams, 'titleLine2').name('Title line 2').onChange((value: string) => applyHeroField('titleLine2', value));
+    heroFolder
+      .addColor(heroParams, 'titleColor')
+      .name('Title color')
+      .onChange((value: string) => applyHeroField('titleColor', new THREE.Color(value).getHex()));
+    heroFolder.add(heroParams, 'subtitleLine1').name('Description line 1').onChange((value: string) => applyHeroField('subtitleLine1', value));
+    heroFolder.add(heroParams, 'subtitleLine2').name('Description line 2').onChange((value: string) => applyHeroField('subtitleLine2', value));
+    heroFolder
+      .addColor(heroParams, 'subtitleColor')
+      .name('Description color')
+      .onChange((value: string) => applyHeroField('subtitleColor', new THREE.Color(value).getHex()));
+    heroFolder.add(heroParams, 'scrollHint').name('Scroll hint').onChange((value: string) => applyHeroField('scrollHint', value));
+    heroFolder
+      .addColor(heroParams, 'scrollHintColor')
+      .name('Scroll hint color')
+      .onChange((value: string) => applyHeroField('scrollHintColor', new THREE.Color(value).getHex()));
+
     const storyFolder = this.gui.addFolder('Story Colors & Titles');
 
     const colorParams = {
@@ -802,6 +827,50 @@ export class SceneStudioGUI {
     storyFolder.addColor(colorParams, 'chipNeed').name('Tick before solve').onChange((v: string) => applyColor('chipNeed', v));
     storyFolder.addColor(colorParams, 'chipResolved').name('Tick after solve').onChange((v: string) => applyColor('chipResolved', v));
 
+    const chipBoxFolder = storyFolder.addFolder('Need chip box');
+    const chipBoxParams = {
+      chipBorder: hex(STORY_CONFIG.chipBorder ?? 0xe0a01a),
+      chipBorderOpacity: STORY_CONFIG.chipBorderOpacity ?? 0.55,
+      chipBackground: hex(STORY_CONFIG.chipBackground ?? 0x14151a),
+      chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity ?? 0.72,
+      chipText: hex(STORY_CONFIG.chipText ?? 0xf5f5f2),
+    };
+    chipBoxFolder
+      .addColor(chipBoxParams, 'chipBorder')
+      .name('Border color')
+      .onChange((value: string) => {
+        STORY_CONFIG.chipBorder = new THREE.Color(value).getHex();
+        applyStoryTheme();
+      });
+    chipBoxFolder
+      .add(chipBoxParams, 'chipBorderOpacity', 0, 1, 0.01)
+      .name('Border opacity')
+      .onChange((value: number) => {
+        STORY_CONFIG.chipBorderOpacity = value;
+        applyStoryTheme();
+      });
+    chipBoxFolder
+      .addColor(chipBoxParams, 'chipBackground')
+      .name('Background color')
+      .onChange((value: string) => {
+        STORY_CONFIG.chipBackground = new THREE.Color(value).getHex();
+        applyStoryTheme();
+      });
+    chipBoxFolder
+      .add(chipBoxParams, 'chipBackgroundOpacity', 0, 1, 0.01)
+      .name('Background opacity')
+      .onChange((value: number) => {
+        STORY_CONFIG.chipBackgroundOpacity = value;
+        applyStoryTheme();
+      });
+    chipBoxFolder
+      .addColor(chipBoxParams, 'chipText')
+      .name('Text color')
+      .onChange((value: string) => {
+        STORY_CONFIG.chipText = new THREE.Color(value).getHex();
+        applyStoryTheme();
+      });
+
     const chipsFolder = storyFolder.addFolder('Need chip titles');
     STORY_CONFIG.clients.forEach((client) => {
       const params = { need: client.need };
@@ -812,6 +881,44 @@ export class SceneStudioGUI {
           client.need = value;
         });
     });
+
+    const timelineFolder = storyFolder.addFolder('Timeline layout');
+    const timelineParams = {
+      align: FLOW_CHROME.align,
+      dir: FLOW_CHROME.dir,
+      titleColor: hex(FLOW_CHROME.titleColor),
+      numberColor: hex(FLOW_CHROME.numberColor),
+      numberActiveColor: hex(FLOW_CHROME.numberActiveColor),
+      numberBg: hex(FLOW_CHROME.numberBg),
+      descriptionColor: hex(FLOW_CHROME.descriptionColor),
+      trackColor: hex(FLOW_CHROME.trackColor),
+      trackFillColor: hex(FLOW_CHROME.trackFillColor),
+    };
+    timelineFolder
+      .add(timelineParams, 'align', ['left', 'right'])
+      .name('Position')
+      .onChange((value: 'left' | 'right') => {
+        FLOW_CHROME.align = value;
+        applyFlowChrome();
+      });
+    timelineFolder
+      .add(timelineParams, 'dir', ['ltr', 'rtl'])
+      .name('Direction')
+      .onChange((value: 'ltr' | 'rtl') => {
+        FLOW_CHROME.dir = value;
+        applyFlowChrome();
+      });
+    const applyTimelineColor = (key: 'titleColor' | 'numberColor' | 'numberActiveColor' | 'numberBg' | 'descriptionColor' | 'trackColor' | 'trackFillColor', value: string) => {
+      FLOW_CHROME[key] = new THREE.Color(value).getHex();
+      applyFlowChrome();
+    };
+    timelineFolder.addColor(timelineParams, 'titleColor').name('Title color').onChange((value: string) => applyTimelineColor('titleColor', value));
+    timelineFolder.addColor(timelineParams, 'numberColor').name('Number color').onChange((value: string) => applyTimelineColor('numberColor', value));
+    timelineFolder.addColor(timelineParams, 'numberActiveColor').name('Active number color').onChange((value: string) => applyTimelineColor('numberActiveColor', value));
+    timelineFolder.addColor(timelineParams, 'numberBg').name('Number background').onChange((value: string) => applyTimelineColor('numberBg', value));
+    timelineFolder.addColor(timelineParams, 'descriptionColor').name('Description color').onChange((value: string) => applyTimelineColor('descriptionColor', value));
+    timelineFolder.addColor(timelineParams, 'trackColor').name('Track color').onChange((value: string) => applyTimelineColor('trackColor', value));
+    timelineFolder.addColor(timelineParams, 'trackFillColor').name('Track fill color').onChange((value: string) => applyTimelineColor('trackFillColor', value));
 
     const titlesFolder = storyFolder.addFolder('Timeline titles');
     FLOW_CONFIG.forEach((step, index) => {
@@ -1074,12 +1181,53 @@ export class SceneStudioGUI {
         .onChange((v: number) => onChange({ metalness: v }));
     };
 
+    const persistGlobals = () => {
+      SCENE_CONFIG.materials.globalFacadeColor = new THREE.Color(this.globalFacade.color).getHex();
+      SCENE_CONFIG.materials.globalWindowColor = new THREE.Color(this.globalWindow.color).getHex();
+      SCENE_CONFIG.materials.globalFacadeRoughness = this.globalFacade.roughness;
+      SCENE_CONFIG.materials.globalFacadeMetalness = this.globalFacade.metalness;
+      SCENE_CONFIG.materials.globalWindowRoughness = this.globalWindow.roughness;
+      SCENE_CONFIG.materials.globalWindowMetalness = this.globalWindow.metalness;
+    };
+
+    const applyDefaultGroup = (
+      entries: TrackedMaterial[],
+      params: { color: string; roughness: number; metalness: number },
+      patch: Partial<{ color: string; roughness: number; metalness: number }>,
+    ) => {
+      const prevColor = params.color.toLowerCase();
+      const targets = entries.filter((entry) => entry.params.color.toLowerCase() === prevColor);
+      applyGroup(targets, patch);
+      if (patch.color !== undefined) params.color = patch.color;
+      if (patch.roughness !== undefined) params.roughness = patch.roughness;
+      if (patch.metalness !== undefined) params.metalness = patch.metalness;
+      persistGlobals();
+    };
+
+    const buildingFacades = facades.filter((entry) => !isSiteMesh(entry.displayName));
+    const buildingWindows = windows.filter((entry) => !isSiteMesh(entry.displayName));
+
+    const defaultsFolder = matFolder.addFolder('All buildings (no override)');
+    defaultsFolder
+      .addColor(this.globalFacade, 'color')
+      .name('Building Color')
+      .listen()
+      .onChange((hexValue: string) => applyDefaultGroup(buildingFacades, this.globalFacade, { color: hexValue }));
+    defaultsFolder
+      .addColor(this.globalWindow, 'color')
+      .name('Window Color')
+      .listen()
+      .onChange((hexValue: string) => applyDefaultGroup(buildingWindows, this.globalWindow, { color: hexValue }));
+
     if (facades.length > 0) {
       const facadeGroupSub = matFolder.addFolder('All Building Facades');
       addMaterialControls(
         facadeGroupSub,
         this.globalFacade,
-        (patch) => applyGroup(facades, patch),
+        (patch) => {
+          applyGroup(facades, patch);
+          persistGlobals();
+        },
         { color: 'Facade Color' },
       );
     }
@@ -1089,7 +1237,10 @@ export class SceneStudioGUI {
       addMaterialControls(
         windowGroupSub,
         this.globalWindow,
-        (patch) => applyGroup(windows, patch),
+        (patch) => {
+          applyGroup(windows, patch);
+          persistGlobals();
+        },
         { color: 'Window Color' },
       );
     }

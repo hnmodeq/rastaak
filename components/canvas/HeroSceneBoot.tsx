@@ -39,18 +39,24 @@ export const HeroSceneBoot: React.FC = () => {
       html.classList.remove('lenis-stopped');
     };
 
+    let revealedHeroCopy = false;
     const revealOnce = () => {
       const root =
         document.querySelector('main[data-taxi] [data-taxi-view]') ?? document;
 
-      root
-        .querySelectorAll<HTMLElement>(
-          '.hero .hero__title, .hero .hero__subtitle, .hero .hsbtn-in',
-        )
-        .forEach((el) => {
-          el.style.removeProperty('opacity');
-          el.style.removeProperty('transform');
-        });
+      // Strip intro inline poses only once. Doing it again mid-scroll fights
+      // HeroScrollMotion and makes the title jump.
+      if (!revealedHeroCopy) {
+        revealedHeroCopy = true;
+        root
+          .querySelectorAll<HTMLElement>(
+            '.hero .hero__title, .hero .hero__subtitle, .hero .hsbtn-in',
+          )
+          .forEach((el) => {
+            el.style.removeProperty('opacity');
+            el.style.removeProperty('transform');
+          });
+      }
 
       root
         .querySelectorAll(

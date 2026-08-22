@@ -1,6 +1,7 @@
 import { HomeContent } from '@/components/home/HomeContent';
 import { HeroScrollMotion } from '@/components/home/HeroScrollMotion';
 import { StoryOverlay } from '@/components/home/StoryOverlay';
+import { HomeTheme } from '@/components/home/HomeTheme';
 import { HeroSceneBoot } from '@/components/canvas/HeroSceneBoot';
 import { HeroCanvasWrapper } from '@/components/canvas/HeroCanvasWrapper';
 
@@ -13,6 +14,7 @@ export default function HomePage() {
       <HeroSceneBoot />
       <HeroCanvasWrapper />
       <HeroScrollMotion />
+      <HomeTheme />
       <StoryOverlay />
       <HomeContent />
     </>

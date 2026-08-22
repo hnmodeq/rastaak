@@ -295,6 +295,11 @@ export const SCENE_CONFIG: SceneConfig = {
         packetGlowSize: asFinite(rawStory.packetGlowSize, 0.22),
         packetCoreSize: asFinite(rawStory.packetCoreSize, 0.07),
         packetTrail: asFinite(rawStory.packetTrail, 0.7),
+        chipBorder: hexLit(asHexNumber(rawStory.chipBorder, 0xe0a01a)),
+        chipBorderOpacity: asFinite(rawStory.chipBorderOpacity, 0.55),
+        chipBackground: hexLit(asHexNumber(rawStory.chipBackground, 0x14151a)),
+        chipBackgroundOpacity: asFinite(rawStory.chipBackgroundOpacity, 0.72),
+        chipText: hexLit(asHexNumber(rawStory.chipText, 0xf5f5f2)),
       };
 
       const storyPath = path.join(rootDir, 'components', 'canvas', 'scene', 'storyConfig.ts');
@@ -347,6 +352,11 @@ export interface StoryConfig {
   packetGlowSize: number;
   packetCoreSize: number;
   packetTrail: number;
+  chipBorder: number;
+  chipBorderOpacity: number;
+  chipBackground: number;
+  chipBackgroundOpacity: number;
+  chipText: number;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -382,29 +392,147 @@ function hexCss(value: number): string {
   return '#' + (value >>> 0).toString(16).padStart(6, '0');
 }
 
+function hexToRgba(value: number, alpha: number): string {
+  const hex = value >>> 0;
+  const r = (hex >> 16) & 255;
+  const g = (hex >> 8) & 255;
+  const b = hex & 255;
+  const a = Math.max(0, Math.min(1, Number.isFinite(alpha) ? alpha : 1));
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+}
+
 export function applyStoryTheme(root: HTMLElement | null = typeof document === 'undefined' ? null : document.documentElement) {
   if (!root) return;
   const colors = STORY_CONFIG.colors;
   root.style.setProperty('--story-chip-need', hexCss(colors.chipNeed ?? colors.need));
   root.style.setProperty('--story-chip-resolved', hexCss(colors.chipResolved ?? colors.resolved));
+  root.style.setProperty('--story-chip-text', hexCss(STORY_CONFIG.chipText ?? 0xf5f5f2));
+  root.style.setProperty(
+    '--story-chip-border',
+    hexToRgba(STORY_CONFIG.chipBorder ?? 0xe0a01a, STORY_CONFIG.chipBorderOpacity ?? 0.55),
+  );
+  root.style.setProperty(
+    '--story-chip-bg',
+    hexToRgba(STORY_CONFIG.chipBackground ?? 0x14151a, STORY_CONFIG.chipBackgroundOpacity ?? 0.72),
+  );
 }
 `;
       fs.writeFileSync(storyPath, storyCode, 'utf8');
     }
 
-    if (Array.isArray(body.flowSteps)) {
-      const steps = body.flowSteps.map((step, index) => ({
-        num: sanitizeText(step?.num, String(index + 1).padStart(2, '0'), 8),
-        title: sanitizeText(step?.title, '', 160),
-        subtitle: sanitizeText(step?.subtitle, '', 240),
-        caption: sanitizeText(step?.caption, '', 600),
-        progressRange: [
-          asFinite(Array.isArray(step?.progressRange) ? step.progressRange[0] : 0, 0),
-          asFinite(Array.isArray(step?.progressRange) ? step.progressRange[1] : 1, 1),
-        ],
-      }));
+    if (body.heroCopy) {
+      const rawHero = body.heroCopy;
+      const heroCopy = {
+        titleLine1: sanitizeText(rawHero.titleLine1, 'The New Standard', 160),
+        titleLine2: sanitizeText(rawHero.titleLine2, 'in Staffing', 160),
+        titleColor: hexLit(asHexNumber(rawHero.titleColor, 0xf5f5f2)),
+        subtitleLine1: sanitizeText(rawHero.subtitleLine1, 'AI driven speed. Expert curation.', 240),
+        subtitleLine2: sanitizeText(
+          rawHero.subtitleLine2,
+          'We mobilize verified crews to protect your schedule and your bottom line in high-consequence environments.',
+          400,
+        ),
+        subtitleColor: hexLit(asHexNumber(rawHero.subtitleColor, 0xe8e8e4)),
+        scrollHint: sanitizeText(rawHero.scrollHint, 'scroll to discover our process', 160),
+        scrollHintColor: hexLit(asHexNumber(rawHero.scrollHintColor, 0xf5f5f2)),
+      };
 
-      const flowPath = path.join(rootDir, 'components', 'home', 'flowConfig.ts');
+      const heroPath = path.join(rootDir, 'components', 'home', 'heroCopy.ts');
+      const heroCode = `/**
+ * Homepage hero copy — source of truth for title, subtitle, and scroll hint.
+ * Saved automatically from 3D Studio.
+ */
+
+export interface HeroCopyConfig {
+  titleLine1: string;
+  titleLine2: string;
+  titleColor: number;
+  subtitleLine1: string;
+  subtitleLine2: string;
+  subtitleColor: number;
+  scrollHint: string;
+  scrollHintColor: number;
+}
+
+export const HERO_COPY: HeroCopyConfig = ${emit(heroCopy, 0)};
+
+function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+export function applyHeroCopy() {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.style.setProperty('--hero-title-color', hexCss(HERO_COPY.titleColor));
+  root.style.setProperty('--hero-subtitle-color', hexCss(HERO_COPY.subtitleColor));
+  root.style.setProperty('--hero-scroll-color', hexCss(HERO_COPY.scrollHintColor));
+
+  const title = document.querySelector<HTMLElement>('.hero__title');
+  if (title) {
+    const lines = [HERO_COPY.titleLine1, HERO_COPY.titleLine2].filter((line) => line.trim().length > 0);
+    title.innerHTML = lines.map((line) => '<span>' + escapeHtml(line) + '</span>').join('');
+  }
+
+  const subtitle = document.querySelector<HTMLElement>('.hero__subtitle');
+  if (subtitle) {
+    const first = HERO_COPY.subtitleLine1.trim();
+    const second = HERO_COPY.subtitleLine2.trim();
+    subtitle.innerHTML =
+      (first ? '<span>' + escapeHtml(first) + (second ? '<br class="sp" />' : '') + '</span>' : '') +
+      (second ? '<span>' + escapeHtml(second) + '</span>' : '');
+  }
+
+  const hint = document.querySelector<HTMLElement>('.hsbtn-in');
+  if (hint) hint.textContent = ' ' + HERO_COPY.scrollHint + ' ';
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+`;
+      fs.writeFileSync(heroPath, heroCode, 'utf8');
+    }
+
+    if (Array.isArray(body.flowSteps) || body.flowChrome) {
+      const steps = Array.isArray(body.flowSteps)
+        ? body.flowSteps.map((step, index) => ({
+            num: sanitizeText(step?.num, String(index + 1).padStart(2, '0'), 8),
+            title: sanitizeText(step?.title, '', 160),
+            subtitle: sanitizeText(step?.subtitle, '', 240),
+            caption: sanitizeText(step?.caption, '', 600),
+            progressRange: [
+              asFinite(Array.isArray(step?.progressRange) ? step.progressRange[0] : 0, 0),
+              asFinite(Array.isArray(step?.progressRange) ? step.progressRange[1] : 1, 1),
+            ],
+          }))
+        : null;
+
+      const rawChrome = body.flowChrome;
+      const chrome = {
+        align: rawChrome?.align === 'right' ? 'right' : 'left',
+        dir: rawChrome?.dir === 'rtl' ? 'rtl' : 'ltr',
+        titleColor: hexLit(asHexNumber(rawChrome?.titleColor, 0xf5f5f2)),
+        numberColor: hexLit(asHexNumber(rawChrome?.numberColor, 0xf5f5f2)),
+        numberActiveColor: hexLit(asHexNumber(rawChrome?.numberActiveColor, 0x1a1b22)),
+        numberBg: hexLit(asHexNumber(rawChrome?.numberBg, 0xffffff)),
+        descriptionColor: hexLit(asHexNumber(rawChrome?.descriptionColor, 0xe8e8e4)),
+        trackColor: hexLit(asHexNumber(rawChrome?.trackColor, 0xffffff)),
+        trackFillColor: hexLit(asHexNumber(rawChrome?.trackFillColor, 0x1a1b22)),
+      };
+
+      const existingFlowPath = path.join(rootDir, 'components', 'home', 'flowConfig.ts');
+      let existingStepsEmit = '';
+      if (!steps) {
+        const current = fs.readFileSync(existingFlowPath, 'utf8');
+        const match = current.match(/export const FLOW_CONFIG: FlowStepConfig\[\] = (\[[\s\S]*?\n\];)/);
+        existingStepsEmit = match ? match[1].replace(/;$/, '') : '[]';
+      }
+
+      const flowPath = existingFlowPath;
       const flowCode = `/**
  * RASTAAK FLOW STEPS CONTROLLER CONFIG
  * Saved automatically from 3D Studio
@@ -418,14 +546,69 @@ export interface FlowStepConfig {
   progressRange: [number, number];
 }
 
-export const FLOW_CONFIG: FlowStepConfig[] = ${emit(steps, 0)};
+export interface FlowChromeConfig {
+  align: 'left' | 'right';
+  dir: 'ltr' | 'rtl';
+  titleColor: number;
+  numberColor: number;
+  numberActiveColor: number;
+  numberBg: number;
+  descriptionColor: number;
+  trackColor: number;
+  trackFillColor: number;
+}
+
+export const FLOW_CONFIG: FlowStepConfig[] = ${steps ? emit(steps, 0) : existingStepsEmit};
+
+export const FLOW_CHROME: FlowChromeConfig = ${emit(chrome, 0)};
+
+function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+export function applyFlowChrome() {
+  if (typeof document === 'undefined') return;
+  const flow = document.querySelector<HTMLElement>('.flow');
+  if (!flow) return;
+  flow.dataset.align = FLOW_CHROME.align;
+  flow.dataset.dir = FLOW_CHROME.dir;
+  flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
+  flow.style.setProperty('--flow-number', hexCss(FLOW_CHROME.numberColor));
+  flow.style.setProperty('--flow-number-active', hexCss(FLOW_CHROME.numberActiveColor));
+  flow.style.setProperty('--flow-number-bg', hexCss(FLOW_CHROME.numberBg));
+  flow.style.setProperty('--flow-description', hexCss(FLOW_CHROME.descriptionColor));
+  flow.style.setProperty('--flow-track', hexCss(FLOW_CHROME.trackColor));
+  flow.style.setProperty('--flow-track-fill', hexCss(FLOW_CHROME.trackFillColor));
+}
+
+export function syncFlowDom() {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll<HTMLElement>('.flow__step').forEach((el, index) => {
+    const step = FLOW_CONFIG[index];
+    if (!step) return;
+    const title = el.querySelector('.flow__title');
+    const description = el.querySelector('.flow__description');
+    const number = el.querySelector('.flow__number span');
+    if (number) number.textContent = step.num;
+    if (title) title.textContent = step.title;
+    if (description) {
+      description.textContent = '';
+      if (step.subtitle) {
+        description.append(step.subtitle, document.createElement('br'));
+      }
+      description.append(step.caption);
+    }
+  });
+  applyFlowChrome();
+}
 `;
       fs.writeFileSync(flowPath, flowCode, 'utf8');
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, and flowConfig.ts',
+      message:
+        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, and heroCopy.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

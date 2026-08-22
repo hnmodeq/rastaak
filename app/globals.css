@@ -79,18 +79,72 @@ main[data-taxi],
   z-index: 2;
 }
 
-/* Process timeline sits on the dark 3D scene, so titles must stay light. */
-.flow .flow__title,
+/* Hero copy colors + stop CSS transitions once JS owns the scroll pose. */
+.hero .hero__title {
+  color: var(--hero-title-color, var(--color-text));
+}
+
+.hero .hero__subtitle {
+  color: var(--hero-subtitle-color, inherit);
+}
+
+.hero .hero__scroll-btn {
+  color: var(--hero-scroll-color, inherit);
+}
+
+.hero.hero--motion .hero__title,
+.hero.hero--motion .hero__subtitle {
+  transition: none !important;
+}
+
+/* Process timeline sits on the dark 3D scene; Studio can recolor it. */
+.flow .flow__title {
+  color: var(--flow-title, oklch(97% 0.01 90)) !important;
+}
+
 .flow .flow__number {
-  color: oklch(97% 0.01 90) !important;
+  color: var(--flow-number, oklch(97% 0.01 90)) !important;
 }
 
 .flow .flow__step--active .flow__number {
-  color: oklch(18% 0.02 260) !important;
+  color: var(--flow-number-active, oklch(18% 0.02 260)) !important;
+}
+
+.flow .flow__number:before {
+  background: var(--flow-number-bg, var(--color-bg)) !important;
 }
 
 .flow .flow__description {
-  color: oklch(92% 0.01 90 / 0.82) !important;
+  color: var(--flow-description, oklch(92% 0.01 90 / 0.82)) !important;
+}
+
+.flow .flow__track-bar {
+  background: var(--flow-track, var(--color-overlay-dark-20, rgba(255, 255, 255, 0.2))) !important;
+}
+
+.flow .flow__track-fill {
+  background: var(--flow-track-fill, var(--color-dark)) !important;
+}
+
+.flow[data-align='left'] .flow__wrapper {
+  justify-content: flex-start;
+}
+
+.flow[data-align='right'] .flow__wrapper {
+  justify-content: flex-end;
+}
+
+.flow[data-dir='rtl'] .flow__header,
+.flow[data-dir='rtl'] .flow__body-inner {
+  flex-direction: row-reverse;
+}
+
+.flow[data-dir='rtl'] .flow__title {
+  transform-origin: right center;
+}
+
+.flow[data-dir='ltr'] .flow__title {
+  transform-origin: left center;
 }
 
 .story-overlay {
@@ -117,9 +171,9 @@ main[data-taxi],
   max-width: min(240px, 70vw);
   padding: 6px 10px 6px 8px;
   border-radius: 999px;
-  background: oklch(12% 0.02 260 / 0.72);
-  border: 1px solid oklch(80% 0.12 80 / 0.55);
-  color: oklch(97% 0.01 90);
+  background: var(--story-chip-bg, oklch(12% 0.02 260 / 0.72));
+  border: 1px solid var(--story-chip-border, oklch(80% 0.12 80 / 0.55));
+  color: var(--story-chip-text, oklch(97% 0.01 90));
   box-shadow: 0 8px 24px oklch(0% 0 0 / 0.28);
   backdrop-filter: blur(10px);
   opacity: 0;
@@ -133,7 +187,7 @@ main[data-taxi],
 }
 
 .story-chip[data-state='resolved'] {
-  border-color: oklch(80% 0.12 230 / 0.7);
+  border-color: var(--story-chip-border, oklch(80% 0.12 230 / 0.7));
 }
 
 .story-chip__mark {

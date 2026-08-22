@@ -47,6 +47,11 @@ export interface StoryConfig {
   packetGlowSize: number;
   packetCoreSize: number;
   packetTrail: number;
+  chipBorder: number;
+  chipBorderOpacity: number;
+  chipBackground: number;
+  chipBackgroundOpacity: number;
+  chipText: number;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -134,7 +139,12 @@ export const STORY_CONFIG: StoryConfig = {
   packetGlow: 1.05,
   packetGlowSize: 0.05,
   packetCoreSize: 0.2,
-  packetTrail: 1
+  packetTrail: 1,
+  chipBorder: 0xe0a01a,
+  chipBorderOpacity: 0.55,
+  chipBackground: 0x14151a,
+  chipBackgroundOpacity: 0.72,
+  chipText: 0xf5f5f2,
 };
 
 export interface StoryChipFrame {
@@ -166,9 +176,27 @@ function hexCss(value: number): string {
   return '#' + (value >>> 0).toString(16).padStart(6, '0');
 }
 
+function hexToRgba(value: number, alpha: number): string {
+  const hex = value >>> 0;
+  const r = (hex >> 16) & 255;
+  const g = (hex >> 8) & 255;
+  const b = hex & 255;
+  const a = Math.max(0, Math.min(1, Number.isFinite(alpha) ? alpha : 1));
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+}
+
 export function applyStoryTheme(root: HTMLElement | null = typeof document === 'undefined' ? null : document.documentElement) {
   if (!root) return;
   const colors = STORY_CONFIG.colors;
   root.style.setProperty('--story-chip-need', hexCss(colors.chipNeed ?? colors.need));
   root.style.setProperty('--story-chip-resolved', hexCss(colors.chipResolved ?? colors.resolved));
+  root.style.setProperty('--story-chip-text', hexCss(STORY_CONFIG.chipText ?? 0xf5f5f2));
+  root.style.setProperty(
+    '--story-chip-border',
+    hexToRgba(STORY_CONFIG.chipBorder ?? 0xe0a01a, STORY_CONFIG.chipBorderOpacity ?? 0.55),
+  );
+  root.style.setProperty(
+    '--story-chip-bg',
+    hexToRgba(STORY_CONFIG.chipBackground ?? 0x14151a, STORY_CONFIG.chipBackgroundOpacity ?? 0.72),
+  );
 }
