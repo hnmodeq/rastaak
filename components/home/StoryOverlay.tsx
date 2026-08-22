@@ -3,19 +3,16 @@
 import { useEffect, useRef } from 'react';
 import { STORY_CONFIG, STORY_FRAME_EVENT, type StoryFrame } from '@/components/canvas/scene/storyConfig';
 
-const PERSIAN_STEP = ['۰۱', '۰۲', '۰۳', '۰۴', '۰۵'];
-
 export function StoryOverlay() {
   const rootRef = useRef<HTMLDivElement>(null);
   const chipRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const captionRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
     const apply = (frame: StoryFrame) => {
-      root.dataset.visible = frame.visible ? 'true' : 'false';
+      root.dataset.visible = 'true';
 
       const chipById = new Map(frame.chips.map((chip) => [chip.id, chip]));
       for (const [id, el] of Object.entries(chipRefs.current)) {
@@ -30,12 +27,6 @@ export function StoryOverlay() {
         el.style.opacity = String(chip.opacity);
         el.style.transform = `translate3d(${chip.x}px, ${chip.y}px, 0) translate(-50%, -120%)`;
       }
-
-      for (const caption of frame.captions) {
-        const el = captionRefs.current[caption.id];
-        if (!el) continue;
-        el.dataset.active = caption.id === frame.activeCaptionId ? 'true' : 'false';
-      }
     };
 
     const onFrame = (event: Event) => {
@@ -47,7 +38,7 @@ export function StoryOverlay() {
   }, []);
 
   return (
-    <div ref={rootRef} className="story-overlay" data-visible="false" aria-hidden="true">
+    <div ref={rootRef} className="story-overlay" data-visible="true" aria-hidden="true">
       {STORY_CONFIG.clients.map((client) => (
         <div
           key={client.id}
@@ -74,22 +65,6 @@ export function StoryOverlay() {
           <span className="story-chip__text">{client.need}</span>
         </div>
       ))}
-
-      <ol className="story-captions" dir="rtl">
-        {STORY_CONFIG.captions.map((caption, index) => (
-          <li
-            key={caption.id}
-            className="story-caption"
-            data-active="false"
-            ref={(node) => {
-              captionRefs.current[caption.id] = node;
-            }}
-          >
-            <span className="story-caption__num">{PERSIAN_STEP[index] ?? String(index + 1).padStart(2, '0')}</span>
-            <span className="story-caption__text">{caption.text}</span>
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }

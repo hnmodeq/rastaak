@@ -79,14 +79,18 @@ main[data-taxi],
   z-index: 2;
 }
 
-/* Keep the flow section as a 3D scroll runway; hide leftover process copy. */
-.flow.is-story-runway {
-  --flow-height-multiplier: 1.15;
+/* Process timeline sits on the dark 3D scene, so titles must stay light. */
+.flow .flow__title,
+.flow .flow__number {
+  color: oklch(97% 0.01 90) !important;
 }
 
-.flow.is-story-runway .flow__steps {
-  visibility: hidden !important;
-  pointer-events: none !important;
+.flow .flow__step--active .flow__number {
+  color: oklch(18% 0.02 260) !important;
+}
+
+.flow .flow__description {
+  color: oklch(92% 0.01 90 / 0.82) !important;
 }
 
 .story-overlay {

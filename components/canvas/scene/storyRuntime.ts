@@ -53,12 +53,53 @@ const _hubPulse = new THREE.Color(STORY_CONFIG.colors.hubPulse);
 const _workColor = new THREE.Color();
 const _workEmissive = new THREE.Color();
 
-function findByName(root: THREE.Object3D, name: string): THREE.Object3D | null {
-  let found: THREE.Object3D | null = null;
+function normalizeName(value: string): string {
+  return value
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase()
+    .replace(/[._/-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function collectNamedObjects(root: THREE.Object3D): THREE.Object3D[] {
+  const nodes: THREE.Object3D[] = [];
   root.traverse((child) => {
-    if (!found && child.name === name) found = child;
+    if (child.name) nodes.push(child);
   });
-  return found;
+  return nodes;
+}
+
+function findByName(root: THREE.Object3D, name: string): THREE.Object3D | null {
+  const exact = root.getObjectByName(name);
+  if (exact) return exact;
+
+  const wanted = normalizeName(name);
+  if (!wanted) return null;
+
+  const nodes = collectNamedObjects(root);
+  const exactNorm = nodes.find((node) => normalizeName(node.name) === wanted);
+  if (exactNorm) return exactNorm;
+
+  const compactWanted = wanted.replace(/\s+/g, '');
+  const compact = nodes.find((node) => normalizeName(node.name).replace(/\s+/g, '') === compactWanted);
+  if (compact) return compact;
+
+  const loose = nodes.filter((node) => {
+    const current = normalizeName(node.name);
+    return current.includes(wanted) || wanted.includes(current);
+  });
+  if (loose.length === 1) return loose[0];
+
+  return null;
+}
+
+function logAvailableBuildings(root: THREE.Object3D) {
+  const names = collectNamedObjects(root)
+    .map((node) => node.name)
+    .filter((name, index, all) => all.indexOf(name) === index)
+    .sort((a, b) => a.localeCompare(b));
+  console.warn('[story] named objects in GLB:', names);
 }
 
 function collectSlots(object: THREE.Object3D): TrackedSlot[] {
@@ -216,8 +257,13 @@ export class StoryRuntime {
     this.scene = scene;
     world.updateMatrixWorld(true);
 
-    const hubObj = findByName(world, STORY_CONFIG.hub);
-    const logoObj = findByName(world, STORY_CONFIG.logo);
+    const searchRoot = world.parent ?? world;
+    const hubObj = findByName(world, STORY_CONFIG.hub) ?? findByName(searchRoot, STORY_CONFIG.hub);
+    const logoObj = findByName(world, STORY_CONFIG.logo) ?? findByName(searchRoot, STORY_CONFIG.logo);
+    if (!hubObj) {
+      console.warn(`[story] missing hub "${STORY_CONFIG.hub}"`);
+      logAvailableBuildings(world);
+    }
     if (hubObj) {
       const origin = new THREE.Vector3();
       if (logoObj) {

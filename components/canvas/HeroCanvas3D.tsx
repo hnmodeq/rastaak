@@ -222,6 +222,10 @@ export const HeroCanvas3D: React.FC = () => {
         applyMaterialsConfig(world, SCENE_CONFIG.materials);
         scene.add(world);
         world.updateMatrixWorld(true);
+        if (process.env.NODE_ENV === 'development') {
+          const named = world.children.map((child) => child.name).filter(Boolean);
+          console.info('[story] loaded world nodes', named.length, named);
+        }
         story.attach(world, scene);
         studioGUI?.populateMaterials();
 
