@@ -26,30 +26,30 @@ export interface FlowChromeConfig {
 export const FLOW_CONFIG: FlowStepConfig[] = [
   {
     num: "01",
-    title: "Activation, simplified",
-    subtitle: "One call triggers mobilization.",
-    caption: "Your requirements: craft, count, and start date route directly to our verified crews. No hand-offs. No escalations. Just boots on the ground in minutes.",
+    title: "راهکار متناسب با نیاز سازمان",
+    subtitle: "",
+    caption: "ما به‌جای ارائه یک محصول ثابت، زیرساختی متناسب با حجم داده، نوع کاربری و نیاز عملیاتی هر سازمان پیشنهاد می‌دهیم؛ تا سرمایه‌گذاری شما دقیق، بهینه و آینده‌نگر باشد.",
     progressRange: [0, 0.22]
   },
   {
     num: "02",
-    title: "Cleared to count",
-    subtitle: "Our team handles all screening and verification before dispatch.",
-    caption: "Compliance, background, certifications, and fitness-for-duty — we enforce a zero-fail model to guarantee every worker clears the gate on Day 1.",
+    title: "امنیت و حفاظت از داده‌ها",
+    subtitle: "",
+    caption: "داده‌های حیاتی سازمان نیازمند زیرساختی فراتر از یک فضای ذخیره‌سازی هستند. راهکارهای ما با تمرکز بر امنیت، پشتیبان‌گیری و جلوگیری از از دست رفتن اطلاعات طراحی می‌شوند.",
     progressRange: [0.22, 0.55]
   },
   {
     num: "03",
-    title: "Proven field match",
-    subtitle: "We don't just provide available workers. We deploy proven crews.",
-    caption: "By filtering for past performance, role fit, and reliability, we deliver teams engineered for endurance — ensuring your project stays fully manned from first break to completion.",
+    title: "عملکرد و پایداری بالا",
+    subtitle: "",
+    caption: "زیرساخت سازمان نباید نقطه توقف کسب‌وکار باشد. تجهیزات و راهکارهای ما برای ارائه عملکرد پایدار، دسترس‌پذیری بالا و پاسخ‌گویی به بارهای کاری سنگین انتخاب و پیاده‌سازی می‌شوند.",
     progressRange: [0.55, 0.82]
   },
   {
     num: "04",
-    title: "Seamless arrival",
-    subtitle: "We manage the \"last mile\" of mobilization.",
-    caption: "Every crew arrives site-ready with finalized reporting details. With real-time arrival monitoring and active coordination, we ensure your shift starts on time, even when field conditions shift.",
+    title: "تخصص و مشاوره فنی",
+    subtitle: "",
+    caption: "انتخاب Storage یا Server مناسب، صرفاً مقایسه مشخصات سخت‌افزاری نیست. تیم متخصص ما با شناخت نیاز واقعی سازمان، در انتخاب، طراحی و پیاده‌سازی بهترین راهکار همراه شماست.",
     progressRange: [0.82, 1]
   }
 ];
@@ -57,12 +57,12 @@ export const FLOW_CONFIG: FlowStepConfig[] = [
 export const FLOW_CHROME: FlowChromeConfig = {
   align: "right",
   dir: "rtl",
-  titleColor: 0xf5f5f2,
-  numberColor: 0xf5f5f2,
-  numberActiveColor: 0xffffff,
-  numberBg: 0x2c2c2c,
-  descriptionColor: 0xe8e8e4,
-  trackColor: 0xffffff,
+  titleColor: 0xffffff,
+  numberColor: 0xffffff,
+  numberActiveColor: 0x7a7a7a,
+  numberBg: 0xffffff,
+  descriptionColor: 0xffffff,
+  trackColor: 0xd8d8d8,
   trackFillColor: 0x585858
 };
 

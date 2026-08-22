@@ -15,13 +15,13 @@ export interface HeroCopyConfig {
 }
 
 export const HERO_COPY: HeroCopyConfig = {
-  titleLine1: "The New Standard",
-  titleLine2: "in Staffing",
+  titleLine1: "از آنچه برایتان مهم است،",
+  titleLine2: "محافظت کنید.",
   titleColor: 0xf5f5f2,
-  subtitleLine1: "AI driven speed. Expert curation.",
-  subtitleLine2: "We mobilize verified crews to protect your schedule and your bottom line in high-consequence environments.",
+  subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
+  subtitleLine2: "",
   subtitleColor: 0xe8e8e4,
-  scrollHint: "scroll to discover our process",
+  scrollHint: "اسکرول کنید",
   scrollHintColor: 0xf5f5f2
 };
 

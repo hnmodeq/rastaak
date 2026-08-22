@@ -46,8 +46,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteNameColor: 0xffffff,
   studioCorner: "top-left",
   heroTitle: {
-    size: 94,
-    weight: 500,
+    size: 119,
+    weight: 700,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -55,13 +55,13 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0
   },
   heroSubtitle: {
-    size: 24,
+    size: 22,
     weight: 400,
     shadowColor: 0x000000,
-    shadowOpacity: 0,
-    shadowBlur: 0,
-    shadowX: 0,
-    shadowY: 0
+    shadowOpacity: 1,
+    shadowBlur: 4,
+    shadowX: 2,
+    shadowY: 3.5
   },
   scrollHint: {
     size: 14,
@@ -110,7 +110,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
   },
   siteNameType: {
     size: 21,
-    weight: 800,
+    weight: 600,
     shadowColor: 0x272727,
     shadowOpacity: 1,
     shadowBlur: 4.5,

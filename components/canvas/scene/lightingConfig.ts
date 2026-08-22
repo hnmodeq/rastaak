@@ -16,9 +16,9 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     position: [-4.5, 16.5, -4],
     distance: 72,
     decay: 1.6,
-    radius: 5.6,
+    radius: 20,
     castShadow: true,
     shadowMapSize: 2048,
-    shadowBias: -0.0008
+    shadowBias: -0.0002
   }
 ];
