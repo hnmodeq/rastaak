@@ -3,6 +3,8 @@ import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
+import { STORY_CONFIG, applyStoryTheme } from './storyConfig';
+import { FLOW_CONFIG } from '@/components/home/flowConfig';
 import {
   collectMaterialsConfig,
   collectTrackedMaterials,
@@ -659,6 +661,7 @@ export class SceneStudioGUI {
       const exportParams = {
         applyAndSaveToCode: async () => {
           try {
+            window.dispatchEvent(new CustomEvent('rastaak-studio-before-save'));
             const payload = this.buildSavePayload();
             this.writePayloadIntoMemory(payload);
 
@@ -1072,15 +1075,6 @@ export class SceneStudioGUI {
     }
     if (this.toggleButton) {
       this.toggleButton.remove();
-      this.toggleButton = null;
-    }
-    if (this.gui) {
-      this.gui.destroy();
-      this.gui = null;
-    }
-  }
-}
-
       this.toggleButton = null;
     }
     if (this.gui) {
