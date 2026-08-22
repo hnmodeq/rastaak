@@ -36,10 +36,26 @@ export function tintMaterialShadows(material: THREE.Material) {
     previous?.call(mat, shader, renderer);
     shader.uniforms.uShadowColor = shadowUniforms.uShadowColor;
     shader.uniforms.uShadowOpacity = shadowUniforms.uShadowOpacity;
+
+    if (!shader.fragmentShader.includes('#include <shadowmask_pars_fragment>')) {
+      if (shader.fragmentShader.includes('#include <shadowmap_pars_fragment>')) {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <shadowmap_pars_fragment>',
+          '#include <shadowmap_pars_fragment>\n#include <shadowmask_pars_fragment>',
+        );
+      } else {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          'void main() {',
+          '#include <shadowmask_pars_fragment>\nvoid main() {',
+        );
+      }
+    }
+
     shader.fragmentShader = shader.fragmentShader.replace(
       'void main() {',
       'uniform vec3 uShadowColor;\nuniform float uShadowOpacity;\nvoid main() {',
     );
+
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <opaque_fragment>',
       `
@@ -54,7 +70,7 @@ export function tintMaterialShadows(material: THREE.Material) {
 `,
     );
   };
-  mat.customProgramCacheKey = () => 'rastaak-shadow-tint';
+  mat.customProgramCacheKey = () => 'rastaak-shadow-tint-v3';
   mat.needsUpdate = true;
 }
 
@@ -63,6 +79,6 @@ export function tintWorldShadows(root: THREE.Object3D) {
     const mesh = child as THREE.Mesh;
     if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    mats.forEach((mat) => tintMaterialShadows(mat));
+    mats.forEach((item) => tintMaterialShadows(item));
   });
 }
