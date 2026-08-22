@@ -12,6 +12,7 @@ export const HomeContent: React.FC = () => {
           <div className="hero__content">
             <h1
               className="hero__title"
+              dir="rtl"
               style={{
                 opacity: 0,
                 transform: 'perspective(1000px) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
@@ -22,6 +23,7 @@ export const HomeContent: React.FC = () => {
             </h1>
             <p
               className="hero__subtitle"
+              dir="rtl"
               style={{
                 opacity: 0,
                 transform: 'perspective(1000px) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',

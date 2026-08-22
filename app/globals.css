@@ -115,6 +115,7 @@ main[data-taxi],
   font-size: var(--hero-title-size, var(--text-3xl)) !important;
   font-weight: var(--hero-title-weight, 500) !important;
   text-shadow: var(--hero-title-shadow, none);
+  direction: rtl;
 }
 
 .hero .hero__subtitle {
@@ -122,6 +123,7 @@ main[data-taxi],
   font-size: var(--hero-subtitle-size, var(--text-lg)) !important;
   font-weight: var(--hero-subtitle-weight, 400) !important;
   text-shadow: var(--hero-subtitle-shadow, none);
+  direction: rtl;
 }
 
 .hero .hero__scroll-btn,
