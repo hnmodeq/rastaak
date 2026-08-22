@@ -478,16 +478,10 @@ export class StoryRuntime {
 
   private applyHubPulse(elapsed: number, flash: number, reducedMotion: boolean) {
     if (!this.hub) return;
-    const pulse = reducedMotion ? 0.08 : 0.1 + Math.sin(elapsed * 1.6) * 0.06;
-    const boost = flash * 0.7;
+    const pulse = reducedMotion ? 0.9 : 0.88 + Math.sin(elapsed * 1.6) * 0.08;
+    const amount = Math.max(0, Math.min(1, pulse + flash * 0.12));
     for (const slot of this.hub.slots) {
-      slot.mat.color.copy(slot.baseColor);
-      if (slot.mat.emissive) {
-        slot.mat.emissive.copy(slot.baseEmissive).lerp(_hubPulse, pulse + boost);
-      }
-      slot.mat.emissiveIntensity =
-        slot.baseEmissiveIntensity + (slot.role === 'window' ? pulse * 1.4 + boost : pulse * 0.35 + boost * 0.4);
-      slot.mat.needsUpdate = true;
+      paintSlot(slot, _hubPulse, amount);
     }
   }
 
