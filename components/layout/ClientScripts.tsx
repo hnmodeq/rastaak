@@ -8,17 +8,18 @@ import Script from 'next/script';
 export const ClientScripts: React.FC = () => {
   const pathname = usePathname();
   const isTokenStudio = pathname?.startsWith('/token-studio') ?? false;
+  const isHome = pathname === '/';
 
   useEffect(() => {
     document.documentElement.classList.remove('preload');
 
-    if (isTokenStudio) {
+    if (isTokenStudio || isHome) {
       document.body.style.overflow = '';
       document.getElementById('loader')?.setAttribute('hidden', '');
     }
-  }, [isTokenStudio]);
+  }, [isTokenStudio, isHome]);
 
-  if (isTokenStudio) return null;
+  if (isTokenStudio || isHome) return null;
 
   return (
     <Script

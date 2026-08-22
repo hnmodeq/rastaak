@@ -80,6 +80,7 @@ export function applyFlowChrome() {
   if (!flow) return;
   flow.dataset.align = FLOW_CHROME.align;
   flow.dataset.dir = FLOW_CHROME.dir;
+  flow.setAttribute('dir', FLOW_CHROME.dir);
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
   flow.style.setProperty('--flow-number', hexCss(FLOW_CHROME.numberColor));
   flow.style.setProperty('--flow-number-active', hexCss(FLOW_CHROME.numberActiveColor));
@@ -98,8 +99,12 @@ export function syncFlowDom() {
     const description = el.querySelector('.flow__description');
     const number = el.querySelector('.flow__number span');
     if (number) number.textContent = step.num;
-    if (title) title.textContent = step.title;
+    if (title) {
+      title.setAttribute('dir', 'auto');
+      title.textContent = step.title;
+    }
     if (description) {
+      description.setAttribute('dir', 'auto');
       description.textContent = '';
       if (step.subtitle) {
         description.append(step.subtitle, document.createElement('br'));

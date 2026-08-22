@@ -40,20 +40,23 @@ export function applyHeroCopy() {
   const title = document.querySelector<HTMLElement>('.hero__title');
   if (title) {
     const lines = [HERO_COPY.titleLine1, HERO_COPY.titleLine2].filter((line) => line.trim().length > 0);
-    title.innerHTML = lines.map((line) => `<span>${escapeHtml(line)}</span>`).join('');
+    const next = lines.map((line) => '<span>' + escapeHtml(line) + '</span>').join('');
+    if (title.innerHTML !== next) title.innerHTML = next;
   }
 
   const subtitle = document.querySelector<HTMLElement>('.hero__subtitle');
   if (subtitle) {
     const first = HERO_COPY.subtitleLine1.trim();
     const second = HERO_COPY.subtitleLine2.trim();
-    subtitle.innerHTML =
-      (first ? `<span>${escapeHtml(first)}${second ? '<br class="sp" />' : ''}</span>` : '') +
-      (second ? `<span>${escapeHtml(second)}</span>` : '');
+    const next =
+      (first ? '<span>' + escapeHtml(first) + (second ? '<br class="sp" />' : '') + '</span>' : '') +
+      (second ? '<span>' + escapeHtml(second) + '</span>' : '');
+    if (subtitle.innerHTML !== next) subtitle.innerHTML = next;
   }
 
   const hint = document.querySelector<HTMLElement>('.hsbtn-in');
-  if (hint) hint.textContent = ` ${HERO_COPY.scrollHint} `;
+  const hintText = ' ' + HERO_COPY.scrollHint + ' ';
+  if (hint && hint.textContent !== hintText) hint.textContent = hintText;
 }
 
 function escapeHtml(value: string): string {

@@ -17,12 +17,6 @@ export function HomeInteractions() {
     document.querySelector('header')?.classList.add('show');
 
     const root = document.querySelector('main[data-taxi] [data-taxi-view]') ?? document;
-    root
-      .querySelectorAll<HTMLElement>('.hero .hero__title, .hero .hero__subtitle, .hero .hsbtn-in')
-      .forEach((el) => {
-        el.style.removeProperty('opacity');
-        el.style.removeProperty('transform');
-      });
     root.querySelectorAll('.hero').forEach((el) => el.classList.add('show'));
 
     const faqHeaders = Array.from(document.querySelectorAll<HTMLElement>('.faq-item__header'));

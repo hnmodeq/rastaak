@@ -7,6 +7,13 @@ import { STORY_CONFIG, applyStoryTheme } from './storyConfig';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
 import {
+  TYPE_CHROME,
+  TYPE_WEIGHTS,
+  applyTypeChrome,
+  applyStudioChrome,
+  type TypeFace,
+} from '@/components/home/typeChrome';
+import {
   collectMaterialsConfig,
   collectTrackedMaterials,
   isSiteMesh,
@@ -314,6 +321,19 @@ export class SceneStudioGUI {
       })),
       heroCopy: { ...HERO_COPY },
       flowChrome: { ...FLOW_CHROME },
+      typeChrome: {
+        siteName: TYPE_CHROME.siteName,
+        siteNameColor: TYPE_CHROME.siteNameColor,
+        studioCorner: TYPE_CHROME.studioCorner,
+        heroTitle: { ...TYPE_CHROME.heroTitle },
+        heroSubtitle: { ...TYPE_CHROME.heroSubtitle },
+        scrollHint: { ...TYPE_CHROME.scrollHint },
+        flowTitle: { ...TYPE_CHROME.flowTitle },
+        flowNumber: { ...TYPE_CHROME.flowNumber },
+        flowDescription: { ...TYPE_CHROME.flowDescription },
+        chipText: { ...TYPE_CHROME.chipText },
+        siteNameType: { ...TYPE_CHROME.siteNameType },
+      },
     };
   }
 
@@ -358,6 +378,7 @@ export class SceneStudioGUI {
       guiEl.style.maxHeight = '80vh';
       guiEl.style.overflowY = 'auto';
       guiEl.style.pointerEvents = 'auto';
+      applyStudioChrome();
 
       guiEl.addEventListener(
         'wheel',
@@ -729,13 +750,80 @@ export class SceneStudioGUI {
     }
   }
 
+  private addTypeControls(folder: any, face: TypeFace, hex: (value: number) => string) {
+    const params = {
+      size: face.size,
+      weight: face.weight,
+      shadowColor: hex(face.shadowColor),
+      shadowOpacity: face.shadowOpacity,
+      shadowBlur: face.shadowBlur,
+      shadowX: face.shadowX,
+      shadowY: face.shadowY,
+    };
+    const sync = () => applyTypeChrome();
+    folder.add(params, 'size', 8, 160, 1).name('Size').onChange((value: number) => {
+      face.size = value;
+      sync();
+    });
+    folder.add(params, 'weight', TYPE_WEIGHTS).name('Weight').onChange((value: number) => {
+      face.weight = Number(value);
+      sync();
+    });
+    folder.addColor(params, 'shadowColor').name('Shadow color').onChange((value: string) => {
+      face.shadowColor = new THREE.Color(value).getHex();
+      sync();
+    });
+    folder.add(params, 'shadowOpacity', 0, 1, 0.01).name('Shadow opacity').onChange((value: number) => {
+      face.shadowOpacity = value;
+      sync();
+    });
+    folder.add(params, 'shadowBlur', 0, 40, 0.5).name('Shadow blur').onChange((value: number) => {
+      face.shadowBlur = value;
+      sync();
+    });
+    folder.add(params, 'shadowX', -20, 20, 0.5).name('Shadow X').onChange((value: number) => {
+      face.shadowX = value;
+      sync();
+    });
+    folder.add(params, 'shadowY', -20, 20, 0.5).name('Shadow Y').onChange((value: number) => {
+      face.shadowY = value;
+      sync();
+    });
+  }
+
   private populateStoryControls() {
     if (!this.gui) return;
     applyStoryTheme();
     applyHeroCopy();
     applyFlowChrome();
+    applyTypeChrome();
 
     const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+
+    const panelFolder = this.gui.addFolder('Studio panel');
+    const panelParams = { corner: TYPE_CHROME.studioCorner };
+    panelFolder
+      .add(panelParams, 'corner', ['top-right', 'top-left', 'bottom-left', 'bottom-right'])
+      .name('Corner')
+      .onChange((value: typeof TYPE_CHROME.studioCorner) => {
+        TYPE_CHROME.studioCorner = value;
+        applyStudioChrome();
+      });
+
+    const brandFolder = this.gui.addFolder('Site name');
+    const brandParams = {
+      siteName: TYPE_CHROME.siteName,
+      siteNameColor: hex(TYPE_CHROME.siteNameColor),
+    };
+    brandFolder.add(brandParams, 'siteName').name('Name').onChange((value: string) => {
+      TYPE_CHROME.siteName = value;
+      applyTypeChrome();
+    });
+    brandFolder.addColor(brandParams, 'siteNameColor').name('Color').onChange((value: string) => {
+      TYPE_CHROME.siteNameColor = new THREE.Color(value).getHex();
+      applyTypeChrome();
+    });
+    this.addTypeControls(brandFolder, TYPE_CHROME.siteNameType, hex);
 
     const heroFolder = this.gui.addFolder('Hero copy');
     const heroParams = {
@@ -769,6 +857,9 @@ export class SceneStudioGUI {
       .addColor(heroParams, 'scrollHintColor')
       .name('Scroll hint color')
       .onChange((value: string) => applyHeroField('scrollHintColor', new THREE.Color(value).getHex()));
+    this.addTypeControls(heroFolder.addFolder('Title type'), TYPE_CHROME.heroTitle, hex);
+    this.addTypeControls(heroFolder.addFolder('Description type'), TYPE_CHROME.heroSubtitle, hex);
+    this.addTypeControls(heroFolder.addFolder('Scroll hint type'), TYPE_CHROME.scrollHint, hex);
 
     const storyFolder = this.gui.addFolder('Story Colors & Titles');
 
@@ -897,6 +988,7 @@ export class SceneStudioGUI {
         STORY_CONFIG.chipText = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
+    this.addTypeControls(chipBoxFolder, TYPE_CHROME.chipText, hex);
 
     const chipsFolder = storyFolder.addFolder('Need chip titles');
     STORY_CONFIG.clients.forEach((client) => {

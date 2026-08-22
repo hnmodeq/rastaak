@@ -1,5 +1,6 @@
 import React from 'react';
 import { tokens } from '@/tokens/design-tokens';
+import { TYPE_CHROME } from '@/components/home/typeChrome';
 
 interface LogoProps {
   variant?: 'dark' | 'light';
@@ -12,27 +13,24 @@ interface LogoProps {
 export const Logo: React.FC<LogoProps> = ({
   variant = 'dark',
   className = '',
-  fontSize = 'text-2xl sm:text-3xl',
+  fontSize = '',
   color,
   style = {},
 }) => {
-  // Linked directly to OKLCH design tokens
   const textColor = color || (variant === 'light' ? tokens.colors.textLight : tokens.colors.textDark);
 
   return (
     <span
-      className={`inline-block font-extrabold select-none transition-colors duration-200 ${fontSize} ${className}`}
+      className={`site-name inline-block select-none ${fontSize} ${className}`.trim()}
       style={{
-        fontFamily: "'Kalameh', 'Roboto', sans-serif",
-        fontWeight: 800,
-        fontSize: '50px',
-        color: textColor,
+        fontFamily: "'Kalameh', sans-serif",
         letterSpacing: '-0.02em',
         lineHeight: 1,
+        color: textColor,
         ...style,
       }}
     >
-      رستاک
+      {TYPE_CHROME.siteName}
     </span>
   );
 };

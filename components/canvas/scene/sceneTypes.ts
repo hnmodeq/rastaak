@@ -150,6 +150,30 @@ export interface StudioFlowChromeSave {
   trackFillColor: number;
 }
 
+export interface StudioTypeFaceSave {
+  size: number;
+  weight: number;
+  shadowColor: number;
+  shadowOpacity: number;
+  shadowBlur: number;
+  shadowX: number;
+  shadowY: number;
+}
+
+export interface StudioTypeChromeSave {
+  siteName: string;
+  siteNameColor: number;
+  studioCorner: 'top-right' | 'top-left' | 'bottom-left' | 'bottom-right';
+  heroTitle: StudioTypeFaceSave;
+  heroSubtitle: StudioTypeFaceSave;
+  scrollHint: StudioTypeFaceSave;
+  flowTitle: StudioTypeFaceSave;
+  flowNumber: StudioTypeFaceSave;
+  flowDescription: StudioTypeFaceSave;
+  chipText: StudioTypeFaceSave;
+  siteNameType: StudioTypeFaceSave;
+}
+
 export interface StudioSavePayload {
   cameraStops: CameraStop[];
   lights: LightConfig[];
@@ -162,4 +186,5 @@ export interface StudioSavePayload {
   flowSteps?: StudioFlowStepSave[];
   heroCopy?: StudioHeroCopySave;
   flowChrome?: StudioFlowChromeSave;
+  typeChrome?: StudioTypeChromeSave;
 }

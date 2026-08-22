@@ -5,6 +5,27 @@
 
 @font-face {
   font-family: 'Kalameh';
+  src: url('/fonts/KalamehWebFaNum-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Kalameh';
+  src: url('/fonts/KalamehWebFaNum-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Kalameh';
+  src: url('/fonts/KalamehWebFaNum-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Kalameh';
   src: url('/fonts/KalamehWebFaNum-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
@@ -91,14 +112,24 @@ main[data-taxi],
 
 .hero .hero__title {
   color: var(--hero-title-color, var(--color-text));
+  font-size: var(--hero-title-size, var(--text-3xl)) !important;
+  font-weight: var(--hero-title-weight, 500) !important;
+  text-shadow: var(--hero-title-shadow, none);
 }
 
 .hero .hero__subtitle {
   color: var(--hero-subtitle-color, inherit);
+  font-size: var(--hero-subtitle-size, var(--text-lg)) !important;
+  font-weight: var(--hero-subtitle-weight, 400) !important;
+  text-shadow: var(--hero-subtitle-shadow, none);
 }
 
-.hero .hero__scroll-btn {
+.hero .hero__scroll-btn,
+.hero .hsbtn-in {
   color: var(--hero-scroll-color, inherit);
+  font-size: var(--hero-scroll-size, 14px) !important;
+  font-weight: var(--hero-scroll-weight, 400) !important;
+  text-shadow: var(--hero-scroll-shadow, none);
 }
 
 .hero.hero--motion .hero__title,
@@ -111,10 +142,16 @@ main[data-taxi],
 /* Process timeline sits on the dark 3D scene; Studio can recolor it. */
 .flow .flow__title {
   color: var(--flow-title, oklch(97% 0.01 90)) !important;
+  font-size: var(--flow-title-size, var(--text-lg)) !important;
+  font-weight: var(--flow-title-weight, 500) !important;
+  text-shadow: var(--flow-title-shadow, none);
 }
 
 .flow .flow__number {
   color: var(--flow-number, oklch(97% 0.01 90)) !important;
+  font-size: var(--flow-number-size, var(--text-sm)) !important;
+  font-weight: var(--flow-number-weight, 500) !important;
+  text-shadow: var(--flow-number-shadow, none);
 }
 
 .flow .flow__step--active .flow__number {
@@ -127,6 +164,9 @@ main[data-taxi],
 
 .flow .flow__description {
   color: var(--flow-description, oklch(92% 0.01 90 / 0.82)) !important;
+  font-size: var(--flow-description-size, var(--text-base)) !important;
+  font-weight: var(--flow-description-weight, 400) !important;
+  text-shadow: var(--flow-description-shadow, none);
 }
 
 .flow .flow__track-bar {
@@ -156,6 +196,18 @@ main[data-taxi],
 
 .flow[data-dir='ltr'] .flow__title {
   transform-origin: left center;
+}
+
+.flow[data-dir='rtl'] .flow__title,
+.flow[data-dir='rtl'] .flow__description {
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+.flow[data-dir='ltr'] .flow__title,
+.flow[data-dir='ltr'] .flow__description {
+  text-align: left;
+  unicode-bidi: plaintext;
 }
 
 .story-overlay {
@@ -312,4 +364,30 @@ header,
 .cta-section,
 .story-overlay {
   font-family: 'Kalameh', sans-serif !important;
+}
+
+.site-name {
+  font-family: 'Kalameh', sans-serif !important;
+  font-size: var(--site-name-size, 50px) !important;
+  font-weight: var(--site-name-weight, 800) !important;
+  color: var(--site-name-color, inherit);
+  text-shadow: var(--site-name-shadow, none);
+}
+
+header.header--white .site-name {
+  color: var(--color-text-light);
+}
+
+#rastaak-studio-btn {
+  top: var(--studio-btn-top, auto) !important;
+  right: var(--studio-btn-right, 24px) !important;
+  bottom: var(--studio-btn-bottom, 24px) !important;
+  left: var(--studio-btn-left, auto) !important;
+}
+
+.lil-gui {
+  top: var(--studio-gui-top, 90px) !important;
+  right: var(--studio-gui-right, 24px) !important;
+  bottom: var(--studio-gui-bottom, auto) !important;
+  left: var(--studio-gui-left, auto) !important;
 }

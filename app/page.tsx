@@ -15,6 +15,7 @@ export default function HomePage() {
       <HeroCanvasWrapper />
       <HeroScrollMotion />
       <HomeTheme />
+      <HomeInteractions />
       <StoryOverlay />
       <HomeContent />
     </>

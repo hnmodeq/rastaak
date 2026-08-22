@@ -47,7 +47,7 @@ export const HomeContent: React.FC = () => {
         <div className="hero-spacer" />
 
         {/* Process Flow Section preserving 100% authentic HTML DOM for legacy Astro animations */}
-        <section className="flow" data-align={FLOW_CHROME.align} data-dir={FLOW_CHROME.dir}>
+        <section className="flow" data-align={FLOW_CHROME.align} data-dir={FLOW_CHROME.dir} dir={FLOW_CHROME.dir}>
           <div className="flow__wrapper">
             <div className="flow__steps">
               {FLOW_CONFIG.map((step, idx) => (
@@ -56,7 +56,7 @@ export const HomeContent: React.FC = () => {
                     <div className="flow__number">
                       <span>{step.num}</span>
                     </div>
-                    <h3 className="flow__title">{step.title}</h3>
+                    <h3 className="flow__title" dir="auto">{step.title}</h3>
                   </div>
                   <div className="flow__body">
                     <div className="flow__body-inner">
@@ -65,7 +65,7 @@ export const HomeContent: React.FC = () => {
                           <div className="flow__track-fill" />
                         </div>
                       </div>
-                      <p className="flow__description">
+                      <p className="flow__description" dir="auto">
                         {step.subtitle && (
                           <>
                             {step.subtitle}
