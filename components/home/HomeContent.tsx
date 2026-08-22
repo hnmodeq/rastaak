@@ -47,7 +47,7 @@ export const HomeContent: React.FC = () => {
         <div className="hero-spacer" />
 
         {/* Process Flow Section preserving 100% authentic HTML DOM for legacy Astro animations */}
-        <section className="flow" data-align={FLOW_CHROME.align} data-dir={FLOW_CHROME.dir} dir={FLOW_CHROME.dir}>
+        <section className="flow" data-align={FLOW_CHROME.align} data-dir={FLOW_CHROME.dir}>
           <div className="flow__wrapper">
             <div className="flow__steps">
               {FLOW_CONFIG.map((step, idx) => (

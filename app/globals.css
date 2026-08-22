@@ -177,6 +177,11 @@ main[data-taxi],
   background: var(--flow-track-fill, var(--color-dark)) !important;
 }
 
+/* Position is physical left/right. Do not put dir=rtl on .flow or flex-start flips. */
+.flow .flow__wrapper {
+  direction: ltr;
+}
+
 .flow[data-align='left'] .flow__wrapper {
   justify-content: flex-start;
 }

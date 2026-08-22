@@ -80,7 +80,7 @@ export function applyFlowChrome() {
   if (!flow) return;
   flow.dataset.align = FLOW_CHROME.align;
   flow.dataset.dir = FLOW_CHROME.dir;
-  flow.setAttribute('dir', FLOW_CHROME.dir);
+  flow.removeAttribute('dir');
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
   flow.style.setProperty('--flow-number', hexCss(FLOW_CHROME.numberColor));
   flow.style.setProperty('--flow-number-active', hexCss(FLOW_CHROME.numberActiveColor));
