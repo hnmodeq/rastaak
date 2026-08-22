@@ -1280,7 +1280,8 @@ export class SceneStudioGUI {
     const worldGroup = this.worldGroupSupplier();
     if (!worldGroup) return;
 
-    const groups = collectCategoryGroups(worldGroup);
+    const liveGroups = () => collectCategoryGroups(worldGroup);
+    const groups = liveGroups();
     const seed = (key: keyof typeof this.palette, category: Exclude<MaterialCategory, 'ignore'>) => {
       const live = sampleCategoryColor(groups[category]);
       if (live === undefined) return;
@@ -1319,7 +1320,7 @@ export class SceneStudioGUI {
     };
 
     const paint = (category: Exclude<MaterialCategory, 'ignore'>, hex: string, storyIdle = false) => {
-      applyCategoryColor(groups[category], hex);
+      applyCategoryColor(liveGroups()[category], hex);
       persistPalette();
       if (storyIdle) {
         window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
