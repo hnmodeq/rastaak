@@ -148,10 +148,10 @@ export const STORY_CONFIG: StoryConfig = {
   packetGlowSize: 0.05,
   packetCoreSize: 0.2,
   packetTrail: 1,
-  chipBorder: 0xe0a01a,
-  chipBorderOpacity: 0.55,
+  chipBorder: 0xffffff,
+  chipBorderOpacity: 0,
   chipBackground: 0x14151a,
-  chipBackgroundOpacity: 0.72,
+  chipBackgroundOpacity: 0,
   chipText: 0xf5f5f2
 };
 

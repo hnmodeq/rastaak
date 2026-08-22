@@ -87,10 +87,10 @@ export const SCENE_CONFIG: SceneConfig = {
   environment: {
     backgroundColor: 0x1c1d22,
     fogColor: 0x1c1d22,
-    fogStart: 15,
-    fogEnd: 110,
+    fogStart: 7,
+    fogEnd: 20,
     shadowColor: 0x000000,
-    shadowOpacity: 1
+    shadowOpacity: 0.79
   },
 
   renderer: {
@@ -98,25 +98,15 @@ export const SCENE_CONFIG: SceneConfig = {
   },
 
   materials: {
-    globalFacadeColor: 0xffffff,
-    globalWindowColor: 0x9e9e9e,
+    globalFacadeColor: 0xdfdfdf,
+    globalWindowColor: 0x454545,
     globalFacadeRoughness: 0.7,
     globalFacadeMetalness: 0.44,
     globalWindowRoughness: 0.6,
     globalWindowMetalness: 0.12,
     overrides: {
-      Plane001__facade: {
-        color: 0x535353,
-        roughness: 0.7,
-        metalness: 0.44
-      },
-      Plane001_1__window: {
-        color: 0x959595,
-        roughness: 0.6,
-        metalness: 0.12
-      },
-      Plane003_1__facade: {
-        color: 0x4d4d4d,
+      Earth__facade: {
+        color: 0xffffff,
         roughness: 0.7,
         metalness: 0.44
       },

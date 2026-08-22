@@ -51,7 +51,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
-    shadowX: 0,
+    shadowX: -1,
     shadowY: 0
   },
   heroSubtitle: {
