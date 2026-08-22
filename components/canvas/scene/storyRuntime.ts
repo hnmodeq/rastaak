@@ -50,7 +50,6 @@ const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
 const _packetColor = new THREE.Color(STORY_CONFIG.colors.packet);
 const _hubPulse = new THREE.Color(STORY_CONFIG.colors.hubPulse);
 const _workColor = new THREE.Color();
-const _workEmissive = new THREE.Color();
 
 function normalizeName(value: string): string {
   return value
