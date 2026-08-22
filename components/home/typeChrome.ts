@@ -42,11 +42,11 @@ export const TYPE_WEIGHTS = {
 } as const;
 
 export const TYPE_CHROME: TypeChromeConfig = {
-  siteName: "رستاک",
+  siteName: "هونامیک ارتباط رستاک",
   siteNameColor: 0xffffff,
   studioCorner: "top-left",
   heroTitle: {
-    size: 96,
+    size: 94,
     weight: 500,
     shadowColor: 0x000000,
     shadowOpacity: 0,
@@ -109,13 +109,13 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0
   },
   siteNameType: {
-    size: 50,
+    size: 21,
     weight: 800,
-    shadowColor: 0x000000,
-    shadowOpacity: 0,
-    shadowBlur: 0,
-    shadowX: 0,
-    shadowY: 0
+    shadowColor: 0x272727,
+    shadowOpacity: 1,
+    shadowBlur: 4.5,
+    shadowX: 3,
+    shadowY: 1.5
   }
 };
 
@@ -175,9 +175,11 @@ export function applyTypeChrome() {
   applyFace('flow-description', TYPE_CHROME.flowDescription, root);
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
-  root.style.setProperty('--site-name-color', hexCss(TYPE_CHROME.siteNameColor));
+  const nameColor = hexCss(TYPE_CHROME.siteNameColor);
+  root.style.setProperty('--site-name-color', nameColor);
   document.querySelectorAll<HTMLElement>('.site-name').forEach((el) => {
     if (el.textContent !== TYPE_CHROME.siteName) el.textContent = TYPE_CHROME.siteName;
+    el.style.setProperty('color', nameColor, 'important');
   });
   applyStudioChrome();
 }

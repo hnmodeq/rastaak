@@ -11,14 +11,14 @@ export const LIGHTS_CONFIG: LightConfig[] = [
   {
     id: "blender_single_point_light",
     type: "point",
-    color: 0xc8c0dc,
-    intensity: 1200,
-    position: [13.5, 18, -4],
-    distance: 50,
-    decay: 1.8,
-    radius: 2.27,
+    color: 0xffffff,
+    intensity: 1570,
+    position: [-4.5, 16.5, -4],
+    distance: 72,
+    decay: 1.6,
+    radius: 5.6,
     castShadow: true,
     shadowMapSize: 2048,
-    shadowBias: -0.0001
+    shadowBias: -0.0008
   }
 ];
