@@ -1149,6 +1149,55 @@ export class SceneStudioGUI {
         });
     });
 
+    const timelineFolder = root.addFolder('Timeline steps');
+    timelineFolder.open();
+    const stepCtrls: Array<{ refresh: () => void }> = [];
+    const refreshTimelineSteps = () => {
+      stepCtrls.forEach((item) => item.refresh());
+    };
+    FLOW_CONFIG.forEach((step, index) => {
+      const folder = timelineFolder.addFolder(`${step.num} ${step.title}`);
+      const row = {
+        start: step.progressRange[0],
+        end: step.progressRange[1],
+        preview: () => this.seekStory(step.progressRange[0]),
+      };
+      const startCtrl = folder
+        .add(row, 'start', 0, 1, 0.01)
+        .name('Active from')
+        .onChange((value: number) => {
+          const prevStart = index > 0 ? FLOW_CONFIG[index - 1].progressRange[0] + 0.01 : 0;
+          const maxStart = step.progressRange[1] - 0.01;
+          const next = clampOrdered(value, prevStart, maxStart);
+          step.progressRange[0] = next;
+          if (index > 0) FLOW_CONFIG[index - 1].progressRange[1] = next;
+          refreshTimelineSteps();
+          this.seekStory(next);
+        });
+      const endCtrl = folder
+        .add(row, 'end', 0, 1, 0.01)
+        .name('Active until')
+        .onChange((value: number) => {
+          const minEnd = step.progressRange[0] + 0.01;
+          const nextLimit =
+            index < FLOW_CONFIG.length - 1 ? FLOW_CONFIG[index + 1].progressRange[1] - 0.01 : 1;
+          const next = clampOrdered(value, minEnd, nextLimit);
+          step.progressRange[1] = next;
+          if (index < FLOW_CONFIG.length - 1) FLOW_CONFIG[index + 1].progressRange[0] = next;
+          refreshTimelineSteps();
+          this.seekStory(next);
+        });
+      folder.add(row, 'preview').name('Preview this step');
+      stepCtrls.push({
+        refresh: () => {
+          row.start = step.progressRange[0];
+          row.end = step.progressRange[1];
+          startCtrl.updateDisplay();
+          endCtrl.updateDisplay();
+        },
+      });
+    });
+
     const beatsFolder = root.addFolder('Story beats');
     beatsFolder.open();
 
