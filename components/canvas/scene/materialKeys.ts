@@ -117,8 +117,14 @@ export function classifyCategory(
     return windowSlot ? 'window' : 'building';
   }
 
+  // This GLB's trees share Material.014 (trunk) + Material.012 (leaf).
+  // Some Cube.* nodes are extra buildings (Material.001/002) — do not treat those as trees.
+  if (TREE_TRUNK_MAT.test(matName)) return 'treeTrunk';
+  if (TREE_LEAF_MAT.test(matName)) return 'treeLeaf';
+
   if (TREE_NODE.test(node) || TREE_NODE.test(mesh.name || '')) {
-    return slot === 0 || materialCount <= 1 ? 'treeTrunk' : 'treeLeaf';
+    if (WINDOW_MAT.test(matName) || windowSlot) return 'window';
+    return 'building';
   }
 
   return 'ignore';
@@ -204,6 +210,7 @@ export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConf
       const color = colorForCategory(category, palette);
       if (color === undefined) return;
       std.color.set(color);
+      std.vertexColors = false;
       std.needsUpdate = true;
     });
   });
@@ -216,6 +223,7 @@ export function applyCategoryColor(
   const next = new THREE.Color(color);
   mats.forEach((mat) => {
     mat.color.copy(next);
+    mat.vertexColors = false;
     mat.needsUpdate = true;
   });
 }
