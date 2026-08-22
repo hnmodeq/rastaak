@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
+import { applySceneShadows } from './shadowTint';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
 import { STORY_CONFIG, applyStoryTheme } from './storyConfig';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
@@ -285,6 +286,8 @@ export class SceneStudioGUI {
         fogColor: fog ? colorToHexNumber(fog.color) : (SCENE_CONFIG.environment.fogColor ?? colorToHexNumber(bg)),
         fogStart: fog?.near ?? SCENE_CONFIG.environment.fogStart,
         fogEnd: fog?.far ?? SCENE_CONFIG.environment.fogEnd,
+        shadowColor: SCENE_CONFIG.environment.shadowColor ?? 0x000000,
+        shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       },
       renderer: {
         toneMappingExposure: this.renderer.toneMappingExposure,
@@ -343,6 +346,8 @@ export class SceneStudioGUI {
     SCENE_CONFIG.environment.fogColor = payload.environment.fogColor ?? payload.environment.backgroundColor;
     SCENE_CONFIG.environment.fogStart = payload.environment.fogStart;
     SCENE_CONFIG.environment.fogEnd = payload.environment.fogEnd;
+    SCENE_CONFIG.environment.shadowColor = payload.environment.shadowColor ?? 0x000000;
+    SCENE_CONFIG.environment.shadowOpacity = payload.environment.shadowOpacity ?? 1;
     SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
     SCENE_CONFIG.scroll.headerScrollMultiplier = payload.scroll.headerScrollMultiplier;
     SCENE_CONFIG.scroll.cameraDamping = payload.scroll.cameraDamping;
@@ -636,6 +641,8 @@ export class SceneStudioGUI {
         fogColor: currentFogHex,
         fogNear: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
         fogFar: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
+        shadowColor: '#' + new THREE.Color(SCENE_CONFIG.environment.shadowColor ?? 0x000000).getHexString(),
+        shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       };
 
       envFolder
@@ -670,6 +677,21 @@ export class SceneStudioGUI {
             this.scene.fog = new THREE.Fog(col, envParams.fogNear, envParams.fogFar);
           }
           SCENE_CONFIG.environment.fogColor = col.getHex();
+        });
+
+      envFolder
+        .addColor(envParams, 'shadowColor')
+        .name('Building shadow color')
+        .onChange((v: string) => {
+          SCENE_CONFIG.environment.shadowColor = new THREE.Color(v).getHex();
+          applySceneShadows(this.lightsMap.values());
+        });
+      envFolder
+        .add(envParams, 'shadowOpacity', 0, 1, 0.01)
+        .name('Building shadow opacity')
+        .onChange((v: number) => {
+          SCENE_CONFIG.environment.shadowOpacity = v;
+          applySceneShadows(this.lightsMap.values());
         });
 
       if (this.scene.fog) {

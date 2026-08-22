@@ -60,6 +60,8 @@ export interface SceneEnvironmentConfig {
   fogColor?: number;
   fogStart: number;
   fogEnd: number;
+  shadowColor?: number;
+  shadowOpacity?: number;
 }
 
 export interface SceneRendererConfig {

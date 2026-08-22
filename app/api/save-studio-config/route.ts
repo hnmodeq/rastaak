@@ -201,6 +201,8 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         fogColor: hexLit(asHexNumber(body.environment?.fogColor ?? body.environment?.backgroundColor, 0x1c1d22)),
         fogStart: asFinite(body.environment?.fogStart, 15),
         fogEnd: asFinite(body.environment?.fogEnd, 110),
+        shadowColor: hexLit(asHexNumber(body.environment?.shadowColor, 0x000000)),
+        shadowOpacity: Math.min(1, Math.max(0, asFinite(body.environment?.shadowOpacity, 1))),
       };
 
       const renderer = {

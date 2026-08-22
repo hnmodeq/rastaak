@@ -153,6 +153,7 @@ export const HeroCanvas3D: React.FC = () => {
         lightsMap.set(cfg.id, light);
       }
     }
+    applySceneShadows(lightsMap.values());
 
     let world: THREE.Group | null = null;
     let studioGUI: SceneStudioGUI | null = null;
@@ -221,6 +222,8 @@ export const HeroCanvas3D: React.FC = () => {
         });
 
         applyMaterialsConfig(world, SCENE_CONFIG.materials);
+        tintWorldShadows(world);
+        applySceneShadows(lightsMap.values());
         scene.add(world);
         world.updateMatrixWorld(true);
         if (process.env.NODE_ENV === 'development') {

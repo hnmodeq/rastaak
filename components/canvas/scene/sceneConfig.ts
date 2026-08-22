@@ -88,7 +88,9 @@ export const SCENE_CONFIG: SceneConfig = {
     backgroundColor: 0x1c1d22,
     fogColor: 0x1c1d22,
     fogStart: 15,
-    fogEnd: 110
+    fogEnd: 110,
+    shadowColor: 0x000000,
+    shadowOpacity: 1
   },
 
   renderer: {
