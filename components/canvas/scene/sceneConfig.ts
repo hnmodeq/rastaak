@@ -14,21 +14,21 @@ export const SCENE_CONFIG: SceneConfig = {
     {
       id: "stop_1_overview",
       progress: 0,
-      camera: [5.5, 8.5, -7.5],
+      camera: [19.5, 8.5, -7.5],
       target: [13.4, 1.2, -0.5],
       fov: 45
     },
     {
       id: "stop_2_hyper",
       progress: 0.16,
-      camera: [11.2, 2.6, -2],
+      camera: [19.5, 2.6, -2],
       target: [14.9, 1.2, 1.2],
       fov: 40
     },
     {
       id: "stop_3_hyper_reply",
       progress: 0.3,
-      camera: [10.4, 4.2, -3.2],
+      camera: [28, 4.2, -3.2],
       target: [15.1, 1.8, 1.5],
       fov: 42
     },
@@ -110,16 +110,6 @@ export const SCENE_CONFIG: SceneConfig = {
         roughness: 0.7,
         metalness: 0.44
       },
-      Hyper_Market_Building__facade: {
-        color: 0xdfdfdf,
-        roughness: 0.7,
-        metalness: 0.44
-      },
-      Hyper_Market_Building__window: {
-        color: 0x454545,
-        roughness: 0.6,
-        metalness: 0.12
-      },
       Building_30__facade: {
         color: 0x8c8c8c,
         roughness: 0.7,
@@ -133,12 +123,12 @@ export const SCENE_CONFIG: SceneConfig = {
       Building_7__facade: {
         color: 0xdfdfdf,
         roughness: 0.7,
-        metalness: 0.44
+        metalness: 0
       },
       Building_7__window: {
         color: 0x454545,
         roughness: 0.6,
-        metalness: 0.12
+        metalness: 0
       },
       Rastaak_Building__facade: {
         color: 0x09006a,
