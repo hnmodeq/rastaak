@@ -47,6 +47,7 @@ export const TYPE_WEIGHTS = {
 export const TYPE_CHROME: TypeChromeConfig = {
   siteName: "هونامیک ارتباط رستاک",
   siteNameColor: 0x555555,
+  siteNameLayoutColor: 0x1a1b22,
   studioCorner: "top-left",
   heroTitle: {
     size: 119,

@@ -626,6 +626,8 @@ export function syncFlowDom() {
         return {
           size: Math.min(160, Math.max(8, asFinite(value.size, size))),
           weight: snapped,
+          lineHeight: Math.min(2.4, Math.max(0.7, asFinite(value.lineHeight, 1.15))),
+          letterSpacing: Math.min(12, Math.max(-12, asFinite(value.letterSpacing, 0))),
           shadowColor: hexLit(asHexNumber(value.shadowColor, 0x000000)),
           shadowOpacity: Math.min(1, Math.max(0, asFinite(value.shadowOpacity, 0))),
           shadowBlur: Math.min(40, Math.max(0, asFinite(value.shadowBlur, 0))),
@@ -636,6 +638,7 @@ export function syncFlowDom() {
       const typeChrome = {
         siteName: sanitizeText(raw.siteName, 'رستاک', 40),
         siteNameColor: hexLit(asHexNumber(raw.siteNameColor, 0x1a1b22)),
+        siteNameLayoutColor: hexLit(asHexNumber(raw.siteNameLayoutColor, 0x1a1b22)),
         studioCorner: corners.has(String(raw.studioCorner)) ? raw.studioCorner : 'bottom-right',
         heroTitle: face(raw.heroTitle, 96, 500),
         heroSubtitle: face(raw.heroSubtitle, 24, 400),
