@@ -158,31 +158,26 @@ function syncStoryColors() {
 }
 
 function applyBuildingLook(slots: TrackedSlot[], blend: number) {
-  // 0 idle, 1 need, 2 resolved
+  // 0 idle, 1 need, 2 resolved — paint the mesh albedo, not a glow overlay.
   const needK = blend <= 1 ? blend : Math.max(0, 2 - blend);
   const resolvedK = blend <= 1 ? 0 : blend - 1;
+  const amount = resolvedK > 0 ? resolvedK : needK;
+  const target = resolvedK > 0 ? _resolvedColor : _needColor;
 
   for (const slot of slots) {
     _workColor.copy(slot.baseColor);
-    if (needK > 0) _workColor.lerp(_needColor, slot.role === 'window' ? needK * 0.45 : needK * 0.62);
-    if (resolvedK > 0) {
-      _workColor.lerp(
-        slot.role === 'window' ? _packetColor : _resolvedColor,
-        slot.role === 'window' ? resolvedK * 0.85 : resolvedK * 0.72,
-      );
+    if (amount > 0) {
+      _workColor.lerp(target, slot.role === 'window' ? amount * 0.55 : amount);
     }
     slot.mat.color.copy(_workColor);
 
-    _workEmissive.copy(slot.baseEmissive);
-    if (needK > 0) _workEmissive.lerp(_needColor, needK);
-    if (resolvedK > 0) _workEmissive.lerp(_packetColor, resolvedK);
-    if (slot.mat.emissive) slot.mat.emissive.copy(_workEmissive);
-
-    const extra =
-      slot.role === 'window'
-        ? needK * 0.55 + resolvedK * 0.9
-        : needK * 0.28 + resolvedK * 0.22;
-    slot.mat.emissiveIntensity = slot.baseEmissiveIntensity + extra;
+    if (slot.mat.emissive) {
+      slot.mat.emissive.copy(slot.baseEmissive);
+      if (slot.role === 'window' && amount > 0) {
+        slot.mat.emissive.lerp(target, amount * 0.2);
+      }
+    }
+    slot.mat.emissiveIntensity = slot.baseEmissiveIntensity + (slot.role === 'window' ? amount * 0.15 : 0);
     slot.mat.needsUpdate = true;
   }
 }
