@@ -30,9 +30,9 @@ interface ClientActor {
 
 interface PacketRig {
   group: THREE.Group;
-  core: THREE.Mesh;
-  glowInner: THREE.Mesh;
-  glowOuter: THREE.Mesh;
+  core: THREE.Sprite;
+  glowInner: THREE.Sprite;
+  glowOuter: THREE.Sprite;
   sparks: THREE.Points;
   light: THREE.PointLight;
   trail: THREE.Line;
@@ -48,6 +48,60 @@ interface HubActor {
 
 const TRAIL_POINTS = 18;
 const CHIP_ROOF_PAD = 0.38;
+const PACKET_MARK_URL = '/img/rastaak-packet-mark.png';
+
+let packetMarkTexture: THREE.Texture | null = null;
+let packetMarkLoad: Promise<THREE.Texture> | null = null;
+
+function loadPacketMarkTexture(): Promise<THREE.Texture> {
+  if (packetMarkTexture) return Promise.resolve(packetMarkTexture);
+  if (!packetMarkLoad) {
+    packetMarkLoad = new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') {
+        reject(new Error('packet mark needs a browser'));
+        return;
+      }
+      new THREE.TextureLoader().load(
+        PACKET_MARK_URL,
+        (texture) => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.anisotropy = 8;
+          texture.needsUpdate = true;
+          packetMarkTexture = texture;
+          resolve(texture);
+        },
+        undefined,
+        (error) => {
+          console.warn('[story] failed to load packet mark', error);
+          reject(error);
+        },
+      );
+    });
+  }
+  return packetMarkLoad;
+}
+
+function bindPacketMark(sprite: THREE.Sprite, texture: THREE.Texture) {
+  const mat = sprite.material as THREE.SpriteMaterial;
+  if (mat.map !== texture) {
+    mat.map = texture;
+    mat.needsUpdate = true;
+  }
+  sprite.visible = true;
+}
+
+function packetMarkMaterial(opacity: number, additive: boolean): THREE.SpriteMaterial {
+  return new THREE.SpriteMaterial({
+    map: packetMarkTexture,
+    color: 0xffffff,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    toneMapped: false,
+  });
+}
+
 const _box = new THREE.Box3();
 const _size = new THREE.Vector3();
 const _projected = new THREE.Vector3();
@@ -230,34 +284,22 @@ function applyBuildingLook(slots: TrackedSlot[], blend: number) {
   }
 }
 
-function glowMaterial(opacity: number): THREE.MeshBasicMaterial {
-  return new THREE.MeshBasicMaterial({
-    color: _packetColor,
-    transparent: true,
-    opacity,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-}
-
 function createPacketRig(): PacketRig {
   const group = new THREE.Group();
   group.visible = false;
 
-  const core = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 16, 16),
-    new THREE.MeshBasicMaterial({
-      color: _packetColor,
-      transparent: true,
-      opacity: 1,
-      depthWrite: false,
-    }),
-  );
-  core.scale.setScalar(0.07);
+  const core = new THREE.Sprite(packetMarkMaterial(1, false));
+  core.scale.setScalar(0.4);
+  core.renderOrder = 3;
+  core.visible = Boolean(packetMarkTexture);
   group.add(core);
 
-  const glowInner = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), glowMaterial(0.45));
-  const glowOuter = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), glowMaterial(0.18));
+  const glowInner = new THREE.Sprite(packetMarkMaterial(0.45, true));
+  const glowOuter = new THREE.Sprite(packetMarkMaterial(0.18, true));
+  glowInner.renderOrder = 1;
+  glowOuter.renderOrder = 2;
+  glowInner.visible = Boolean(packetMarkTexture);
+  glowOuter.visible = Boolean(packetMarkTexture);
   group.add(glowInner, glowOuter);
 
   const sparkGeo = new THREE.BufferGeometry();
@@ -394,6 +436,16 @@ export class StoryRuntime {
         packet,
       });
     }
+
+    void loadPacketMarkTexture()
+      .then((texture) => {
+        for (const client of this.clients) {
+          bindPacketMark(client.packet.core, texture);
+          bindPacketMark(client.packet.glowInner, texture);
+          bindPacketMark(client.packet.glowOuter, texture);
+        }
+      })
+      .catch(() => {});
   }
 
   setEnabled(enabled: boolean) {
@@ -532,21 +584,26 @@ export class StoryRuntime {
     packet.light.distance = Math.max(0.5, STORY_CONFIG.packetDistance ?? 9);
     packet.light.decay = 2;
 
-    packet.core.scale.setScalar(coreSize);
-    const coreMat = packet.core.material as THREE.MeshBasicMaterial;
-    coreMat.color.copy(_packetCore);
-    coreMat.opacity = 0.9 * pulse;
+    const logoSize = coreSize * 2.4;
+    packet.core.scale.set(logoSize, logoSize, 1);
+    const coreMat = packet.core.material as THREE.SpriteMaterial;
+    coreMat.color.setHex(0xffffff);
+    coreMat.opacity = 0.96 * pulse;
 
-    const innerMat = packet.glowInner.material as THREE.MeshBasicMaterial;
-    const outerMat = packet.glowOuter.material as THREE.MeshBasicMaterial;
+    const innerMat = packet.glowInner.material as THREE.SpriteMaterial;
+    const outerMat = packet.glowOuter.material as THREE.SpriteMaterial;
     innerMat.color.copy(_packetInner);
     outerMat.color.copy(_packetOuter);
-    packet.glowInner.scale.setScalar(glowSize * (1.15 + flicker * 0.2));
-    packet.glowOuter.scale.setScalar(glowSize * 2.15 * (1 + flicker * 0.15));
-    innerMat.opacity = 0.55 * glow * pulse;
+    const innerSize = logoSize * (1.08 + glow * 0.06) + glowSize;
+    const outerSize = logoSize * (1.22 + glow * 0.16) + glowSize * 2.4;
+    packet.glowInner.scale.set(innerSize, innerSize, 1);
+    packet.glowOuter.scale.set(outerSize, outerSize, 1);
+    innerMat.opacity = 0.5 * glow * pulse;
     outerMat.opacity = 0.22 * glow * pulse;
-    packet.glowInner.visible = glow > 0.01;
-    packet.glowOuter.visible = glow > 0.01;
+    const hasMark = Boolean(coreMat.map);
+    packet.core.visible = hasMark;
+    packet.glowInner.visible = hasMark && glow > 0.01;
+    packet.glowOuter.visible = hasMark && glow > 0.01;
 
     const sparkMat = packet.sparks.material as THREE.PointsMaterial;
     sparkMat.color.copy(_packetSpark);
@@ -602,11 +659,8 @@ export class StoryRuntime {
     }
     for (const client of this.clients) {
       const packet = client.packet;
-      packet.core.geometry.dispose();
       (packet.core.material as THREE.Material).dispose();
-      packet.glowInner.geometry.dispose();
       (packet.glowInner.material as THREE.Material).dispose();
-      packet.glowOuter.geometry.dispose();
       (packet.glowOuter.material as THREE.Material).dispose();
       packet.sparks.geometry.dispose();
       (packet.sparks.material as THREE.Material).dispose();

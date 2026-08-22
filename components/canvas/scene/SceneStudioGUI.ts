@@ -909,8 +909,8 @@ export class SceneStudioGUI {
 
     storyFolder.addColor(colorParams, 'packet').name('Shooting light trail').onChange((v: string) => applyColor('packet', v));
     storyFolder.addColor(colorParams, 'packetCore').name('Shooting light core').onChange((v: string) => applyColor('packetCore', v));
-    storyFolder.addColor(colorParams, 'packetInner').name('Shooting light inner circle').onChange((v: string) => applyColor('packetInner', v));
-    storyFolder.addColor(colorParams, 'packetOuter').name('Shooting light outer circle').onChange((v: string) => applyColor('packetOuter', v));
+    storyFolder.addColor(colorParams, 'packetInner').name('Shooting logo inner glow').onChange((v: string) => applyColor('packetInner', v));
+    storyFolder.addColor(colorParams, 'packetOuter').name('Shooting logo outer glow').onChange((v: string) => applyColor('packetOuter', v));
     storyFolder.addColor(colorParams, 'packetSpark').name('Shooting light sparks').onChange((v: string) => applyColor('packetSpark', v));
     storyFolder.addColor(colorParams, 'packetBounce').name('Shooting light reflection color').onChange((v: string) => applyColor('packetBounce', v));
 
@@ -947,8 +947,8 @@ export class SceneStudioGUI {
         STORY_CONFIG.packetGlowSize = value;
       });
     storyFolder
-      .add(bounceParams, 'packetCoreSize', 0.02, 0.25, 0.005)
-      .name('Shooting light core size')
+      .add(bounceParams, 'packetCoreSize', 0.02, 0.8, 0.005)
+      .name('Shooting logo size')
       .onChange((value: number) => {
         STORY_CONFIG.packetCoreSize = value;
       });
@@ -1455,3 +1455,4 @@ export class SceneStudioGUI {
     }
   }
 }
+
