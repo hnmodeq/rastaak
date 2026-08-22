@@ -14,6 +14,8 @@ import { sampleSceneJourney } from './scene/journeyMath';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
 import { applyMaterialsConfig } from './scene/materialKeys';
+import { STORY_FRAME_EVENT } from './scene/storyConfig';
+import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 
 const studioEnabled = process.env.NODE_ENV === 'development';
 
@@ -153,6 +155,13 @@ export const HeroCanvas3D: React.FC = () => {
 
     let world: THREE.Group | null = null;
     let studioGUI: SceneStudioGUI | null = null;
+    const story = new StoryRuntime();
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const onStudioBeforeSave = () => story.restoreBase();
+    const onStudioAfterSave = () => story.captureBase();
+    window.addEventListener('rastaak-studio-before-save', onStudioBeforeSave);
+    window.addEventListener('rastaak-studio-after-save', onStudioAfterSave);
 
     if (studioEnabled) {
       studioGUI = new SceneStudioGUI(
@@ -212,6 +221,8 @@ export const HeroCanvas3D: React.FC = () => {
 
         applyMaterialsConfig(world, SCENE_CONFIG.materials);
         scene.add(world);
+        world.updateMatrixWorld(true);
+        story.attach(world, scene);
         studioGUI?.populateMaterials();
 
         window.dispatchEvent(
@@ -240,9 +251,7 @@ export const HeroCanvas3D: React.FC = () => {
     let currentScrollProgress = 0;
 
     const handleScroll = () => {
-      const heroHeight = window.innerHeight * SCENE_CONFIG.scroll.headerScrollMultiplier;
-      const scrollY = window.scrollY;
-      targetScrollProgress = Math.min(1.0, Math.max(0, scrollY / heroHeight));
+      targetScrollProgress = readStoryScrollProgress(SCENE_CONFIG.scroll.headerScrollMultiplier);
     };
 
     handleScroll();
@@ -253,6 +262,7 @@ export const HeroCanvas3D: React.FC = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      handleScroll();
     };
     window.addEventListener('resize', handleResize);
 
@@ -288,10 +298,12 @@ export const HeroCanvas3D: React.FC = () => {
 
         camPos.set(sample.camera[0], sample.camera[1], sample.camera[2]);
 
-        if (SCENE_CONFIG.scroll.idleFloatAmount > 0) {
+        const floatFade = 1 - THREE.MathUtils.smoothstep(t, 0.86, 1);
+        if (SCENE_CONFIG.scroll.idleFloatAmount > 0 && floatFade > 0) {
           camPos.y +=
             Math.sin(elapsed * SCENE_CONFIG.scroll.idleFloatSpeed) *
-            SCENE_CONFIG.scroll.idleFloatAmount;
+            SCENE_CONFIG.scroll.idleFloatAmount *
+            floatFade;
         }
         camera.position.copy(camPos);
 
@@ -302,6 +314,34 @@ export const HeroCanvas3D: React.FC = () => {
           camera.fov = sample.fov;
           camera.updateProjectionMatrix();
         }
+      }
+
+      const editing = Boolean(studioGUI?.isEditing);
+      story.setEnabled(!editing);
+      if (!editing) {
+        const frame = story.update({
+          t: currentScrollProgress,
+          camera,
+          width: window.innerWidth,
+          height: window.innerHeight,
+          delta,
+          elapsed,
+          reducedMotion: motionQuery.matches,
+          compact: window.innerWidth <= 820,
+        });
+        window.dispatchEvent(new CustomEvent(STORY_FRAME_EVENT, { detail: frame }));
+      } else {
+        window.dispatchEvent(
+          new CustomEvent(STORY_FRAME_EVENT, {
+            detail: {
+              t: currentScrollProgress,
+              chips: [],
+              captions: [],
+              activeCaptionId: null,
+              visible: false,
+            },
+          }),
+        );
       }
 
       renderer.render(scene, camera);
@@ -315,6 +355,9 @@ export const HeroCanvas3D: React.FC = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('rastaak-studio-before-save', onStudioBeforeSave);
+      window.removeEventListener('rastaak-studio-after-save', onStudioAfterSave);
+      story.dispose();
       controls.dispose();
       studioGUI?.destroy();
 

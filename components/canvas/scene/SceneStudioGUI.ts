@@ -55,6 +55,10 @@ export class SceneStudioGUI {
 
   public isManualMode = false;
   public isOrbitMode = false;
+
+  public get isEditing() {
+    return this.isOpen || this.isManualMode || this.isOrbitMode;
+  }
   public manualCamPos = new THREE.Vector3();
   public manualLookAt = new THREE.Vector3();
 
@@ -631,6 +635,7 @@ export class SceneStudioGUI {
 
             const data = await res.json();
             if (res.ok) {
+              window.dispatchEvent(new CustomEvent('rastaak-studio-after-save'));
               alert(
                 'Saved. Camera, lights, shadows, fog, exposure, and every building material were written to sceneConfig.ts and lightingConfig.ts. Refresh will restore this exact scene.',
               );
