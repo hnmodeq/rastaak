@@ -725,8 +725,11 @@ export class SceneStudioGUI {
     const colorParams = {
       packet: hex(STORY_CONFIG.colors.packet),
       hubPulse: hex(STORY_CONFIG.colors.hubPulse),
+      hubPulseWindow: hex(STORY_CONFIG.colors.hubPulseWindow ?? STORY_CONFIG.colors.hubPulse),
       need: hex(STORY_CONFIG.colors.need),
+      needWindow: hex(STORY_CONFIG.colors.needWindow ?? STORY_CONFIG.colors.need),
       resolved: hex(STORY_CONFIG.colors.resolved),
+      resolvedWindow: hex(STORY_CONFIG.colors.resolvedWindow ?? STORY_CONFIG.colors.resolved),
       chipNeed: hex(STORY_CONFIG.colors.chipNeed ?? STORY_CONFIG.colors.need),
       chipResolved: hex(STORY_CONFIG.colors.chipResolved ?? STORY_CONFIG.colors.resolved),
     };
@@ -737,9 +740,12 @@ export class SceneStudioGUI {
     };
 
     storyFolder.addColor(colorParams, 'packet').name('Shooting light').onChange((v: string) => applyColor('packet', v));
-    storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak glow').onChange((v: string) => applyColor('hubPulse', v));
-    storyFolder.addColor(colorParams, 'need').name('Client before solve').onChange((v: string) => applyColor('need', v));
-    storyFolder.addColor(colorParams, 'resolved').name('Client after solve').onChange((v: string) => applyColor('resolved', v));
+    storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak building').onChange((v: string) => applyColor('hubPulse', v));
+    storyFolder.addColor(colorParams, 'hubPulseWindow').name('Rastaak window').onChange((v: string) => applyColor('hubPulseWindow', v));
+    storyFolder.addColor(colorParams, 'need').name('Client before — building').onChange((v: string) => applyColor('need', v));
+    storyFolder.addColor(colorParams, 'needWindow').name('Client before — window').onChange((v: string) => applyColor('needWindow', v));
+    storyFolder.addColor(colorParams, 'resolved').name('Client after — building').onChange((v: string) => applyColor('resolved', v));
+    storyFolder.addColor(colorParams, 'resolvedWindow').name('Client after — window').onChange((v: string) => applyColor('resolvedWindow', v));
     storyFolder.addColor(colorParams, 'chipNeed').name('Tick before solve').onChange((v: string) => applyColor('chipNeed', v));
     storyFolder.addColor(colorParams, 'chipResolved').name('Tick after solve').onChange((v: string) => applyColor('chipResolved', v));
 

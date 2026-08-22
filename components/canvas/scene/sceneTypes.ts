@@ -80,9 +80,12 @@ export interface StudioStorySave {
   logo: string;
   colors: {
     need: number;
+    needWindow: number;
     packet: number;
     resolved: number;
+    resolvedWindow: number;
     hubPulse: number;
+    hubPulseWindow: number;
     chipNeed: number;
     chipResolved: number;
   };

@@ -49,9 +49,12 @@ const _box = new THREE.Box3();
 const _size = new THREE.Vector3();
 const _projected = new THREE.Vector3();
 const _needColor = new THREE.Color(STORY_CONFIG.colors.need);
+const _needWindow = new THREE.Color(STORY_CONFIG.colors.needWindow ?? STORY_CONFIG.colors.need);
 const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
+const _resolvedWindow = new THREE.Color(STORY_CONFIG.colors.resolvedWindow ?? STORY_CONFIG.colors.resolved);
 const _packetColor = new THREE.Color(STORY_CONFIG.colors.packet);
 const _hubPulse = new THREE.Color(STORY_CONFIG.colors.hubPulse);
+const _hubWindow = new THREE.Color(STORY_CONFIG.colors.hubPulseWindow ?? STORY_CONFIG.colors.hubPulse);
 
 function normalizeName(value: string): string {
   return value
@@ -183,10 +186,14 @@ function paintSlot(slot: TrackedSlot, target: THREE.Color | null, amount: number
 }
 
 function syncStoryColors() {
-  _needColor.set(STORY_CONFIG.colors.need);
-  _resolvedColor.set(STORY_CONFIG.colors.resolved);
-  _packetColor.set(STORY_CONFIG.colors.packet);
-  _hubPulse.set(STORY_CONFIG.colors.hubPulse);
+  const colors = STORY_CONFIG.colors;
+  _needColor.set(colors.need);
+  _needWindow.set(colors.needWindow ?? colors.need);
+  _resolvedColor.set(colors.resolved);
+  _resolvedWindow.set(colors.resolvedWindow ?? colors.resolved);
+  _packetColor.set(colors.packet);
+  _hubPulse.set(colors.hubPulse);
+  _hubWindow.set(colors.hubPulseWindow ?? colors.hubPulse);
 }
 
 function applyBuildingLook(slots: TrackedSlot[], blend: number) {
@@ -194,9 +201,18 @@ function applyBuildingLook(slots: TrackedSlot[], blend: number) {
   const needK = blend <= 1 ? blend : Math.max(0, 2 - blend);
   const resolvedK = blend <= 1 ? 0 : blend - 1;
   const amount = resolvedK > 0 ? resolvedK : needK;
-  const target = amount <= 0 ? null : resolvedK > 0 ? _resolvedColor : _needColor;
 
   for (const slot of slots) {
+    const target =
+      amount <= 0
+        ? null
+        : resolvedK > 0
+          ? slot.role === 'window'
+            ? _resolvedWindow
+            : _resolvedColor
+          : slot.role === 'window'
+            ? _needWindow
+            : _needColor;
     paintSlot(slot, target, amount);
   }
 }
@@ -481,7 +497,7 @@ export class StoryRuntime {
     const pulse = reducedMotion ? 0.9 : 0.88 + Math.sin(elapsed * 1.6) * 0.08;
     const amount = Math.max(0, Math.min(1, pulse + flash * 0.12));
     for (const slot of this.hub.slots) {
-      paintSlot(slot, _hubPulse, amount);
+      paintSlot(slot, slot.role === 'window' ? _hubWindow : _hubPulse, amount);
     }
   }
 

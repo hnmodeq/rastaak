@@ -39,6 +39,11 @@ function sanitizeId(value: unknown, fallback: string): string {
   return cleaned || fallback;
 }
 
+function sanitizeText(value: unknown, fallback: string, max = 240): string {
+  if (typeof value !== 'string') return fallback;
+  return value.replace(/\u0000/g, '').slice(0, max);
+}
+
 function sanitizeOverrideKey(value: string): string | null {
   const trimmed = value.trim().slice(0, 160);
   if (/^[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed;
@@ -256,9 +261,12 @@ export const SCENE_CONFIG: SceneConfig = {
         logo: sanitizeText(rawStory.logo, 'Logo', 80),
         colors: {
           need: hexLit(asHexNumber(rawStory.colors?.need, 0xe0a01a)),
+          needWindow: hexLit(asHexNumber(rawStory.colors?.needWindow, 0x8a5a08)),
           packet: hexLit(asHexNumber(rawStory.colors?.packet, 0x57cdff)),
           resolved: hexLit(asHexNumber(rawStory.colors?.resolved, 0x0e94fb)),
+          resolvedWindow: hexLit(asHexNumber(rawStory.colors?.resolvedWindow, 0x57cdff)),
           hubPulse: hexLit(asHexNumber(rawStory.colors?.hubPulse, 0x57cdff)),
+          hubPulseWindow: hexLit(asHexNumber(rawStory.colors?.hubPulseWindow, 0x9ae6ff)),
           chipNeed: hexLit(asHexNumber(rawStory.colors?.chipNeed, 0xe0a01a)),
           chipResolved: hexLit(asHexNumber(rawStory.colors?.chipResolved, 0x0e94fb)),
         },

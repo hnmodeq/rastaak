@@ -23,9 +23,12 @@ export interface StoryCaptionConfig {
 
 export interface StoryColors {
   need: number;
+  needWindow: number;
   packet: number;
   resolved: number;
+  resolvedWindow: number;
   hubPulse: number;
+  hubPulseWindow: number;
   chipNeed: number;
   chipResolved: number;
 }
@@ -47,9 +50,12 @@ export const STORY_CONFIG: StoryConfig = {
   logo: 'Logo',
   colors: {
     need: 0xe0a01a,
+    needWindow: 0x8a5a08,
     packet: 0x57cdff,
     resolved: 0x0e94fb,
+    resolvedWindow: 0x57cdff,
     hubPulse: 0x57cdff,
+    hubPulseWindow: 0x9ae6ff,
     chipNeed: 0xe0a01a,
     chipResolved: 0x0e94fb,
   },
