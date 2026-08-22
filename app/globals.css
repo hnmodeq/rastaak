@@ -46,18 +46,24 @@
   font-display: swap;
 }
 
-/* 3D canvas stays behind the page. Hero is transparent; later sections are opaque. */
+/* 3D canvas fills the viewport behind the hero + process scroll. */
 #rastaak-hero-canvas,
 #rastaak-hero-canvas canvas {
   z-index: -1 !important;
 }
 
+html,
+body,
+main[data-taxi],
+.top,
 .hero,
-.hero-spacer {
-  background-color: transparent;
+.hero-spacer,
+.flow,
+.flow__wrapper {
+  background-color: transparent !important;
 }
 
-.flow,
+/* Content below the 3D journey keeps solid page backgrounds. */
 .features,
 .standards,
 .faq {
