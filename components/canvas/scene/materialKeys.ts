@@ -29,7 +29,10 @@ const GENERIC_NODE = /^(scene|node|root|armature)$/i;
 const WINDOW_NAME = /window|glass|inset|pane|casement/i;
 const FEATURED_NAME = /building|market|rastaak|logo/i;
 const BUILDING_NODE = /building|market/i;
-const TREE_NODE = /^cube(\.\d+)?$/i;
+const TREE_NODE = /^cube([._]?\d+)?$/i;
+const TREE_TRUNK_MAT = /material\.014/;
+const TREE_LEAF_MAT = /material\.012/;
+const WINDOW_MAT = /material\.002/;
 const PLATE_NODE = /^(grounds|ground|plane)(\.\d+)?$/i;
 const SITE_NAME = /^(earth|grounds|ground|plane)(\.\d+)?$/i;
 
