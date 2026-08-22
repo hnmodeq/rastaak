@@ -187,13 +187,17 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
       }
 
       const materials = {
-        globalFacadeColor: hexLit(asHexNumber(body.materials?.globalFacadeColor, 0x8c8c8c)),
-        globalWindowColor: hexLit(asHexNumber(body.materials?.globalWindowColor, 0x222222)),
-        globalFacadeRoughness: asFinite(body.materials?.globalFacadeRoughness, 0.6),
-        globalFacadeMetalness: asFinite(body.materials?.globalFacadeMetalness, 0.12),
-        globalWindowRoughness: asFinite(body.materials?.globalWindowRoughness, 0.6),
-        globalWindowMetalness: asFinite(body.materials?.globalWindowMetalness, 0.12),
-        overrides,
+        buildingColor: hexLit(asHexNumber(body.materials?.buildingColor ?? body.materials?.globalFacadeColor, 0xa3a3a3)),
+        windowColor: hexLit(asHexNumber(body.materials?.windowColor ?? body.materials?.globalWindowColor, 0xffffff)),
+        rastaakColor: hexLit(asHexNumber(body.materials?.rastaakColor, 0x09006a)),
+        logoColor: hexLit(asHexNumber(body.materials?.logoColor, 0xffffff)),
+        groundColor: hexLit(asHexNumber(body.materials?.groundColor, 0xffffff)),
+        borderColor: hexLit(asHexNumber(body.materials?.borderColor, 0x888888)),
+        treeTrunkColor: hexLit(asHexNumber(body.materials?.treeTrunkColor, 0x6b4f2a)),
+        treeLeafColor: hexLit(asHexNumber(body.materials?.treeLeafColor, 0x3d6b3a)),
+        globalFacadeColor: hexLit(asHexNumber(body.materials?.buildingColor ?? body.materials?.globalFacadeColor, 0xa3a3a3)),
+        globalWindowColor: hexLit(asHexNumber(body.materials?.windowColor ?? body.materials?.globalWindowColor, 0xffffff)),
+        overrides: {},
       };
 
       const environment = {

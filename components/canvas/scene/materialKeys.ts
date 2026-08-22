@@ -1,32 +1,41 @@
 import * as THREE from 'three';
-import type { BuildingMaterialOverride, MaterialsConfig } from './sceneTypes';
-import { STORY_CONFIG } from './storyConfig';
+import type { MaterialsConfig } from './sceneTypes';
 
 export type MaterialRole = 'facade' | 'window';
 
-export type TrackedMaterial = {
-  key: string;
-  buildingId: string;
-  displayName: string;
-  role: MaterialRole;
-  slot: number;
-  mat: THREE.MeshStandardMaterial;
-  mats: THREE.MeshStandardMaterial[];
-  params: { color: string; roughness: number; metalness: number };
+export type MaterialCategory =
+  | 'building'
+  | 'window'
+  | 'rastaak'
+  | 'logo'
+  | 'ground'
+  | 'border'
+  | 'treeTrunk'
+  | 'treeLeaf'
+  | 'ignore';
+
+export type CategoryPalette = {
+  buildingColor?: number;
+  windowColor?: number;
+  rastaakColor?: number;
+  logoColor?: number;
+  groundColor?: number;
+  borderColor?: number;
+  treeTrunkColor?: number;
+  treeLeafColor?: number;
 };
 
 const GENERIC_NODE = /^(scene|node|root|armature)$/i;
 const WINDOW_NAME = /window|glass|inset|pane|casement/i;
 const FEATURED_NAME = /building|market|rastaak|logo/i;
+const BUILDING_NODE = /building|market/i;
+const TREE_NODE = /^cube(\.\d+)?$/i;
+const PLATE_NODE = /^(grounds|ground|plane)(\.\d+)?$/i;
 const SITE_NAME = /^(earth|grounds|ground|plane)(\.\d+)?$/i;
 
 export function slugName(name: string): string {
   const slugged = name.trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_-]/g, '_');
   return slugged || 'Unnamed';
-}
-
-export function materialKey(buildingName: string, role: MaterialRole): string {
-  return `${slugName(buildingName)}__${role}`;
 }
 
 export function isSiteMesh(name: string): boolean {
@@ -74,175 +83,161 @@ export function classifyRole(mesh: THREE.Mesh, slot: number, materialCount: numb
   return 'facade';
 }
 
-export function forEachStudioMaterial(
-  root: THREE.Object3D,
-  callback: (entry: {
-    mesh: THREE.Mesh;
-    mat: THREE.MeshStandardMaterial;
-    slot: number;
-    buildingName: string;
-    role: MaterialRole;
-    key: string;
-  }) => void,
-): void {
+function sourceMatName(mat: THREE.Material): string {
+  const tagged = (mat.userData?.gltfName as string | undefined) || '';
+  return `${tagged} ${mat.name || ''}`.toLowerCase();
+}
+
+export function classifyCategory(
+  mesh: THREE.Mesh,
+  slot: number,
+  materialCount: number,
+  mat: THREE.Material,
+): MaterialCategory {
+  const node = resolveBuildingName(mesh);
+  const nodeL = node.toLowerCase();
+  const meshL = (mesh.name || '').toLowerCase();
+  const matName = sourceMatName(mat);
+  const windowSlot = classifyRole(mesh, slot, materialCount) === 'window';
+
+  if (matName.includes('ground edge')) return 'border';
+  if (matName.includes('ground inside')) return 'ignore';
+
+  if (nodeL.includes('logo') || meshL.includes('logo')) return 'logo';
+  if (nodeL === 'earth' || meshL === 'earth') return 'ground';
+  if (PLATE_NODE.test(nodeL) || PLATE_NODE.test(meshL)) {
+    return slot === 0 ? 'border' : 'ignore';
+  }
+
+  if (nodeL.includes('rastaak')) {
+    return windowSlot ? 'window' : 'rastaak';
+  }
+
+  if (BUILDING_NODE.test(nodeL)) {
+    return windowSlot ? 'window' : 'building';
+  }
+
+  if (TREE_NODE.test(node) || TREE_NODE.test(mesh.name || '')) {
+    return slot === 0 || materialCount <= 1 ? 'treeTrunk' : 'treeLeaf';
+  }
+
+  return 'ignore';
+}
+
+export function resolvePalette(config: MaterialsConfig | undefined): CategoryPalette {
+  const overrides = config?.overrides || {};
+  return {
+    buildingColor: config?.buildingColor ?? config?.globalFacadeColor,
+    windowColor: config?.windowColor ?? config?.globalWindowColor,
+    rastaakColor: config?.rastaakColor ?? overrides.Rastaak_Building__facade?.color,
+    logoColor: config?.logoColor,
+    groundColor: config?.groundColor ?? overrides.Earth__facade?.color,
+    borderColor: config?.borderColor,
+    treeTrunkColor: config?.treeTrunkColor,
+    treeLeafColor: config?.treeLeafColor,
+  };
+}
+
+export function collectCategoryGroups(root: THREE.Object3D): Record<Exclude<MaterialCategory, 'ignore'>, THREE.MeshStandardMaterial[]> {
+  const groups: Record<Exclude<MaterialCategory, 'ignore'>, THREE.MeshStandardMaterial[]> = {
+    building: [],
+    window: [],
+    rastaak: [],
+    logo: [],
+    ground: [],
+    border: [],
+    treeTrunk: [],
+    treeLeaf: [],
+  };
+
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
     if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
-
     const mats = getMeshMaterials(mesh);
-    const buildingName = resolveBuildingName(mesh);
-
     mats.forEach((mat, slot) => {
       const std = mat as THREE.MeshStandardMaterial;
       if (!std?.color) return;
-      const role = classifyRole(mesh, slot, mats.length);
-      callback({
-        mesh,
-        mat: std,
-        slot,
-        buildingName,
-        role,
-        key: materialKey(buildingName, role),
-      });
+      const category = classifyCategory(mesh, slot, mats.length, std);
+      if (category === 'ignore') return;
+      groups[category].push(std);
+    });
+  });
+
+  return groups;
+}
+
+function colorForCategory(category: Exclude<MaterialCategory, 'ignore'>, palette: CategoryPalette): number | undefined {
+  switch (category) {
+    case 'building':
+      return palette.buildingColor;
+    case 'window':
+      return palette.windowColor;
+    case 'rastaak':
+      return palette.rastaakColor;
+    case 'logo':
+      return palette.logoColor;
+    case 'ground':
+      return palette.groundColor;
+    case 'border':
+      return palette.borderColor;
+    case 'treeTrunk':
+      return palette.treeTrunkColor;
+    case 'treeLeaf':
+      return palette.treeLeafColor;
+  }
+}
+
+/** Codes → scene. Only the matching category is painted. */
+export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConfig | undefined): void {
+  if (!config) return;
+  const palette = resolvePalette(config);
+
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
+    const mats = getMeshMaterials(mesh);
+    mats.forEach((mat, slot) => {
+      const std = mat as THREE.MeshStandardMaterial;
+      if (!std?.color) return;
+      const category = classifyCategory(mesh, slot, mats.length, std);
+      if (category === 'ignore') return;
+      const color = colorForCategory(category, palette);
+      if (color === undefined) return;
+      std.color.set(color);
+      std.needsUpdate = true;
     });
   });
 }
 
-function applyOverride(mat: THREE.MeshStandardMaterial, ov: BuildingMaterialOverride | undefined) {
-  if (!ov) return;
-  if (ov.color !== undefined) mat.color.set(ov.color);
-  if (ov.roughness !== undefined && 'roughness' in mat) mat.roughness = ov.roughness;
-  if (ov.metalness !== undefined && 'metalness' in mat) mat.metalness = ov.metalness;
-}
-
-function lookupOverride(
-  overrides: Record<string, BuildingMaterialOverride> | undefined,
-  buildingName: string,
-  role: MaterialRole,
-  slot: number,
-): BuildingMaterialOverride | undefined {
-  if (!overrides) return undefined;
-  const slugged = slugName(buildingName);
-  return (
-    overrides[materialKey(buildingName, role)] ||
-    overrides[`${slugged}__mat_${slot}`] ||
-    overrides[`${slugged}_mat_${slot}`] ||
-    overrides[`${buildingName}_mat_${slot}`] ||
-    overrides[`${buildingName.replace(/\s+/g, '_')}_mat_${slot}`]
-  );
-}
-
-/** Codes → scene. Globals first, then per-building facade/window overrides. */
-export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConfig | undefined): void {
-  if (!config) return;
-
-  forEachStudioMaterial(root, ({ mat, buildingName, role, slot }) => {
-    if (role === 'window') {
-      if (config.globalWindowColor !== undefined) mat.color.set(config.globalWindowColor);
-      if (config.globalWindowRoughness !== undefined && 'roughness' in mat) {
-        mat.roughness = config.globalWindowRoughness;
-      }
-      if (config.globalWindowMetalness !== undefined && 'metalness' in mat) {
-        mat.metalness = config.globalWindowMetalness;
-      }
-    } else {
-      if (config.globalFacadeColor !== undefined) mat.color.set(config.globalFacadeColor);
-      if (config.globalFacadeRoughness !== undefined && 'roughness' in mat) {
-        mat.roughness = config.globalFacadeRoughness;
-      }
-      if (config.globalFacadeMetalness !== undefined && 'metalness' in mat) {
-        mat.metalness = config.globalFacadeMetalness;
-      }
-    }
-
-    applyOverride(mat, lookupOverride(config.overrides, buildingName, role, slot));
+export function applyCategoryColor(
+  mats: THREE.MeshStandardMaterial[],
+  color: string | number,
+): void {
+  const next = new THREE.Color(color);
+  mats.forEach((mat) => {
+    mat.color.copy(next);
     mat.needsUpdate = true;
   });
 }
 
-/** Scene → codes. One record per building facade and one per building windows. */
-export function collectMaterialsConfig(
-  root: THREE.Object3D,
-  globals: Omit<MaterialsConfig, 'overrides'>,
-): MaterialsConfig {
-  const overrides: Record<string, BuildingMaterialOverride> = {};
-  const clientSlugs = new Set(STORY_CONFIG.clients.map((client) => slugName(client.building)));
-  const storyPaint = new Set(
-    [
-      STORY_CONFIG.colors.need,
-      STORY_CONFIG.colors.needWindow,
-      STORY_CONFIG.colors.resolved,
-      STORY_CONFIG.colors.resolvedWindow,
-    ].map((value) => value >>> 0),
-  );
-
-  forEachStudioMaterial(root, ({ mat, key, role, buildingName }) => {
-    if (clientSlugs.has(slugName(buildingName)) && storyPaint.has(mat.color.getHex() >>> 0)) {
-      return;
-    }
-    const globalColor = role === 'window' ? globals.globalWindowColor : globals.globalFacadeColor;
-    const globalRoughness = role === 'window' ? globals.globalWindowRoughness : globals.globalFacadeRoughness;
-    const globalMetalness = role === 'window' ? globals.globalWindowMetalness : globals.globalFacadeMetalness;
-    const color = mat.color.getHex();
-    const roughness = typeof mat.roughness === 'number' ? mat.roughness : undefined;
-    const metalness = typeof mat.metalness === 'number' ? mat.metalness : undefined;
-    const colorDiffers = globalColor === undefined || color !== (globalColor >>> 0);
-    const roughnessDiffers =
-      roughness !== undefined &&
-      (globalRoughness === undefined || Math.abs(roughness - globalRoughness) > 0.001);
-    const metalnessDiffers =
-      metalness !== undefined &&
-      (globalMetalness === undefined || Math.abs(metalness - globalMetalness) > 0.001);
-    if (!colorDiffers && !roughnessDiffers && !metalnessDiffers) return;
-
-    overrides[key] = { color, roughness, metalness };
-  });
-
+/** Scene palette → codes. Does not write per-mesh overrides. */
+export function collectMaterialsConfig(palette: CategoryPalette): MaterialsConfig {
   return {
-    ...globals,
-    overrides,
+    buildingColor: palette.buildingColor,
+    windowColor: palette.windowColor,
+    rastaakColor: palette.rastaakColor,
+    logoColor: palette.logoColor,
+    groundColor: palette.groundColor,
+    borderColor: palette.borderColor,
+    treeTrunkColor: palette.treeTrunkColor,
+    treeLeafColor: palette.treeLeafColor,
+    globalFacadeColor: palette.buildingColor,
+    globalWindowColor: palette.windowColor,
+    overrides: {},
   };
 }
 
-export function collectTrackedMaterials(root: THREE.Object3D): TrackedMaterial[] {
-  const grouped = new Map<string, TrackedMaterial>();
-
-  forEachStudioMaterial(root, ({ mat, key, buildingName, role, slot }) => {
-    const existing = grouped.get(key);
-    if (existing) {
-      existing.mats.push(mat);
-      existing.mat = mat;
-      existing.params.color = '#' + mat.color.getHexString();
-      existing.params.roughness = mat.roughness ?? existing.params.roughness;
-      existing.params.metalness = mat.metalness ?? existing.params.metalness;
-      return;
-    }
-
-    grouped.set(key, {
-      key,
-      buildingId: slugName(buildingName),
-      displayName: buildingName,
-      role,
-      slot,
-      mat,
-      mats: [mat],
-      params: {
-        color: '#' + mat.color.getHexString(),
-        roughness: mat.roughness ?? 0.6,
-        metalness: mat.metalness ?? 0,
-      },
-    });
-  });
-
-  return Array.from(grouped.values()).sort((a, b) => {
-    const aFeatured = FEATURED_NAME.test(a.displayName) ? 0 : 1;
-    const bFeatured = FEATURED_NAME.test(b.displayName) ? 0 : 1;
-    if (aFeatured !== bFeatured) return aFeatured - bFeatured;
-    if (a.displayName !== b.displayName) return a.displayName.localeCompare(b.displayName);
-    return a.role.localeCompare(b.role);
-  });
-}
-
-export function countMaterialOverrides(config: MaterialsConfig | undefined): number {
-  return config?.overrides ? Object.keys(config.overrides).length : 0;
+export function sampleCategoryColor(mats: THREE.MeshStandardMaterial[]): number | undefined {
+  if (!mats.length) return undefined;
+  return mats[0].color.getHex();
 }

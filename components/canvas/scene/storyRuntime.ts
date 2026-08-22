@@ -6,7 +6,8 @@ import {
   type StoryClientConfig,
   type StoryFrame,
 } from './storyConfig';
-import { classifyRole, getMeshMaterials } from './materialKeys';
+import { classifyRole, getMeshMaterials, resolvePalette } from './materialKeys';
+import { SCENE_CONFIG } from './sceneConfig';
 
 interface TrackedSlot {
   mat: THREE.MeshStandardMaterial;
@@ -467,6 +468,22 @@ export class StoryRuntime {
   captureBase() {
     if (this.hub) recaptureSlots(this.hub.slots);
     for (const client of this.clients) recaptureSlots(client.slots);
+  }
+
+  rebindIdlePalette() {
+    const palette = resolvePalette(SCENE_CONFIG.materials);
+    for (const client of this.clients) {
+      for (const slot of client.slots) {
+        const hex = slot.role === 'window' ? palette.windowColor : palette.buildingColor;
+        if (hex !== undefined) slot.baseColor.set(hex);
+      }
+    }
+    if (this.hub) {
+      for (const slot of this.hub.slots) {
+        const hex = slot.role === 'window' ? palette.windowColor : palette.rastaakColor;
+        if (hex !== undefined) slot.baseColor.set(hex);
+      }
+    }
   }
 
   update(input: {

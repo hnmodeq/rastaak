@@ -98,58 +98,13 @@ export const SCENE_CONFIG: SceneConfig = {
   },
 
   materials: {
+    buildingColor: 0xa3a3a3,
+    windowColor: 0xffffff,
+    rastaakColor: 0x09006a,
+    logoColor: 0xffffff,
+    groundColor: 0xffffff,
     globalFacadeColor: 0xa3a3a3,
     globalWindowColor: 0xffffff,
-    globalFacadeRoughness: 0,
-    globalFacadeMetalness: 0,
-    globalWindowRoughness: 0.6,
-    globalWindowMetalness: 0.12,
-    overrides: {
-      Earth__facade: {
-        color: 0xffffff,
-        roughness: 0.7,
-        metalness: 0.44
-      },
-      Building_30__facade: {
-        color: 0x8c8c8c,
-        roughness: 0.7,
-        metalness: 0
-      },
-      Building_30__window: {
-        color: 0x222222,
-        roughness: 0.6,
-        metalness: 0
-      },
-      Building_7__facade: {
-        color: 0xdfdfdf,
-        roughness: 0.7,
-        metalness: 0
-      },
-      Building_7__window: {
-        color: 0x454545,
-        roughness: 0.6,
-        metalness: 0
-      },
-      Rastaak_Building__facade: {
-        color: 0x09006a,
-        roughness: 0.7,
-        metalness: 0
-      },
-      Rastaak_Building__window: {
-        color: 0xffffff,
-        roughness: 0.6,
-        metalness: 0
-      },
-      Building_34__facade: {
-        color: 0x8c8c8c,
-        roughness: 0.7,
-        metalness: 0
-      },
-      Building_34__window: {
-        color: 0x222222,
-        roughness: 0.6,
-        metalness: 0
-      }
-    }
+    overrides: {}
   } as MaterialsConfig,
 };

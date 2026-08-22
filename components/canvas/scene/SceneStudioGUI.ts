@@ -15,10 +15,13 @@ import {
   type TypeFace,
 } from '@/components/home/typeChrome';
 import {
+  applyCategoryColor,
+  collectCategoryGroups,
   collectMaterialsConfig,
-  collectTrackedMaterials,
-  isSiteMesh,
-  type TrackedMaterial,
+  resolvePalette,
+  sampleCategoryColor,
+  type CategoryPalette,
+  type MaterialCategory,
 } from './materialKeys';
 
 function downloadJSON(filename: string, data: unknown) {
@@ -51,16 +54,15 @@ export class SceneStudioGUI {
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
-  private trackedMaterials: TrackedMaterial[] = [];
-  private globalFacade = {
-    color: '#' + new THREE.Color(tokens.experimentalScene.lightFacadeDefault).getHexString(),
-    roughness: 0.6,
-    metalness: 0.12,
-  };
-  private globalWindow = {
-    color: '#' + new THREE.Color(tokens.experimentalScene.windowInsetDefault).getHexString(),
-    roughness: 0.6,
-    metalness: 0.0,
+  private palette = {
+    building: '#a3a3a3',
+    window: '#ffffff',
+    rastaak: '#09006a',
+    logo: '#ffffff',
+    ground: '#ffffff',
+    border: '#888888',
+    treeTrunk: '#6b4f2a',
+    treeLeaf: '#3d6b3a',
   };
 
   public isManualMode = false;
@@ -89,17 +91,15 @@ export class SceneStudioGUI {
   }
 
   private hydrateGlobalsFromConfig() {
-    const mats = SCENE_CONFIG.materials;
-    if (mats.globalFacadeColor !== undefined) {
-      this.globalFacade.color = '#' + new THREE.Color(mats.globalFacadeColor).getHexString();
-    }
-    if (mats.globalWindowColor !== undefined) {
-      this.globalWindow.color = '#' + new THREE.Color(mats.globalWindowColor).getHexString();
-    }
-    if (mats.globalFacadeRoughness !== undefined) this.globalFacade.roughness = mats.globalFacadeRoughness;
-    if (mats.globalFacadeMetalness !== undefined) this.globalFacade.metalness = mats.globalFacadeMetalness;
-    if (mats.globalWindowRoughness !== undefined) this.globalWindow.roughness = mats.globalWindowRoughness;
-    if (mats.globalWindowMetalness !== undefined) this.globalWindow.metalness = mats.globalWindowMetalness;
+    const palette = resolvePalette(SCENE_CONFIG.materials);
+    if (palette.buildingColor !== undefined) this.palette.building = '#' + new THREE.Color(palette.buildingColor).getHexString();
+    if (palette.windowColor !== undefined) this.palette.window = '#' + new THREE.Color(palette.windowColor).getHexString();
+    if (palette.rastaakColor !== undefined) this.palette.rastaak = '#' + new THREE.Color(palette.rastaakColor).getHexString();
+    if (palette.logoColor !== undefined) this.palette.logo = '#' + new THREE.Color(palette.logoColor).getHexString();
+    if (palette.groundColor !== undefined) this.palette.ground = '#' + new THREE.Color(palette.groundColor).getHexString();
+    if (palette.borderColor !== undefined) this.palette.border = '#' + new THREE.Color(palette.borderColor).getHexString();
+    if (palette.treeTrunkColor !== undefined) this.palette.treeTrunk = '#' + new THREE.Color(palette.treeTrunkColor).getHexString();
+    if (palette.treeLeafColor !== undefined) this.palette.treeLeaf = '#' + new THREE.Color(palette.treeLeafColor).getHexString();
   }
 
   private createToggleButton() {
@@ -243,27 +243,18 @@ export class SceneStudioGUI {
   }
 
   private collectCurrentMaterials() {
-    const worldGroup = this.worldGroupSupplier();
-    if (!worldGroup) {
-      return {
-        globalFacadeColor: new THREE.Color(this.globalFacade.color).getHex(),
-        globalWindowColor: new THREE.Color(this.globalWindow.color).getHex(),
-        globalFacadeRoughness: this.globalFacade.roughness,
-        globalFacadeMetalness: this.globalFacade.metalness,
-        globalWindowRoughness: this.globalWindow.roughness,
-        globalWindowMetalness: this.globalWindow.metalness,
-        overrides: { ...SCENE_CONFIG.materials.overrides },
-      };
-    }
-
-    return collectMaterialsConfig(worldGroup, {
-      globalFacadeColor: new THREE.Color(this.globalFacade.color).getHex(),
-      globalWindowColor: new THREE.Color(this.globalWindow.color).getHex(),
-      globalFacadeRoughness: this.globalFacade.roughness,
-      globalFacadeMetalness: this.globalFacade.metalness,
-      globalWindowRoughness: this.globalWindow.roughness,
-      globalWindowMetalness: this.globalWindow.metalness,
-    });
+    const palette: CategoryPalette = {
+      buildingColor: new THREE.Color(this.palette.building).getHex(),
+      windowColor: new THREE.Color(this.palette.window).getHex(),
+      rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
+      logoColor: new THREE.Color(this.palette.logo).getHex(),
+      groundColor: new THREE.Color(this.palette.ground).getHex(),
+      borderColor: new THREE.Color(this.palette.border).getHex(),
+      treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
+      treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
+    };
+    SCENE_CONFIG.materials = { ...SCENE_CONFIG.materials, ...palette, overrides: {} };
+    return collectMaterialsConfig(palette);
   }
 
   private buildSavePayload(): StudioSavePayload {
@@ -1289,174 +1280,62 @@ export class SceneStudioGUI {
     const worldGroup = this.worldGroupSupplier();
     if (!worldGroup) return;
 
-    this.trackedMaterials = collectTrackedMaterials(worldGroup);
-    if (this.trackedMaterials.length === 0) {
-      console.warn('[3D Studio] No building materials found to edit.');
-      return;
-    }
+    const groups = collectCategoryGroups(worldGroup);
+    const seed = (key: keyof typeof this.palette, category: Exclude<MaterialCategory, 'ignore'>) => {
+      const live = sampleCategoryColor(groups[category]);
+      if (live === undefined) return;
+      const already = resolvePalette(SCENE_CONFIG.materials);
+      const named = `${category}Color` as keyof CategoryPalette;
+      if (already[named] === undefined) {
+        this.palette[key] = '#' + new THREE.Color(live).getHexString();
+      }
+    };
+    seed('building', 'building');
+    seed('window', 'window');
+    seed('rastaak', 'rastaak');
+    seed('logo', 'logo');
+    seed('ground', 'ground');
+    seed('border', 'border');
+    seed('treeTrunk', 'treeTrunk');
+    seed('treeLeaf', 'treeLeaf');
 
-    const matFolder = this.gui.addFolder('Materials Controller');
+    const matFolder = this.gui.addFolder('Scene colors');
     this.materialsFolderPopulated = true;
 
-    const facades = this.trackedMaterials.filter((entry) => entry.role === 'facade');
-    const windows = this.trackedMaterials.filter((entry) => entry.role === 'window');
-
-    const applyGroup = (
-      entries: TrackedMaterial[],
-      patch: Partial<{ color: string; roughness: number; metalness: number }>,
-    ) => {
-      const col = patch.color ? new THREE.Color(patch.color) : null;
-      entries.forEach((entry) => {
-        const targets = entry.mats?.length ? entry.mats : [entry.mat];
-        targets.forEach((mat) => {
-          if (col) mat.color.copy(col);
-          if (patch.roughness !== undefined && 'roughness' in mat) mat.roughness = patch.roughness;
-          if (patch.metalness !== undefined && 'metalness' in mat) mat.metalness = patch.metalness;
-          mat.needsUpdate = true;
-        });
-        if (col) entry.params.color = patch.color!;
-        if (patch.roughness !== undefined) entry.params.roughness = patch.roughness;
-        if (patch.metalness !== undefined) entry.params.metalness = patch.metalness;
-      });
+    const persistPalette = () => {
+      SCENE_CONFIG.materials = {
+        ...SCENE_CONFIG.materials,
+        ...collectMaterialsConfig({
+          buildingColor: new THREE.Color(this.palette.building).getHex(),
+          windowColor: new THREE.Color(this.palette.window).getHex(),
+          rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
+          logoColor: new THREE.Color(this.palette.logo).getHex(),
+          groundColor: new THREE.Color(this.palette.ground).getHex(),
+          borderColor: new THREE.Color(this.palette.border).getHex(),
+          treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
+          treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
+        }),
+      };
     };
 
-    const addMaterialControls = (
-      folder: any,
-      params: { color: string; roughness: number; metalness: number },
-      onChange: (patch: Partial<{ color: string; roughness: number; metalness: number }>) => void,
-      labels: { color: string },
-    ) => {
-      folder
-        .addColor(params, 'color')
-        .name(labels.color)
-        .listen()
-        .onChange((hex: string) => onChange({ color: hex }));
-      folder
-        .add(params, 'roughness', 0.0, 1.0, 0.02)
-        .name('Roughness')
-        .listen()
-        .onChange((v: number) => onChange({ roughness: v }));
-      folder
-        .add(params, 'metalness', 0.0, 1.0, 0.02)
-        .name('Metalness')
-        .listen()
-        .onChange((v: number) => onChange({ metalness: v }));
+    const paint = (category: Exclude<MaterialCategory, 'ignore'>, hex: string, storyIdle = false) => {
+      applyCategoryColor(groups[category], hex);
+      persistPalette();
+      if (storyIdle) {
+        window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
+      }
     };
 
-    const persistGlobals = () => {
-      SCENE_CONFIG.materials.globalFacadeColor = new THREE.Color(this.globalFacade.color).getHex();
-      SCENE_CONFIG.materials.globalWindowColor = new THREE.Color(this.globalWindow.color).getHex();
-      SCENE_CONFIG.materials.globalFacadeRoughness = this.globalFacade.roughness;
-      SCENE_CONFIG.materials.globalFacadeMetalness = this.globalFacade.metalness;
-      SCENE_CONFIG.materials.globalWindowRoughness = this.globalWindow.roughness;
-      SCENE_CONFIG.materials.globalWindowMetalness = this.globalWindow.metalness;
-    };
+    matFolder.addColor(this.palette, 'building').name('Buildings').onChange((hex: string) => paint('building', hex, true));
+    matFolder.addColor(this.palette, 'window').name('Windows').onChange((hex: string) => paint('window', hex, true));
+    matFolder.addColor(this.palette, 'rastaak').name('Rastaak building').onChange((hex: string) => paint('rastaak', hex, true));
+    matFolder.addColor(this.palette, 'logo').name('Logo').onChange((hex: string) => paint('logo', hex));
+    matFolder.addColor(this.palette, 'ground').name('Ground').onChange((hex: string) => paint('ground', hex));
+    matFolder.addColor(this.palette, 'border').name('Ground borders').onChange((hex: string) => paint('border', hex));
+    matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
+    matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));
 
-    const applyDefaultGroup = (
-      entries: TrackedMaterial[],
-      params: { color: string; roughness: number; metalness: number },
-      patch: Partial<{ color: string; roughness: number; metalness: number }>,
-    ) => {
-      applyGroup(entries, patch);
-      if (patch.color !== undefined) params.color = patch.color;
-      if (patch.roughness !== undefined) params.roughness = patch.roughness;
-      if (patch.metalness !== undefined) params.metalness = patch.metalness;
-      persistGlobals();
-    };
-
-    const buildingFacades = facades.filter((entry) => !isSiteMesh(entry.displayName));
-    const buildingWindows = windows.filter((entry) => !isSiteMesh(entry.displayName));
-
-    const defaultsFolder = matFolder.addFolder('All buildings');
-    defaultsFolder
-      .addColor(this.globalFacade, 'color')
-      .name('Building Color')
-      .listen()
-      .onChange((hexValue: string) => applyDefaultGroup(buildingFacades, this.globalFacade, { color: hexValue }));
-    defaultsFolder
-      .addColor(this.globalWindow, 'color')
-      .name('Window Color')
-      .listen()
-      .onChange((hexValue: string) => applyDefaultGroup(buildingWindows, this.globalWindow, { color: hexValue }));
-
-    if (facades.length > 0) {
-      const facadeGroupSub = matFolder.addFolder('All Building Facades');
-      addMaterialControls(
-        facadeGroupSub,
-        this.globalFacade,
-        (patch) => {
-          applyGroup(facades, patch);
-          persistGlobals();
-        },
-        { color: 'Facade Color' },
-      );
-    }
-
-    if (windows.length > 0) {
-      const windowGroupSub = matFolder.addFolder('All Building Windows');
-      addMaterialControls(
-        windowGroupSub,
-        this.globalWindow,
-        (patch) => {
-          applyGroup(windows, patch);
-          persistGlobals();
-        },
-        { color: 'Window Color' },
-      );
-    }
-
-    const buildings = new Map<string, { name: string; facade?: TrackedMaterial; window?: TrackedMaterial }>();
-    for (const entry of this.trackedMaterials) {
-      if (isSiteMesh(entry.displayName)) continue;
-      const group = buildings.get(entry.buildingId) ?? { name: entry.displayName };
-      if (entry.role === 'window') group.window = entry;
-      else group.facade = entry;
-      buildings.set(entry.buildingId, group);
-    }
-
-    const clientSlugs = new Set(STORY_CONFIG.clients.map((client) => client.building.replace(/\s+/g, '_')));
-    const clientFolder = matFolder.addFolder('Story client buildings (idle color)');
-    buildings.forEach((group, buildingId) => {
-      if (!clientSlugs.has(buildingId)) return;
-      const sub = clientFolder.addFolder(group.name);
-      if (group.facade) {
-        addMaterialControls(
-          sub,
-          group.facade.params,
-          (patch) => applyGroup([group.facade!], patch),
-          { color: 'Building Color' },
-        );
-      }
-      if (group.window) {
-        addMaterialControls(
-          sub,
-          group.window.params,
-          (patch) => applyGroup([group.window!], patch),
-          { color: 'Window Color' },
-        );
-      }
-    });
-
-    const indBldgSub = matFolder.addFolder('Each Building (Body + Windows)');
-    buildings.forEach((group) => {
-      const sub = indBldgSub.addFolder(group.name);
-      if (group.facade) {
-        addMaterialControls(
-          sub,
-          group.facade.params,
-          (patch) => applyGroup([group.facade!], patch),
-          { color: 'Building Color' },
-        );
-      }
-      if (group.window) {
-        addMaterialControls(
-          sub,
-          group.window.params,
-          (patch) => applyGroup([group.window!], patch),
-          { color: 'Window Color' },
-        );
-      }
-    });
+    persistPalette();
   }
 
   private refreshCamDisplay = () => {};
@@ -1476,4 +1355,3 @@ export class SceneStudioGUI {
     }
   }
 }
-

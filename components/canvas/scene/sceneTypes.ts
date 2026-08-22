@@ -33,6 +33,14 @@ export interface BuildingMaterialOverride {
 }
 
 export interface MaterialsConfig {
+  buildingColor?: number;
+  windowColor?: number;
+  rastaakColor?: number;
+  logoColor?: number;
+  groundColor?: number;
+  borderColor?: number;
+  treeTrunkColor?: number;
+  treeLeafColor?: number;
   globalFacadeColor?: number;
   globalWindowColor?: number;
   globalFacadeRoughness?: number;

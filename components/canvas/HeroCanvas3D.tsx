@@ -164,7 +164,7 @@ export const HeroCanvas3D: React.FC = () => {
     const onStudioBeforeSave = () => story.restoreBase();
     const onStudioAfterSave = () => story.captureBase();
     const onStudioMaterialsChanged = () => {
-      story.captureBase();
+      story.rebindIdlePalette();
     };
     window.addEventListener('rastaak-studio-before-save', onStudioBeforeSave);
     window.addEventListener('rastaak-studio-after-save', onStudioAfterSave);
@@ -211,14 +211,16 @@ export const HeroCanvas3D: React.FC = () => {
             if (Array.isArray(mesh.material)) {
               mesh.material = mesh.material.map((m, idx) => {
                 const cloned = m.clone() as THREE.MeshStandardMaterial;
-                cloned.name = `${mesh.name || 'Building'}_Mat_${idx}`;
+                cloned.userData.gltfName = m.name || '';
+                cloned.name = m.name || `${mesh.name || 'Building'}_Mat_${idx}`;
                 if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.12);
                 if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 1, 0.6);
                 return cloned;
               });
             } else {
               const cloned = mesh.material.clone() as THREE.MeshStandardMaterial;
-              cloned.name = `${mesh.name || 'Building'}_Mat_0`;
+              cloned.userData.gltfName = mesh.material.name || '';
+              cloned.name = mesh.material.name || `${mesh.name || 'Building'}_Mat_0`;
               if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.12);
               if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 1, 0.6);
               mesh.material = cloned;
