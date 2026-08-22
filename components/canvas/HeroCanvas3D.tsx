@@ -14,6 +14,7 @@ import { sampleSceneJourney } from './scene/journeyMath';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
 import { applyMaterialsConfig } from './scene/materialKeys';
+import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 
