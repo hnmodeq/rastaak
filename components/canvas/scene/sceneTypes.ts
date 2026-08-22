@@ -155,6 +155,8 @@ export interface StudioFlowChromeSave {
 export interface StudioTypeFaceSave {
   size: number;
   weight: number;
+  lineHeight?: number;
+  letterSpacing?: number;
   shadowColor: number;
   shadowOpacity: number;
   shadowBlur: number;
@@ -165,6 +167,7 @@ export interface StudioTypeFaceSave {
 export interface StudioTypeChromeSave {
   siteName: string;
   siteNameColor: number;
+  siteNameLayoutColor?: number;
   studioCorner: 'top-right' | 'top-left' | 'bottom-left' | 'bottom-right';
   heroTitle: StudioTypeFaceSave;
   heroSubtitle: StudioTypeFaceSave;

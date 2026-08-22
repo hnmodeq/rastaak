@@ -480,30 +480,23 @@ export function applyHeroCopy() {
 
   const title = document.querySelector<HTMLElement>('.hero__title');
   if (title) {
-    const lines = [HERO_COPY.titleLine1, HERO_COPY.titleLine2].filter((line) => line.trim().length > 0);
-    title.innerHTML = lines.map((line) => '<span>' + escapeHtml(line) + '</span>').join('');
+    const spans = title.querySelectorAll('span');
+    if (spans[0]) spans[0].textContent = HERO_COPY.titleLine1;
+    if (spans[1]) spans[1].textContent = HERO_COPY.titleLine2;
   }
 
   const subtitle = document.querySelector<HTMLElement>('.hero__subtitle');
   if (subtitle) {
-    const first = HERO_COPY.subtitleLine1.trim();
-    const second = HERO_COPY.subtitleLine2.trim();
-    subtitle.innerHTML =
-      (first ? '<span>' + escapeHtml(first) + (second ? '<br class="sp" />' : '') + '</span>' : '') +
-      (second ? '<span>' + escapeHtml(second) + '</span>' : '');
+    const first = subtitle.querySelector<HTMLElement>('[data-hero-sub="1"]');
+    const second = subtitle.querySelector<HTMLElement>('[data-hero-sub="2"]');
+    if (first) first.textContent = HERO_COPY.subtitleLine1;
+    if (second) second.textContent = HERO_COPY.subtitleLine2;
   }
 
   const hint = document.querySelector<HTMLElement>('.hsbtn-in');
   if (hint) hint.textContent = ' ' + HERO_COPY.scrollHint + ' ';
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 `;
       fs.writeFileSync(heroPath, heroCode, 'utf8');
     }
@@ -604,11 +597,12 @@ export function syncFlowDom() {
     if (number) number.textContent = step.num;
     if (title) title.textContent = step.title;
     if (description) {
-      description.textContent = '';
-      if (step.subtitle) {
-        description.append(step.subtitle, document.createElement('br'));
-      }
-      description.append(step.caption);
+      const kicker = description.querySelector<HTMLElement>('.flow__description-kicker');
+      const copy = description.querySelector<HTMLElement>('.flow__description-copy');
+      const br = description.querySelector<HTMLElement>('.flow__description-break');
+      if (kicker) kicker.textContent = step.subtitle;
+      if (copy) copy.textContent = step.caption;
+      if (br) br.hidden = !step.subtitle;
     }
   });
   applyFlowChrome();
@@ -658,6 +652,8 @@ export type StudioCorner = 'top-right' | 'top-left' | 'bottom-left' | 'bottom-ri
 export interface TypeFace {
   size: number;
   weight: number;
+  lineHeight?: number;
+  letterSpacing?: number;
   shadowColor: number;
   shadowOpacity: number;
   shadowBlur: number;
@@ -668,6 +664,7 @@ export interface TypeFace {
 export interface TypeChromeConfig {
   siteName: string;
   siteNameColor: number;
+  siteNameLayoutColor: number;
   studioCorner: StudioCorner;
   heroTitle: TypeFace;
   heroSubtitle: TypeFace;
@@ -712,6 +709,8 @@ export function shadowCss(faceValue: TypeFace): string {
 function applyFace(prefix: string, faceValue: TypeFace, root: HTMLElement) {
   root.style.setProperty('--' + prefix + '-size', faceValue.size + 'px');
   root.style.setProperty('--' + prefix + '-weight', String(faceValue.weight));
+  root.style.setProperty('--' + prefix + '-leading', String(faceValue.lineHeight ?? 1.15));
+  root.style.setProperty('--' + prefix + '-tracking', (faceValue.letterSpacing ?? 0) + 'px');
   root.style.setProperty('--' + prefix + '-shadow', shadowCss(faceValue));
 }
 
@@ -749,11 +748,14 @@ export function applyTypeChrome() {
   applyFace('flow-description', TYPE_CHROME.flowDescription, root);
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
-  const nameColor = hexCss(TYPE_CHROME.siteNameColor);
-  root.style.setProperty('--site-name-color', nameColor);
+  const sceneColor = hexCss(TYPE_CHROME.siteNameColor);
+  const layoutColor = hexCss(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22);
+  root.style.setProperty('--site-name-color', sceneColor);
+  root.style.setProperty('--site-name-scene-color', sceneColor);
+  root.style.setProperty('--site-name-layout-color', layoutColor);
   document.querySelectorAll<HTMLElement>('.site-name').forEach((el) => {
     if (el.textContent !== TYPE_CHROME.siteName) el.textContent = TYPE_CHROME.siteName;
-    el.style.setProperty('color', nameColor, 'important');
+    el.style.removeProperty('color');
   });
   applyStudioChrome();
 }

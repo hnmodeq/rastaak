@@ -29,11 +29,9 @@ export const HomeContent: React.FC = () => {
                 transform: 'perspective(1000px) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg)',
               }}
             >
-              <span>
-                {HERO_COPY.subtitleLine1}
-                <br className="sp" />
-              </span>
-              <span>{HERO_COPY.subtitleLine2}</span>
+              <span data-hero-sub="1">{HERO_COPY.subtitleLine1}</span>
+              <br className="sp" />
+              <span data-hero-sub="2">{HERO_COPY.subtitleLine2}</span>
             </p>
           </div>
           <div className="hero__scroll-btn">
@@ -68,13 +66,9 @@ export const HomeContent: React.FC = () => {
                         </div>
                       </div>
                       <p className="flow__description" dir="auto">
-                        {step.subtitle && (
-                          <>
-                            {step.subtitle}
-                            <br />
-                          </>
-                        )}
-                        {step.caption}
+                        <span className="flow__description-kicker">{step.subtitle}</span>
+                        <br className="flow__description-break" hidden={!step.subtitle} />
+                        <span className="flow__description-copy">{step.caption}</span>
                       </p>
                     </div>
                   </div>

@@ -97,11 +97,12 @@ export function syncFlowDom() {
     if (number) number.textContent = step.num;
     if (title) title.textContent = step.title;
     if (description) {
-      description.textContent = '';
-      if (step.subtitle) {
-        description.append(step.subtitle, document.createElement('br'));
-      }
-      description.append(step.caption);
+      const kicker = description.querySelector<HTMLElement>('.flow__description-kicker');
+      const copy = description.querySelector<HTMLElement>('.flow__description-copy');
+      const br = description.querySelector<HTMLElement>('.flow__description-break');
+      if (kicker) kicker.textContent = step.subtitle;
+      if (copy) copy.textContent = step.caption;
+      if (br) br.hidden = !step.subtitle;
     }
   });
   applyFlowChrome();

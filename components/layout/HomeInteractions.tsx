@@ -78,6 +78,7 @@ export function HomeInteractions() {
       const darkSections = [document.querySelector('.cta-section'), document.querySelector('.footer')].filter(
         Boolean,
       ) as HTMLElement[];
+      const features = document.querySelector<HTMLElement>('.features');
       if (header) {
         const headerHeight = header.offsetHeight;
         const overDark = darkSections.some((section) => {
@@ -85,6 +86,8 @@ export function HomeInteractions() {
           return rect.top < headerHeight && rect.bottom > 0;
         });
         header.classList.toggle('header--white', overDark);
+        const stillInScene = !features || features.getBoundingClientRect().top > headerHeight + 12;
+        document.documentElement.dataset.chrome = stillInScene || overDark ? 'scene' : 'layout';
       }
     };
 

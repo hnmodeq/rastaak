@@ -8,6 +8,7 @@ import { applyTypeChrome } from './typeChrome';
 
 export function HomeTheme() {
   useEffect(() => {
+    document.documentElement.dataset.chrome = document.documentElement.dataset.chrome || 'scene';
     applyStoryTheme();
     applyHeroCopy();
     applyFlowChrome();

@@ -19,8 +19,6 @@ export const Logo: React.FC<LogoProps> = ({
       className={`site-name inline-block select-none ${fontSize} ${className}`.trim()}
       style={{
         fontFamily: "'Kalameh', sans-serif",
-        letterSpacing: '-0.02em',
-        lineHeight: 1,
         ...style,
       }}
     >

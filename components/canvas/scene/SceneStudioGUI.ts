@@ -327,6 +327,7 @@ export class SceneStudioGUI {
       typeChrome: {
         siteName: TYPE_CHROME.siteName,
         siteNameColor: TYPE_CHROME.siteNameColor,
+        siteNameLayoutColor: TYPE_CHROME.siteNameLayoutColor,
         studioCorner: TYPE_CHROME.studioCorner,
         heroTitle: { ...TYPE_CHROME.heroTitle },
         heroSubtitle: { ...TYPE_CHROME.heroSubtitle },
@@ -773,9 +774,13 @@ export class SceneStudioGUI {
   }
 
   private addTypeControls(folder: any, face: TypeFace, hex: (value: number) => string) {
+    if (face.lineHeight === undefined) face.lineHeight = 1.15;
+    if (face.letterSpacing === undefined) face.letterSpacing = 0;
     const params = {
       size: face.size,
       weight: face.weight,
+      lineHeight: face.lineHeight,
+      letterSpacing: face.letterSpacing,
       shadowColor: hex(face.shadowColor),
       shadowOpacity: face.shadowOpacity,
       shadowBlur: face.shadowBlur,
@@ -789,6 +794,14 @@ export class SceneStudioGUI {
     });
     folder.add(params, 'weight', TYPE_WEIGHTS).name('Weight').onChange((value: number) => {
       face.weight = Number(value);
+      sync();
+    });
+    folder.add(params, 'lineHeight', 0.7, 2.4, 0.02).name('Line spacing').onChange((value: number) => {
+      face.lineHeight = value;
+      sync();
+    });
+    folder.add(params, 'letterSpacing', -12, 12, 0.1).name('Letter spacing').onChange((value: number) => {
+      face.letterSpacing = value;
       sync();
     });
     folder.addColor(params, 'shadowColor').name('Shadow color').onChange((value: string) => {
@@ -836,13 +849,18 @@ export class SceneStudioGUI {
     const brandParams = {
       siteName: TYPE_CHROME.siteName,
       siteNameColor: hex(TYPE_CHROME.siteNameColor),
+      siteNameLayoutColor: hex(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22),
     };
     brandFolder.add(brandParams, 'siteName').name('Name').onChange((value: string) => {
       TYPE_CHROME.siteName = value;
       applyTypeChrome();
     });
-    brandFolder.addColor(brandParams, 'siteNameColor').name('Color').onChange((value: string) => {
+    brandFolder.addColor(brandParams, 'siteNameColor').name('Title 3D scene color').onChange((value: string) => {
       TYPE_CHROME.siteNameColor = new THREE.Color(value).getHex();
+      applyTypeChrome();
+    });
+    brandFolder.addColor(brandParams, 'siteNameLayoutColor').name('Title website layout color').onChange((value: string) => {
+      TYPE_CHROME.siteNameLayoutColor = new THREE.Color(value).getHex();
       applyTypeChrome();
     });
     this.addTypeControls(brandFolder, TYPE_CHROME.siteNameType, hex);
@@ -1060,6 +1078,9 @@ export class SceneStudioGUI {
     timelineFolder.addColor(timelineParams, 'descriptionColor').name('Description color').onChange((value: string) => applyTimelineColor('descriptionColor', value));
     timelineFolder.addColor(timelineParams, 'trackColor').name('Track color').onChange((value: string) => applyTimelineColor('trackColor', value));
     timelineFolder.addColor(timelineParams, 'trackFillColor').name('Track fill color').onChange((value: string) => applyTimelineColor('trackFillColor', value));
+    this.addTypeControls(timelineFolder.addFolder('Title type'), TYPE_CHROME.flowTitle, hex);
+    this.addTypeControls(timelineFolder.addFolder('Description type'), TYPE_CHROME.flowDescription, hex);
+    this.addTypeControls(timelineFolder.addFolder('Number type'), TYPE_CHROME.flowNumber, hex);
 
     const titlesFolder = storyFolder.addFolder('Timeline titles');
     FLOW_CONFIG.forEach((step, index) => {

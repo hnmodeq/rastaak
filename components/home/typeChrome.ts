@@ -8,6 +8,8 @@ export type StudioCorner = 'top-right' | 'top-left' | 'bottom-left' | 'bottom-ri
 export interface TypeFace {
   size: number;
   weight: number;
+  lineHeight?: number;
+  letterSpacing?: number;
   shadowColor: number;
   shadowOpacity: number;
   shadowBlur: number;
@@ -18,6 +20,7 @@ export interface TypeFace {
 export interface TypeChromeConfig {
   siteName: string;
   siteNameColor: number;
+  siteNameLayoutColor: number;
   studioCorner: StudioCorner;
   heroTitle: TypeFace;
   heroSubtitle: TypeFace;
@@ -44,10 +47,13 @@ export const TYPE_WEIGHTS = {
 export const TYPE_CHROME: TypeChromeConfig = {
   siteName: "هونامیک ارتباط رستاک",
   siteNameColor: 0xffffff,
+  siteNameLayoutColor: 0x1a1b22,
   studioCorner: "top-left",
   heroTitle: {
     size: 119,
     weight: 700,
+    lineHeight: 0.9,
+    letterSpacing: -5.76,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -57,6 +63,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   heroSubtitle: {
     size: 22,
     weight: 400,
+    lineHeight: 1.2,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 1,
     shadowBlur: 4,
@@ -66,6 +74,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   scrollHint: {
     size: 14,
     weight: 400,
+    lineHeight: 1,
+    letterSpacing: 0.28,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -75,6 +85,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowTitle: {
     size: 24,
     weight: 500,
+    lineHeight: 1.3,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -84,6 +96,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowNumber: {
     size: 14,
     weight: 500,
+    lineHeight: 1,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -93,6 +107,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowDescription: {
     size: 18,
     weight: 400,
+    lineHeight: 1.4,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -102,6 +118,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   chipText: {
     size: 13,
     weight: 600,
+    lineHeight: 1.2,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -111,6 +129,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteNameType: {
     size: 21,
     weight: 600,
+    lineHeight: 1,
+    letterSpacing: -0.4,
     shadowColor: 0x272727,
     shadowOpacity: 1,
     shadowBlur: 4.5,
@@ -138,6 +158,8 @@ export function shadowCss(faceValue: TypeFace): string {
 function applyFace(prefix: string, faceValue: TypeFace, root: HTMLElement) {
   root.style.setProperty('--' + prefix + '-size', faceValue.size + 'px');
   root.style.setProperty('--' + prefix + '-weight', String(faceValue.weight));
+  root.style.setProperty('--' + prefix + '-leading', String(faceValue.lineHeight ?? 1.15));
+  root.style.setProperty('--' + prefix + '-tracking', (faceValue.letterSpacing ?? 0) + 'px');
   root.style.setProperty('--' + prefix + '-shadow', shadowCss(faceValue));
 }
 
@@ -175,11 +197,14 @@ export function applyTypeChrome() {
   applyFace('flow-description', TYPE_CHROME.flowDescription, root);
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
-  const nameColor = hexCss(TYPE_CHROME.siteNameColor);
-  root.style.setProperty('--site-name-color', nameColor);
+  const sceneColor = hexCss(TYPE_CHROME.siteNameColor);
+  const layoutColor = hexCss(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22);
+  root.style.setProperty('--site-name-color', sceneColor);
+  root.style.setProperty('--site-name-scene-color', sceneColor);
+  root.style.setProperty('--site-name-layout-color', layoutColor);
   document.querySelectorAll<HTMLElement>('.site-name').forEach((el) => {
     if (el.textContent !== TYPE_CHROME.siteName) el.textContent = TYPE_CHROME.siteName;
-    el.style.setProperty('color', nameColor, 'important');
+    el.style.removeProperty('color');
   });
   applyStudioChrome();
 }
