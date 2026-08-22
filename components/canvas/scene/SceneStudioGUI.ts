@@ -313,6 +313,8 @@ export class SceneStudioGUI {
         })),
         chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
         captionFadeIn: STORY_CONFIG.captionFadeIn,
+        packetIntensity: STORY_CONFIG.packetIntensity,
+        packetDistance: STORY_CONFIG.packetDistance,
       },
       flowSteps: FLOW_CONFIG.map((step) => ({
         ...step,

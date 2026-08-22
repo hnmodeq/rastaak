@@ -470,8 +470,9 @@ export class StoryRuntime {
     packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;
     packet.light.color.copy(_packetColor);
-    packet.light.intensity = 260 + Math.sin(u * Math.PI) * 180;
-    packet.light.distance = 9;
+    const bounce = Math.max(0, STORY_CONFIG.packetIntensity ?? 260);
+    packet.light.intensity = bounce + Math.sin(u * Math.PI) * bounce * 0.7;
+    packet.light.distance = Math.max(0.5, STORY_CONFIG.packetDistance ?? 9);
     packet.light.decay = 2;
     const coreMat = packet.core.material as THREE.MeshBasicMaterial;
     coreMat.color.copy(_packetColor);

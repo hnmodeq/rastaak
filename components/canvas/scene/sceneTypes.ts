@@ -100,6 +100,8 @@ export interface StudioStorySave {
   captions: Array<{ id: string; text: string; range: [number, number] }>;
   chipHoldAfterArrive: number;
   captionFadeIn: number;
+  packetIntensity: number;
+  packetDistance: number;
 }
 
 export interface StudioFlowStepSave {

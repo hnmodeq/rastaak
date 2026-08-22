@@ -41,6 +41,10 @@ export interface StoryConfig {
   captions: StoryCaptionConfig[];
   chipHoldAfterArrive: number;
   captionFadeIn: number;
+  /** Point-light power that bounces the packet color onto nearby buildings. */
+  packetIntensity: number;
+  /** How far that bounce light reaches. */
+  packetDistance: number;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -102,6 +106,8 @@ export const STORY_CONFIG: StoryConfig = {
   ],
   chipHoldAfterArrive: 0.14,
   captionFadeIn: 0.06,
+  packetIntensity: 260,
+  packetDistance: 9,
 };
 
 export interface StoryChipFrame {

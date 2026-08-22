@@ -288,6 +288,8 @@ export const SCENE_CONFIG: SceneConfig = {
         })),
         chipHoldAfterArrive: asFinite(rawStory.chipHoldAfterArrive, 0.14),
         captionFadeIn: asFinite(rawStory.captionFadeIn, 0.06),
+        packetIntensity: asFinite(rawStory.packetIntensity, 260),
+        packetDistance: asFinite(rawStory.packetDistance, 9),
       };
 
       const storyPath = path.join(rootDir, 'components', 'canvas', 'scene', 'storyConfig.ts');
