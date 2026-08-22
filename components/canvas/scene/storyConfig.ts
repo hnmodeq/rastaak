@@ -69,9 +69,9 @@ export const STORY_CONFIG: StoryConfig = {
     packet: 0x010492,
     packetBounce: 0xffffff,
     packetCore: 0x010492,
-    packetInner: 0x010492,
-    packetOuter: 0x010492,
-    packetSpark: 0xffffff,
+    packetInner: 0xffffff,
+    packetOuter: 0xffffff,
+    packetSpark: 0x000000,
     resolved: 0x000762,
     resolvedWindow: 0xffffff,
     hubPulse: 0x09006a,
@@ -152,7 +152,7 @@ export const STORY_CONFIG: StoryConfig = {
   chipBorderOpacity: 0.55,
   chipBackground: 0x14151a,
   chipBackgroundOpacity: 0.72,
-  chipText: 0xf5f5f2,
+  chipText: 0xf5f5f2
 };
 
 export interface StoryChipFrame {

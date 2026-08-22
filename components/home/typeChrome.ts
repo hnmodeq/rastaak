@@ -41,30 +41,82 @@ export const TYPE_WEIGHTS = {
   Black: 900,
 } as const;
 
-function face(size: number, weight: number): TypeFace {
-  return {
-    size,
-    weight,
+export const TYPE_CHROME: TypeChromeConfig = {
+  siteName: "رستاک",
+  siteNameColor: 0xffffff,
+  studioCorner: "top-left",
+  heroTitle: {
+    size: 96,
+    weight: 500,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
     shadowX: 0,
-    shadowY: 0,
-  };
-}
-
-export const TYPE_CHROME: TypeChromeConfig = {
-  siteName: 'رستاک',
-  siteNameColor: 0x1a1b22,
-  studioCorner: 'bottom-right',
-  heroTitle: face(96, 500),
-  heroSubtitle: face(24, 400),
-  scrollHint: face(14, 400),
-  flowTitle: face(24, 500),
-  flowNumber: face(14, 500),
-  flowDescription: face(18, 400),
-  chipText: face(13, 600),
-  siteNameType: face(50, 800),
+    shadowY: 0
+  },
+  heroSubtitle: {
+    size: 24,
+    weight: 400,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  },
+  scrollHint: {
+    size: 14,
+    weight: 400,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  },
+  flowTitle: {
+    size: 24,
+    weight: 500,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  },
+  flowNumber: {
+    size: 14,
+    weight: 500,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  },
+  flowDescription: {
+    size: 18,
+    weight: 400,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  },
+  chipText: {
+    size: 13,
+    weight: 600,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  },
+  siteNameType: {
+    size: 50,
+    weight: 800,
+    shadowColor: 0x000000,
+    shadowOpacity: 0,
+    shadowBlur: 0,
+    shadowX: 0,
+    shadowY: 0
+  }
 };
 
 function hexCss(value: number): string {
@@ -80,22 +132,7 @@ export function shadowCss(faceValue: TypeFace): string {
   const r = (hex >> 16) & 255;
   const g = (hex >> 8) & 255;
   const b = hex & 255;
-  return (
-    faceValue.shadowX +
-    'px ' +
-    faceValue.shadowY +
-    'px ' +
-    faceValue.shadowBlur +
-    'px rgba(' +
-    r +
-    ', ' +
-    g +
-    ', ' +
-    b +
-    ', ' +
-    a +
-    ')'
-  );
+  return faceValue.shadowX + 'px ' + faceValue.shadowY + 'px ' + faceValue.shadowBlur + 'px rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
 }
 
 function applyFace(prefix: string, faceValue: TypeFace, root: HTMLElement) {
@@ -110,17 +147,14 @@ export function applyStudioChrome() {
   const corner = TYPE_CHROME.studioCorner;
   const top = corner.startsWith('top');
   const left = corner.endsWith('left');
-
   root.style.setProperty('--studio-btn-top', top ? '24px' : 'auto');
   root.style.setProperty('--studio-btn-bottom', top ? 'auto' : '24px');
   root.style.setProperty('--studio-btn-left', left ? '24px' : 'auto');
   root.style.setProperty('--studio-btn-right', left ? 'auto' : '24px');
-
   root.style.setProperty('--studio-gui-top', top ? '90px' : 'auto');
   root.style.setProperty('--studio-gui-bottom', top ? 'auto' : '88px');
   root.style.setProperty('--studio-gui-left', left ? '24px' : 'auto');
   root.style.setProperty('--studio-gui-right', left ? 'auto' : '24px');
-
   const btn = document.getElementById('rastaak-studio-btn');
   if (btn) {
     btn.style.top = top ? '24px' : 'auto';
@@ -142,10 +176,8 @@ export function applyTypeChrome() {
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
   root.style.setProperty('--site-name-color', hexCss(TYPE_CHROME.siteNameColor));
-
   document.querySelectorAll<HTMLElement>('.site-name').forEach((el) => {
     if (el.textContent !== TYPE_CHROME.siteName) el.textContent = TYPE_CHROME.siteName;
   });
-
   applyStudioChrome();
 }
