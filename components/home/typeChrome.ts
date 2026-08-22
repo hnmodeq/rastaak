@@ -52,16 +52,16 @@ export const TYPE_CHROME: TypeChromeConfig = {
     size: 119,
     weight: 700,
     shadowColor: 0x000000,
-    shadowOpacity: 0.3,
-    shadowBlur: 7,
-    shadowX: 5,
+    shadowOpacity: 0.39,
+    shadowBlur: 9,
+    shadowX: 7.5,
     shadowY: 6.5
   },
   heroSubtitle: {
     size: 22,
     weight: 400,
     shadowColor: 0x000000,
-    shadowOpacity: 0.52,
+    shadowOpacity: 0.64,
     shadowBlur: 4,
     shadowX: 2,
     shadowY: 3.5
@@ -103,7 +103,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0.5
   },
   chipText: {
-    size: 13,
+    size: 8,
     weight: 600,
     shadowColor: 0x000000,
     shadowOpacity: 0,
@@ -112,8 +112,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0
   },
   siteNameType: {
-    size: 21,
-    weight: 600,
+    size: 46,
+    weight: 800,
     shadowColor: 0x272727,
     shadowOpacity: 0,
     shadowBlur: 1.5,
