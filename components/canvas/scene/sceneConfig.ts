@@ -86,6 +86,7 @@ export const SCENE_CONFIG: SceneConfig = {
 
   environment: {
     backgroundColor: 0x1c1d22,
+    fogColor: 0x1c1d22,
     fogStart: 15,
     fogEnd: 110
   },

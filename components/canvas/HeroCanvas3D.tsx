@@ -32,12 +32,13 @@ export const HeroCanvas3D: React.FC = () => {
     const env = SCENE_CONFIG.environment;
     const camConfig = SCENE_CONFIG.camera;
     const backgroundColor = new THREE.Color(env.backgroundColor);
+    const fogColor = new THREE.Color(env.fogColor ?? env.backgroundColor);
 
     document.body.style.backgroundColor = '#' + backgroundColor.getHexString();
 
     const scene = new THREE.Scene();
     scene.background = backgroundColor;
-    scene.fog = new THREE.Fog(backgroundColor, env.fogStart, env.fogEnd);
+    scene.fog = new THREE.Fog(fogColor, env.fogStart, env.fogEnd);
 
     const camera = new THREE.PerspectiveCamera(
       camConfig.defaultFov,

@@ -57,6 +57,7 @@ export interface SceneCameraConfig {
 
 export interface SceneEnvironmentConfig {
   backgroundColor: number;
+  fogColor?: number;
   fogStart: number;
   fogEnd: number;
 }
@@ -83,6 +84,10 @@ export interface StudioStorySave {
     needWindow: number;
     packet: number;
     packetBounce: number;
+    packetCore?: number;
+    packetInner?: number;
+    packetOuter?: number;
+    packetSpark?: number;
     resolved: number;
     resolvedWindow: number;
     hubPulse: number;

@@ -198,6 +198,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 
       const environment = {
         backgroundColor: hexLit(asHexNumber(body.environment?.backgroundColor, 0x1c1d22)),
+        fogColor: hexLit(asHexNumber(body.environment?.fogColor ?? body.environment?.backgroundColor, 0x1c1d22)),
         fogStart: asFinite(body.environment?.fogStart, 15),
         fogEnd: asFinite(body.environment?.fogEnd, 110),
       };
@@ -264,6 +265,10 @@ export const SCENE_CONFIG: SceneConfig = {
           needWindow: hexLit(asHexNumber(rawStory.colors?.needWindow, 0x8a5a08)),
           packet: hexLit(asHexNumber(rawStory.colors?.packet, 0x57cdff)),
           packetBounce: hexLit(asHexNumber(rawStory.colors?.packetBounce, 0x57cdff)),
+          packetCore: hexLit(asHexNumber(rawStory.colors?.packetCore ?? rawStory.colors?.packet, 0x57cdff)),
+          packetInner: hexLit(asHexNumber(rawStory.colors?.packetInner ?? rawStory.colors?.packet, 0x57cdff)),
+          packetOuter: hexLit(asHexNumber(rawStory.colors?.packetOuter ?? rawStory.colors?.packet, 0x57cdff)),
+          packetSpark: hexLit(asHexNumber(rawStory.colors?.packetSpark ?? rawStory.colors?.packet, 0x57cdff)),
           resolved: hexLit(asHexNumber(rawStory.colors?.resolved, 0x0e94fb)),
           resolvedWindow: hexLit(asHexNumber(rawStory.colors?.resolvedWindow, 0x57cdff)),
           hubPulse: hexLit(asHexNumber(rawStory.colors?.hubPulse, 0x57cdff)),
@@ -330,6 +335,10 @@ export interface StoryColors {
   needWindow: number;
   packet: number;
   packetBounce: number;
+  packetCore: number;
+  packetInner: number;
+  packetOuter: number;
+  packetSpark: number;
   resolved: number;
   resolvedWindow: number;
   hubPulse: number;

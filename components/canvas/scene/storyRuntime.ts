@@ -57,6 +57,10 @@ const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
 const _resolvedWindow = new THREE.Color(STORY_CONFIG.colors.resolvedWindow ?? STORY_CONFIG.colors.resolved);
 const _packetColor = new THREE.Color(STORY_CONFIG.colors.packet);
 const _packetBounce = new THREE.Color(STORY_CONFIG.colors.packetBounce ?? STORY_CONFIG.colors.packet);
+const _packetCore = new THREE.Color(STORY_CONFIG.colors.packetCore ?? STORY_CONFIG.colors.packet);
+const _packetInner = new THREE.Color(STORY_CONFIG.colors.packetInner ?? STORY_CONFIG.colors.packet);
+const _packetOuter = new THREE.Color(STORY_CONFIG.colors.packetOuter ?? STORY_CONFIG.colors.packet);
+const _packetSpark = new THREE.Color(STORY_CONFIG.colors.packetSpark ?? STORY_CONFIG.colors.packet);
 const _hubPulse = new THREE.Color(STORY_CONFIG.colors.hubPulse);
 const _hubWindow = new THREE.Color(STORY_CONFIG.colors.hubPulseWindow ?? STORY_CONFIG.colors.hubPulse);
 
@@ -197,6 +201,10 @@ function syncStoryColors() {
   _resolvedWindow.set(colors.resolvedWindow ?? colors.resolved);
   _packetColor.set(colors.packet);
   _packetBounce.set(colors.packetBounce ?? colors.packet);
+  _packetCore.set(colors.packetCore ?? colors.packet);
+  _packetInner.set(colors.packetInner ?? colors.packet);
+  _packetOuter.set(colors.packetOuter ?? colors.packet);
+  _packetSpark.set(colors.packetSpark ?? colors.packet);
   _hubPulse.set(colors.hubPulse);
   _hubWindow.set(colors.hubPulseWindow ?? colors.hubPulse);
 }
@@ -526,13 +534,13 @@ export class StoryRuntime {
 
     packet.core.scale.setScalar(coreSize);
     const coreMat = packet.core.material as THREE.MeshBasicMaterial;
-    coreMat.color.copy(_packetColor);
+    coreMat.color.copy(_packetCore);
     coreMat.opacity = 0.9 * pulse;
 
     const innerMat = packet.glowInner.material as THREE.MeshBasicMaterial;
     const outerMat = packet.glowOuter.material as THREE.MeshBasicMaterial;
-    innerMat.color.copy(_packetColor);
-    outerMat.color.copy(_packetColor);
+    innerMat.color.copy(_packetInner);
+    outerMat.color.copy(_packetOuter);
     packet.glowInner.scale.setScalar(glowSize * (1.15 + flicker * 0.2));
     packet.glowOuter.scale.setScalar(glowSize * 2.15 * (1 + flicker * 0.15));
     innerMat.opacity = 0.55 * glow * pulse;
@@ -541,7 +549,7 @@ export class StoryRuntime {
     packet.glowOuter.visible = glow > 0.01;
 
     const sparkMat = packet.sparks.material as THREE.PointsMaterial;
-    sparkMat.color.copy(_packetColor);
+    sparkMat.color.copy(_packetSpark);
     sparkMat.opacity = Math.min(1, glow * 0.85 * flicker);
     sparkMat.size = coreSize * 0.7;
     packet.sparks.visible = glow > 0.05;

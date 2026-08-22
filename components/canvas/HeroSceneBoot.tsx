@@ -44,18 +44,13 @@ export const HeroSceneBoot: React.FC = () => {
       const root =
         document.querySelector('main[data-taxi] [data-taxi-view]') ?? document;
 
-      // Strip intro inline poses only once. Doing it again mid-scroll fights
-      // HeroScrollMotion and makes the title jump.
+      // Do not strip hero title/subtitle poses — HeroScrollMotion owns those.
       if (!revealedHeroCopy) {
         revealedHeroCopy = true;
-        root
-          .querySelectorAll<HTMLElement>(
-            '.hero .hero__title, .hero .hero__subtitle, .hero .hsbtn-in',
-          )
-          .forEach((el) => {
-            el.style.removeProperty('opacity');
-            el.style.removeProperty('transform');
-          });
+        root.querySelectorAll<HTMLElement>('.hero .hsbtn-in').forEach((el) => {
+          el.style.removeProperty('opacity');
+          el.style.removeProperty('transform');
+        });
       }
 
       root

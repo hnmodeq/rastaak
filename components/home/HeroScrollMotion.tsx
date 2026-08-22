@@ -13,18 +13,25 @@ export function HeroScrollMotion() {
     const subtitle = hero?.querySelector<HTMLElement>('.hero__subtitle');
     if (!hero || !title || !subtitle) return;
 
+    hero.classList.add('hero--motion');
+
     const killTweens = (el: HTMLElement) => {
       const gsap = (window as unknown as { gsap?: { killTweensOf?: (target: Element) => void } }).gsap;
       gsap?.killTweensOf?.(el);
     };
 
-    let frame = 0;
-    let takeover = false;
-    let armTimer = 0;
+    const poseOf = (ease: number, y: number) =>
+      `perspective(1000px) translate3d(${222.2 * ease}px, ${y * ease}px, 0) ` +
+      `rotateY(${-60 * ease}deg) rotateX(${-35 * ease}deg)`;
+
+    const paint = (el: HTMLElement, opacity: string, transform: string) => {
+      killTweens(el);
+      el.style.setProperty('transition', 'none', 'important');
+      el.style.setProperty('opacity', opacity, 'important');
+      el.style.setProperty('transform', transform, 'important');
+    };
 
     const apply = () => {
-      frame = 0;
-
       const limit = window.innerHeight * 0.4;
       const t = Math.max(0, Math.min(1, window.scrollY / Math.max(limit, 1)));
       const ease = t * t * (3 - 2 * t);
@@ -35,60 +42,45 @@ export function HeroScrollMotion() {
         window.matchMedia('(max-width: 820px)').matches ? window.scrollY > 0 : t > 0.15,
       );
 
-      if (!takeover) return;
+      if (!shown) {
+        paint(title, '0', poseOf(0, -88));
+        paint(subtitle, '0', poseOf(0, -200));
+        return;
+      }
 
-      killTweens(title);
-      killTweens(subtitle);
-
-      const setPose = (el: HTMLElement, y: number) => {
-        el.style.transition = 'none';
-        if (!shown) {
-          el.style.opacity = '0';
-          return;
-        }
-        el.style.opacity = String(1 - ease);
-        el.style.transform =
-          `perspective(1000px) translate3d(${222.2 * ease}px, ${y * ease}px, 0) ` +
-          `rotateY(${-60 * ease}deg) rotateX(${-35 * ease}deg)`;
-      };
-
-      setPose(title, -88);
-      setPose(subtitle, -200);
+      paint(title, String(1 - ease), poseOf(ease, -88));
+      paint(subtitle, String(1 - ease), poseOf(ease, -200));
     };
 
-    const armTakeover = () => {
-      if (takeover) return;
-      takeover = true;
-      hero.classList.add('hero--motion');
+    let frame = 0;
+    let alive = true;
+
+    const tick = () => {
+      frame = 0;
       apply();
+      if (alive && window.scrollY < window.innerHeight) {
+        frame = window.requestAnimationFrame(tick);
+      }
     };
 
-    const onScroll = () => {
-      if (window.scrollY > 2) armTakeover();
-      if (!frame) frame = window.requestAnimationFrame(apply);
-    };
-
-    const scheduleArm = () => {
-      if (!hero.classList.contains('show') || armTimer) return;
-      armTimer = window.setTimeout(armTakeover, 1600);
+    const kick = () => {
+      if (!frame) frame = window.requestAnimationFrame(tick);
     };
 
     apply();
-    scheduleArm();
-    const showWatcher = new MutationObserver(() => {
-      scheduleArm();
-      apply();
-    });
+    kick();
+
+    const showWatcher = new MutationObserver(kick);
     showWatcher.observe(hero, { attributes: true, attributeFilter: ['class'] });
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', apply);
+    window.addEventListener('scroll', kick, { passive: true });
+    window.addEventListener('resize', kick);
 
     return () => {
+      alive = false;
       showWatcher.disconnect();
-      window.clearTimeout(armTimer);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', apply);
+      window.removeEventListener('scroll', kick);
+      window.removeEventListener('resize', kick);
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);

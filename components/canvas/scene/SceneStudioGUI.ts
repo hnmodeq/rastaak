@@ -275,6 +275,7 @@ export class SceneStudioGUI {
       lights: this.collectCurrentLights(),
       environment: {
         backgroundColor: colorToHexNumber(bg),
+        fogColor: fog ? colorToHexNumber(fog.color) : (SCENE_CONFIG.environment.fogColor ?? colorToHexNumber(bg)),
         fogStart: fog?.near ?? SCENE_CONFIG.environment.fogStart,
         fogEnd: fog?.far ?? SCENE_CONFIG.environment.fogEnd,
       },
@@ -319,6 +320,7 @@ export class SceneStudioGUI {
   private writePayloadIntoMemory(payload: StudioSavePayload) {
     SCENE_CONFIG.stops.splice(0, SCENE_CONFIG.stops.length, ...payload.cameraStops);
     SCENE_CONFIG.environment.backgroundColor = payload.environment.backgroundColor;
+    SCENE_CONFIG.environment.fogColor = payload.environment.fogColor ?? payload.environment.backgroundColor;
     SCENE_CONFIG.environment.fogStart = payload.environment.fogStart;
     SCENE_CONFIG.environment.fogEnd = payload.environment.fogEnd;
     SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
@@ -601,10 +603,16 @@ export class SceneStudioGUI {
           ? this.scene.background.getHexString()
           : new THREE.Color(SCENE_CONFIG.environment.backgroundColor).getHexString()
       );
+      const currentFogHex = '#' + (
+        this.scene.fog
+          ? (this.scene.fog as THREE.Fog).color.getHexString()
+          : new THREE.Color(SCENE_CONFIG.environment.fogColor ?? SCENE_CONFIG.environment.backgroundColor).getHexString()
+      );
 
       const envParams = {
         exposure: this.renderer.toneMappingExposure,
         bgColor: currentBgHex,
+        fogColor: currentFogHex,
         fogNear: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
         fogFar: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
       };
@@ -625,11 +633,22 @@ export class SceneStudioGUI {
         .onChange((v: string) => {
           const col = new THREE.Color(v);
           this.scene.background = col;
-          if (this.scene.fog) {
-            this.scene.fog.color = col;
-          }
           document.body.style.backgroundColor = v;
           SCENE_CONFIG.environment.backgroundColor = col.getHex();
+        });
+
+      envFolder
+        .addColor(envParams, 'fogColor')
+        .name('Fog Color')
+        .listen()
+        .onChange((v: string) => {
+          const col = new THREE.Color(v);
+          if (this.scene.fog) {
+            this.scene.fog.color.copy(col);
+          } else {
+            this.scene.fog = new THREE.Fog(col, envParams.fogNear, envParams.fogFar);
+          }
+          SCENE_CONFIG.environment.fogColor = col.getHex();
         });
 
       if (this.scene.fog) {
@@ -756,6 +775,10 @@ export class SceneStudioGUI {
     const colorParams = {
       packet: hex(STORY_CONFIG.colors.packet),
       packetBounce: hex(STORY_CONFIG.colors.packetBounce ?? STORY_CONFIG.colors.packet),
+      packetCore: hex(STORY_CONFIG.colors.packetCore ?? STORY_CONFIG.colors.packet),
+      packetInner: hex(STORY_CONFIG.colors.packetInner ?? STORY_CONFIG.colors.packet),
+      packetOuter: hex(STORY_CONFIG.colors.packetOuter ?? STORY_CONFIG.colors.packet),
+      packetSpark: hex(STORY_CONFIG.colors.packetSpark ?? STORY_CONFIG.colors.packet),
       hubPulse: hex(STORY_CONFIG.colors.hubPulse),
       hubPulseWindow: hex(STORY_CONFIG.colors.hubPulseWindow ?? STORY_CONFIG.colors.hubPulse),
       need: hex(STORY_CONFIG.colors.need),
@@ -771,7 +794,11 @@ export class SceneStudioGUI {
       applyStoryTheme();
     };
 
-    storyFolder.addColor(colorParams, 'packet').name('Shooting light').onChange((v: string) => applyColor('packet', v));
+    storyFolder.addColor(colorParams, 'packet').name('Shooting light trail').onChange((v: string) => applyColor('packet', v));
+    storyFolder.addColor(colorParams, 'packetCore').name('Shooting light core').onChange((v: string) => applyColor('packetCore', v));
+    storyFolder.addColor(colorParams, 'packetInner').name('Shooting light inner circle').onChange((v: string) => applyColor('packetInner', v));
+    storyFolder.addColor(colorParams, 'packetOuter').name('Shooting light outer circle').onChange((v: string) => applyColor('packetOuter', v));
+    storyFolder.addColor(colorParams, 'packetSpark').name('Shooting light sparks').onChange((v: string) => applyColor('packetSpark', v));
     storyFolder.addColor(colorParams, 'packetBounce').name('Shooting light reflection color').onChange((v: string) => applyColor('packetBounce', v));
 
     const bounceParams = {
@@ -1195,9 +1222,7 @@ export class SceneStudioGUI {
       params: { color: string; roughness: number; metalness: number },
       patch: Partial<{ color: string; roughness: number; metalness: number }>,
     ) => {
-      const prevColor = params.color.toLowerCase();
-      const targets = entries.filter((entry) => entry.params.color.toLowerCase() === prevColor);
-      applyGroup(targets, patch);
+      applyGroup(entries, patch);
       if (patch.color !== undefined) params.color = patch.color;
       if (patch.roughness !== undefined) params.roughness = patch.roughness;
       if (patch.metalness !== undefined) params.metalness = patch.metalness;
@@ -1207,7 +1232,7 @@ export class SceneStudioGUI {
     const buildingFacades = facades.filter((entry) => !isSiteMesh(entry.displayName));
     const buildingWindows = windows.filter((entry) => !isSiteMesh(entry.displayName));
 
-    const defaultsFolder = matFolder.addFolder('All buildings (no override)');
+    const defaultsFolder = matFolder.addFolder('All buildings');
     defaultsFolder
       .addColor(this.globalFacade, 'color')
       .name('Building Color')
