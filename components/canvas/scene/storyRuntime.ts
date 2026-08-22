@@ -22,7 +22,6 @@ interface ClientActor {
   roof: THREE.Vector3;
   slots: TrackedSlot[];
   blend: number;
-  latchedResolved: boolean;
   packet: PacketRig;
 }
 
@@ -149,6 +148,13 @@ function recaptureSlots(slots: TrackedSlot[]) {
     if (slot.mat.emissive) slot.baseEmissive.copy(slot.mat.emissive);
     slot.baseEmissiveIntensity = slot.mat.emissiveIntensity ?? 1;
   }
+}
+
+function syncStoryColors() {
+  _needColor.set(STORY_CONFIG.colors.need);
+  _resolvedColor.set(STORY_CONFIG.colors.resolved);
+  _packetColor.set(STORY_CONFIG.colors.packet);
+  _hubPulse.set(STORY_CONFIG.colors.hubPulse);
 }
 
 function applyBuildingLook(slots: TrackedSlot[], blend: number) {
@@ -282,10 +288,15 @@ export class StoryRuntime {
     this.packetRoot.name = 'rastaak-story-packets';
     scene.add(this.packetRoot);
 
+    let loggedNames = Boolean(hubObj);
     for (const config of STORY_CONFIG.clients) {
-      const object = findByName(world, config.building);
+      const object = findByName(world, config.building) ?? findByName(searchRoot, config.building);
       if (!object) {
         console.warn(`[story] missing building "${config.building}"`);
+        if (!loggedNames) {
+          logAvailableBuildings(world);
+          loggedNames = true;
+        }
         continue;
       }
       const roof = new THREE.Vector3();
@@ -300,7 +311,6 @@ export class StoryRuntime {
         roof,
         slots: collectSlots(object),
         blend: 0,
-        latchedResolved: false,
         packet,
       });
     }
@@ -338,28 +348,23 @@ export class StoryRuntime {
     compact: boolean;
   }): StoryFrame {
     const t = Math.max(0, Math.min(1, input.t));
-    const goingForward = t + 0.0005 >= this.lastT;
+    const jumped = Math.abs(t - this.lastT) > 0.04;
     this.lastT = t;
-
-    if (t < 0.02) {
-      for (const client of this.clients) client.latchedResolved = false;
-    }
+    syncStoryColors();
 
     const chips: StoryChipFrame[] = [];
     let dispatchFlash = 0;
 
     for (const client of this.clients) {
-      if (t >= client.config.arrive) client.latchedResolved = true;
-
       let state: StoryBuildingState = 'idle';
-      if (client.latchedResolved || t >= client.config.arrive) state = 'resolved';
+      if (t >= client.config.arrive) state = 'resolved';
       else if (t >= client.config.appear) state = 'need';
 
       const targetBlend = state === 'idle' ? 0 : state === 'need' ? 1 : 2;
-      if (input.reducedMotion || !this.enabled) {
+      if (input.reducedMotion || !this.enabled || jumped) {
         client.blend = targetBlend;
       } else {
-        const k = 1 - Math.exp(-input.delta * 7);
+        const k = 1 - Math.exp(-input.delta * 14);
         client.blend += (targetBlend - client.blend) * k;
       }
 
@@ -368,12 +373,7 @@ export class StoryRuntime {
       const holdEnd = client.config.arrive + STORY_CONFIG.chipHoldAfterArrive;
       const chipOn = t >= client.config.appear && t < holdEnd;
       const traveling = t >= client.config.dispatch && t < client.config.arrive;
-      const showPacket =
-        this.enabled &&
-        !input.reducedMotion &&
-        !input.compact &&
-        goingForward &&
-        traveling;
+      const showPacket = this.enabled && !input.reducedMotion && !input.compact && traveling;
 
       this.updatePacket(client, t, showPacket);
 

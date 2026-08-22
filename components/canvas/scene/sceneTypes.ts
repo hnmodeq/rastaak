@@ -75,6 +75,38 @@ export interface SceneConfig {
   materials: MaterialsConfig;
 }
 
+export interface StudioStorySave {
+  hub: string;
+  logo: string;
+  colors: {
+    need: number;
+    packet: number;
+    resolved: number;
+    hubPulse: number;
+    chipNeed: number;
+    chipResolved: number;
+  };
+  clients: Array<{
+    id: string;
+    building: string;
+    need: string;
+    appear: number;
+    dispatch: number;
+    arrive: number;
+  }>;
+  captions: Array<{ id: string; text: string; range: [number, number] }>;
+  chipHoldAfterArrive: number;
+  captionFadeIn: number;
+}
+
+export interface StudioFlowStepSave {
+  num: string;
+  title: string;
+  subtitle: string;
+  caption: string;
+  progressRange: [number, number];
+}
+
 export interface StudioSavePayload {
   cameraStops: CameraStop[];
   lights: LightConfig[];
@@ -83,4 +115,6 @@ export interface StudioSavePayload {
   scroll: SceneScrollConfig;
   camera: SceneCameraConfig;
   materials: MaterialsConfig;
+  story?: StudioStorySave;
+  flowSteps?: StudioFlowStepSave[];
 }

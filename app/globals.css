@@ -144,11 +144,11 @@ main[data-taxi],
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #e0a01a;
+  background: var(--story-chip-need, #e0a01a);
 }
 
 .story-chip[data-state='resolved'] .story-chip__mark {
-  background: #0e94fb;
+  background: var(--story-chip-resolved, #0e94fb);
 }
 
 .story-chip__check {

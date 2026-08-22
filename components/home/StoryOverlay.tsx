@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { STORY_CONFIG, STORY_FRAME_EVENT, type StoryFrame } from '@/components/canvas/scene/storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, type StoryFrame } from '@/components/canvas/scene/storyConfig';
 
 export function StoryOverlay() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -10,6 +10,7 @@ export function StoryOverlay() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    applyStoryTheme();
 
     const apply = (frame: StoryFrame) => {
       root.dataset.visible = 'true';
@@ -26,6 +27,8 @@ export function StoryOverlay() {
         el.dataset.state = chip.state;
         el.style.opacity = String(chip.opacity);
         el.style.transform = `translate3d(${chip.x}px, ${chip.y}px, 0) translate(-50%, -120%)`;
+        const label = el.querySelector('.story-chip__text');
+        if (label && label.textContent !== chip.text) label.textContent = chip.text;
       }
     };
 

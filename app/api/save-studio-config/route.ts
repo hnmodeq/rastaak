@@ -247,9 +247,160 @@ export const SCENE_CONFIG: SceneConfig = {
       fs.writeFileSync(sceneConfigPath, sceneConfigCode, 'utf8');
     }
 
+    if (body.story) {
+      const rawStory = body.story;
+      const rawClients = Array.isArray(rawStory.clients) ? rawStory.clients : [];
+      const rawCaptions = Array.isArray(rawStory.captions) ? rawStory.captions : [];
+      const story = {
+        hub: sanitizeText(rawStory.hub, 'Rastaak Building', 80),
+        logo: sanitizeText(rawStory.logo, 'Logo', 80),
+        colors: {
+          need: hexLit(asHexNumber(rawStory.colors?.need, 0xe0a01a)),
+          packet: hexLit(asHexNumber(rawStory.colors?.packet, 0x57cdff)),
+          resolved: hexLit(asHexNumber(rawStory.colors?.resolved, 0x0e94fb)),
+          hubPulse: hexLit(asHexNumber(rawStory.colors?.hubPulse, 0x57cdff)),
+          chipNeed: hexLit(asHexNumber(rawStory.colors?.chipNeed, 0xe0a01a)),
+          chipResolved: hexLit(asHexNumber(rawStory.colors?.chipResolved, 0x0e94fb)),
+        },
+        clients: rawClients.map((client, index) => ({
+          id: sanitizeId(client?.id, `client_${index + 1}`),
+          building: sanitizeText(client?.building, `Building ${index + 1}`, 80),
+          need: sanitizeText(client?.need, '', 160),
+          appear: asFinite(client?.appear, 0.1),
+          dispatch: asFinite(client?.dispatch, 0.16),
+          arrive: asFinite(client?.arrive, 0.24),
+        })),
+        captions: rawCaptions.map((caption, index) => ({
+          id: sanitizeId(caption?.id, `caption_${index + 1}`),
+          text: sanitizeText(caption?.text, '', 160),
+          range: [
+            asFinite(Array.isArray(caption?.range) ? caption.range[0] : 0, 0),
+            asFinite(Array.isArray(caption?.range) ? caption.range[1] : 1, 1),
+          ],
+        })),
+        chipHoldAfterArrive: asFinite(rawStory.chipHoldAfterArrive, 0.14),
+        captionFadeIn: asFinite(rawStory.captionFadeIn, 0.06),
+      };
+
+      const storyPath = path.join(rootDir, 'components', 'canvas', 'scene', 'storyConfig.ts');
+      const storyCode = `/**
+ * Homepage 3D story — source of truth.
+ * Saved automatically from 3D Studio.
+ */
+
+export type StoryBuildingState = 'idle' | 'need' | 'resolved';
+
+export interface StoryClientConfig {
+  id: string;
+  building: string;
+  need: string;
+  appear: number;
+  dispatch: number;
+  arrive: number;
+}
+
+export interface StoryCaptionConfig {
+  id: string;
+  text: string;
+  range: [number, number];
+}
+
+export interface StoryColors {
+  need: number;
+  packet: number;
+  resolved: number;
+  hubPulse: number;
+  chipNeed: number;
+  chipResolved: number;
+}
+
+export interface StoryConfig {
+  hub: string;
+  logo: string;
+  colors: StoryColors;
+  clients: StoryClientConfig[];
+  captions: StoryCaptionConfig[];
+  chipHoldAfterArrive: number;
+  captionFadeIn: number;
+}
+
+export const STORY_FRAME_EVENT = 'rastaak-story-frame';
+
+export const STORY_CONFIG: StoryConfig = ${emit(story, 0)};
+
+export interface StoryChipFrame {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  state: Exclude<StoryBuildingState, 'idle'>;
+  visible: boolean;
+  opacity: number;
+}
+
+export interface StoryCaptionFrame {
+  id: string;
+  text: string;
+  index: number;
+  total: number;
+}
+
+export interface StoryFrame {
+  t: number;
+  chips: StoryChipFrame[];
+  captions: StoryCaptionConfig[];
+  activeCaptionId: string | null;
+  visible: boolean;
+}
+
+function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+export function applyStoryTheme(root: HTMLElement | null = typeof document === 'undefined' ? null : document.documentElement) {
+  if (!root) return;
+  const colors = STORY_CONFIG.colors;
+  root.style.setProperty('--story-chip-need', hexCss(colors.chipNeed ?? colors.need));
+  root.style.setProperty('--story-chip-resolved', hexCss(colors.chipResolved ?? colors.resolved));
+}
+`;
+      fs.writeFileSync(storyPath, storyCode, 'utf8');
+    }
+
+    if (Array.isArray(body.flowSteps)) {
+      const steps = body.flowSteps.map((step, index) => ({
+        num: sanitizeText(step?.num, String(index + 1).padStart(2, '0'), 8),
+        title: sanitizeText(step?.title, '', 160),
+        subtitle: sanitizeText(step?.subtitle, '', 240),
+        caption: sanitizeText(step?.caption, '', 600),
+        progressRange: [
+          asFinite(Array.isArray(step?.progressRange) ? step.progressRange[0] : 0, 0),
+          asFinite(Array.isArray(step?.progressRange) ? step.progressRange[1] : 1, 1),
+        ],
+      }));
+
+      const flowPath = path.join(rootDir, 'components', 'home', 'flowConfig.ts');
+      const flowCode = `/**
+ * RASTAAK FLOW STEPS CONTROLLER CONFIG
+ * Saved automatically from 3D Studio
+ */
+
+export interface FlowStepConfig {
+  num: string;
+  title: string;
+  subtitle: string;
+  caption: string;
+  progressRange: [number, number];
+}
+
+export const FLOW_CONFIG: FlowStepConfig[] = ${emit(steps, 0)};
+`;
+      fs.writeFileSync(flowPath, flowCode, 'utf8');
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Config saved to sceneConfig.ts and lightingConfig.ts',
+      message: 'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, and flowConfig.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

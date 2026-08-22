@@ -34,6 +34,24 @@ function colorToHexNumber(color: THREE.Color): number {
   return color.getHex();
 }
 
+function syncFlowDom() {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll<HTMLElement>('.flow__step').forEach((el, index) => {
+    const step = FLOW_CONFIG[index];
+    if (!step) return;
+    const title = el.querySelector('.flow__title');
+    const description = el.querySelector('.flow__description');
+    if (title) title.textContent = step.title;
+    if (description) {
+      description.textContent = '';
+      if (step.subtitle) {
+        description.append(step.subtitle, document.createElement('br'));
+      }
+      description.append(step.caption);
+    }
+  });
+}
+
 export class SceneStudioGUI {
   private gui: any = null;
   private toggleButton: HTMLButtonElement | null = null;
@@ -282,6 +300,22 @@ export class SceneStudioGUI {
       scroll: { ...SCENE_CONFIG.scroll },
       camera: { ...SCENE_CONFIG.camera },
       materials: this.collectCurrentMaterials(),
+      story: {
+        hub: STORY_CONFIG.hub,
+        logo: STORY_CONFIG.logo,
+        colors: { ...STORY_CONFIG.colors },
+        clients: STORY_CONFIG.clients.map((client) => ({ ...client })),
+        captions: STORY_CONFIG.captions.map((caption) => ({
+          ...caption,
+          range: [...caption.range] as [number, number],
+        })),
+        chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
+        captionFadeIn: STORY_CONFIG.captionFadeIn,
+      },
+      flowSteps: FLOW_CONFIG.map((step) => ({
+        ...step,
+        progressRange: [...step.progressRange] as [number, number],
+      })),
     };
   }
 
@@ -562,6 +596,7 @@ export class SceneStudioGUI {
 
       this.populateLightsAndShadows();
       this.populateMaterials();
+      this.populateStoryControls();
 
       const envFolder = this.gui.addFolder('Environment & Fog');
       const currentBgHex = '#' + (
@@ -637,7 +672,7 @@ export class SceneStudioGUI {
             if (res.ok) {
               window.dispatchEvent(new CustomEvent('rastaak-studio-after-save'));
               alert(
-                'Saved. Camera, lights, shadows, fog, exposure, and every building material were written to sceneConfig.ts and lightingConfig.ts. Refresh will restore this exact scene.',
+                'Saved. Camera, lights, story colors, timeline titles, and materials were written to code. Refresh will restore this exact scene.',
               );
             } else {
               alert(`Error saving config: ${data.error || 'Unknown error'}`);
@@ -675,6 +710,69 @@ export class SceneStudioGUI {
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
+  }
+
+  private populateStoryControls() {
+    if (!this.gui) return;
+    applyStoryTheme();
+
+    const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+    const storyFolder = this.gui.addFolder('Story Colors & Titles');
+
+    const colorParams = {
+      packet: hex(STORY_CONFIG.colors.packet),
+      hubPulse: hex(STORY_CONFIG.colors.hubPulse),
+      need: hex(STORY_CONFIG.colors.need),
+      resolved: hex(STORY_CONFIG.colors.resolved),
+      chipNeed: hex(STORY_CONFIG.colors.chipNeed ?? STORY_CONFIG.colors.need),
+      chipResolved: hex(STORY_CONFIG.colors.chipResolved ?? STORY_CONFIG.colors.resolved),
+    };
+
+    const applyColor = (key: keyof typeof colorParams, value: string) => {
+      STORY_CONFIG.colors[key] = new THREE.Color(value).getHex();
+      applyStoryTheme();
+    };
+
+    storyFolder.addColor(colorParams, 'packet').name('Shooting light').onChange((v: string) => applyColor('packet', v));
+    storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak glow').onChange((v: string) => applyColor('hubPulse', v));
+    storyFolder.addColor(colorParams, 'need').name('Client before solve').onChange((v: string) => applyColor('need', v));
+    storyFolder.addColor(colorParams, 'resolved').name('Client after solve').onChange((v: string) => applyColor('resolved', v));
+    storyFolder.addColor(colorParams, 'chipNeed').name('Tick before solve').onChange((v: string) => applyColor('chipNeed', v));
+    storyFolder.addColor(colorParams, 'chipResolved').name('Tick after solve').onChange((v: string) => applyColor('chipResolved', v));
+
+    const chipsFolder = storyFolder.addFolder('Need chip titles');
+    STORY_CONFIG.clients.forEach((client) => {
+      const params = { need: client.need };
+      chipsFolder
+        .add(params, 'need')
+        .name(client.building)
+        .onChange((value: string) => {
+          client.need = value;
+        });
+    });
+
+    const titlesFolder = storyFolder.addFolder('Timeline titles');
+    FLOW_CONFIG.forEach((step, index) => {
+      const folder = titlesFolder.addFolder(`${step.num} ${step.title}`);
+      const params = {
+        title: step.title,
+        subtitle: step.subtitle,
+        caption: step.caption,
+      };
+      folder.add(params, 'title').name('Title').onChange((value: string) => {
+        step.title = value;
+        syncFlowDom();
+      });
+      folder.add(params, 'subtitle').name('Subtitle').onChange((value: string) => {
+        step.subtitle = value;
+        syncFlowDom();
+      });
+      folder.add(params, 'caption').name('Description').onChange((value: string) => {
+        step.caption = value;
+        syncFlowDom();
+      });
+      void index;
+    });
   }
 
   public populateLightsAndShadows() {
@@ -974,6 +1072,15 @@ export class SceneStudioGUI {
     }
     if (this.toggleButton) {
       this.toggleButton.remove();
+      this.toggleButton = null;
+    }
+    if (this.gui) {
+      this.gui.destroy();
+      this.gui = null;
+    }
+  }
+}
+
       this.toggleButton = null;
     }
     if (this.gui) {

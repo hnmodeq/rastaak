@@ -21,15 +21,19 @@ export interface StoryCaptionConfig {
   range: [number, number];
 }
 
+export interface StoryColors {
+  need: number;
+  packet: number;
+  resolved: number;
+  hubPulse: number;
+  chipNeed: number;
+  chipResolved: number;
+}
+
 export interface StoryConfig {
   hub: string;
   logo: string;
-  colors: {
-    need: number;
-    packet: number;
-    resolved: number;
-    hubPulse: number;
-  };
+  colors: StoryColors;
   clients: StoryClientConfig[];
   captions: StoryCaptionConfig[];
   chipHoldAfterArrive: number;
@@ -46,6 +50,8 @@ export const STORY_CONFIG: StoryConfig = {
     packet: 0x57cdff,
     resolved: 0x0e94fb,
     hubPulse: 0x57cdff,
+    chipNeed: 0xe0a01a,
+    chipResolved: 0x0e94fb,
   },
   clients: [
     {
@@ -115,4 +121,16 @@ export interface StoryFrame {
   captions: StoryCaptionConfig[];
   activeCaptionId: string | null;
   visible: boolean;
+}
+
+function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+/** Pushes story colors into CSS variables used by chips / ticks. */
+export function applyStoryTheme(root: HTMLElement | null = typeof document === 'undefined' ? null : document.documentElement) {
+  if (!root) return;
+  const colors = STORY_CONFIG.colors;
+  root.style.setProperty('--story-chip-need', hexCss(colors.chipNeed ?? colors.need));
+  root.style.setProperty('--story-chip-resolved', hexCss(colors.chipResolved ?? colors.resolved));
 }

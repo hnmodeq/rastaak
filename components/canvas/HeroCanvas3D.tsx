@@ -320,33 +320,18 @@ export const HeroCanvas3D: React.FC = () => {
         }
       }
 
-      const editing = Boolean(studioGUI?.isEditing);
-      story.setEnabled(!editing);
-      if (!editing) {
-        const frame = story.update({
-          t: currentScrollProgress,
-          camera,
-          width: window.innerWidth,
-          height: window.innerHeight,
-          delta,
-          elapsed,
-          reducedMotion: motionQuery.matches,
-          compact: window.innerWidth <= 820,
-        });
-        window.dispatchEvent(new CustomEvent(STORY_FRAME_EVENT, { detail: frame }));
-      } else {
-        window.dispatchEvent(
-          new CustomEvent(STORY_FRAME_EVENT, {
-            detail: {
-              t: currentScrollProgress,
-              chips: [],
-              captions: [],
-              activeCaptionId: null,
-              visible: false,
-            },
-          }),
-        );
-      }
+      story.setEnabled(true);
+      const frame = story.update({
+        t: currentScrollProgress,
+        camera,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        delta,
+        elapsed,
+        reducedMotion: motionQuery.matches,
+        compact: window.innerWidth <= 820,
+      });
+      window.dispatchEvent(new CustomEvent(STORY_FRAME_EVENT, { detail: frame }));
 
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
