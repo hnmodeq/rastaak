@@ -38,6 +38,7 @@ export interface MaterialsConfig {
   rastaakColor?: number;
   logoColor?: number;
   groundColor?: number;
+  plateColor?: number;
   borderColor?: number;
   treeTrunkColor?: number;
   treeLeafColor?: number;

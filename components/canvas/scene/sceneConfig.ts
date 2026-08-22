@@ -103,6 +103,7 @@ export const SCENE_CONFIG: SceneConfig = {
     rastaakColor: 0x000000,
     logoColor: 0xffffff,
     groundColor: 0x3e3e3e,
+    plateColor: 0x7f7f7f,
     borderColor: 0x191919,
     treeTrunkColor: 0x6b4f2a,
     treeLeafColor: 0x3d6b3a,

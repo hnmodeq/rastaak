@@ -192,6 +192,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         rastaakColor: hexLit(asHexNumber(body.materials?.rastaakColor, 0x09006a)),
         logoColor: hexLit(asHexNumber(body.materials?.logoColor, 0xffffff)),
         groundColor: hexLit(asHexNumber(body.materials?.groundColor, 0xffffff)),
+        plateColor: hexLit(asHexNumber(body.materials?.plateColor, 0x7f7f7f)),
         borderColor: hexLit(asHexNumber(body.materials?.borderColor, 0x888888)),
         treeTrunkColor: hexLit(asHexNumber(body.materials?.treeTrunkColor, 0x6b4f2a)),
         treeLeafColor: hexLit(asHexNumber(body.materials?.treeLeafColor, 0x3d6b3a)),

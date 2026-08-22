@@ -60,6 +60,7 @@ export class SceneStudioGUI {
     rastaak: '#09006a',
     logo: '#ffffff',
     ground: '#ffffff',
+    plate: '#7f7f7f',
     border: '#888888',
     treeTrunk: '#6b4f2a',
     treeLeaf: '#3d6b3a',
@@ -97,6 +98,7 @@ export class SceneStudioGUI {
     if (palette.rastaakColor !== undefined) this.palette.rastaak = '#' + new THREE.Color(palette.rastaakColor).getHexString();
     if (palette.logoColor !== undefined) this.palette.logo = '#' + new THREE.Color(palette.logoColor).getHexString();
     if (palette.groundColor !== undefined) this.palette.ground = '#' + new THREE.Color(palette.groundColor).getHexString();
+    if (palette.plateColor !== undefined) this.palette.plate = '#' + new THREE.Color(palette.plateColor).getHexString();
     if (palette.borderColor !== undefined) this.palette.border = '#' + new THREE.Color(palette.borderColor).getHexString();
     if (palette.treeTrunkColor !== undefined) this.palette.treeTrunk = '#' + new THREE.Color(palette.treeTrunkColor).getHexString();
     if (palette.treeLeafColor !== undefined) this.palette.treeLeaf = '#' + new THREE.Color(palette.treeLeafColor).getHexString();
@@ -249,6 +251,7 @@ export class SceneStudioGUI {
       rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
       logoColor: new THREE.Color(this.palette.logo).getHex(),
       groundColor: new THREE.Color(this.palette.ground).getHex(),
+      plateColor: new THREE.Color(this.palette.plate).getHex(),
       borderColor: new THREE.Color(this.palette.border).getHex(),
       treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
       treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
@@ -1296,6 +1299,7 @@ export class SceneStudioGUI {
     seed('rastaak', 'rastaak');
     seed('logo', 'logo');
     seed('ground', 'ground');
+    seed('plate', 'plate');
     seed('border', 'border');
     seed('treeTrunk', 'treeTrunk');
     seed('treeLeaf', 'treeLeaf');
@@ -1312,6 +1316,7 @@ export class SceneStudioGUI {
           rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
           logoColor: new THREE.Color(this.palette.logo).getHex(),
           groundColor: new THREE.Color(this.palette.ground).getHex(),
+          plateColor: new THREE.Color(this.palette.plate).getHex(),
           borderColor: new THREE.Color(this.palette.border).getHex(),
           treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
           treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
@@ -1332,6 +1337,7 @@ export class SceneStudioGUI {
     matFolder.addColor(this.palette, 'rastaak').name('Rastaak building').onChange((hex: string) => paint('rastaak', hex, true));
     matFolder.addColor(this.palette, 'logo').name('Logo').onChange((hex: string) => paint('logo', hex));
     matFolder.addColor(this.palette, 'ground').name('Ground').onChange((hex: string) => paint('ground', hex));
+    matFolder.addColor(this.palette, 'plate').name('Plates').onChange((hex: string) => paint('plate', hex));
     matFolder.addColor(this.palette, 'border').name('Ground borders').onChange((hex: string) => paint('border', hex));
     matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
     matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));

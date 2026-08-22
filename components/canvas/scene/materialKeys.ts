@@ -9,6 +9,7 @@ export type MaterialCategory =
   | 'rastaak'
   | 'logo'
   | 'ground'
+  | 'plate'
   | 'border'
   | 'treeTrunk'
   | 'treeLeaf'
@@ -20,6 +21,7 @@ export type CategoryPalette = {
   rastaakColor?: number;
   logoColor?: number;
   groundColor?: number;
+  plateColor?: number;
   borderColor?: number;
   treeTrunkColor?: number;
   treeLeafColor?: number;
@@ -43,6 +45,15 @@ export function slugName(name: string): string {
 
 export function isSiteMesh(name: string): boolean {
   return SITE_NAME.test(name.trim());
+}
+
+function isPlateObject(object: THREE.Object3D): boolean {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    if (PLATE_NODE.test((current.name || '').trim())) return true;
+    current = current.parent;
+  }
+  return false;
 }
 
 export function getMeshMaterials(mesh: THREE.Mesh): THREE.Material[] {
@@ -104,13 +115,16 @@ export function classifyCategory(
   const windowSlot = classifyRole(mesh, slot, materialCount) === 'window';
 
   if (matName.includes('ground edge')) return 'border';
-  if (matName.includes('ground inside')) return 'ignore';
+
+  // Grounds uses "Ground Inside". The park (Plane.003) reuses Material.012,
+  // the same slot trees use for leaves — keep that fill on plates, not trees.
+  const onPlate = isPlateObject(mesh) || PLATE_NODE.test(nodeL) || PLATE_NODE.test(meshL);
+  if (matName.includes('ground inside') || (onPlate && !matName.includes('ground edge'))) {
+    return 'plate';
+  }
 
   if (nodeL.includes('logo') || meshL.includes('logo')) return 'logo';
   if (nodeL === 'earth' || meshL === 'earth') return 'ground';
-  if (PLATE_NODE.test(nodeL) || PLATE_NODE.test(meshL)) {
-    return slot === 0 ? 'border' : 'ignore';
-  }
 
   if (nodeL.includes('rastaak')) {
     return windowSlot ? 'window' : 'rastaak';
@@ -141,6 +155,7 @@ export function resolvePalette(config: MaterialsConfig | undefined): CategoryPal
     rastaakColor: config?.rastaakColor ?? overrides.Rastaak_Building__facade?.color,
     logoColor: config?.logoColor,
     groundColor: config?.groundColor ?? overrides.Earth__facade?.color,
+    plateColor: config?.plateColor,
     borderColor: config?.borderColor,
     treeTrunkColor: config?.treeTrunkColor,
     treeLeafColor: config?.treeLeafColor,
@@ -154,6 +169,7 @@ export function collectCategoryGroups(root: THREE.Object3D): Record<Exclude<Mate
     rastaak: [],
     logo: [],
     ground: [],
+    plate: [],
     border: [],
     treeTrunk: [],
     treeLeaf: [],
@@ -187,6 +203,8 @@ function colorForCategory(category: Exclude<MaterialCategory, 'ignore'>, palette
       return palette.logoColor;
     case 'ground':
       return palette.groundColor;
+    case 'plate':
+      return palette.plateColor;
     case 'border':
       return palette.borderColor;
     case 'treeTrunk':
@@ -200,6 +218,24 @@ function colorForCategory(category: Exclude<MaterialCategory, 'ignore'>, palette
 export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConfig | undefined): void {
   if (!config) return;
   const palette = resolvePalette(config);
+
+  if (palette.plateColor === undefined) {
+    root.traverse((child) => {
+      if (palette.plateColor !== undefined) return;
+      const mesh = child as THREE.Mesh;
+      if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
+      const mats = getMeshMaterials(mesh);
+      mats.forEach((mat, slot) => {
+        if (palette.plateColor !== undefined) return;
+        const std = mat as THREE.MeshStandardMaterial;
+        if (!std?.color) return;
+        if (classifyCategory(mesh, slot, mats.length, std) !== 'plate') return;
+        if (sourceMatName(std).includes('ground inside')) {
+          palette.plateColor = std.color.getHex();
+        }
+      });
+    });
+  }
 
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
@@ -239,6 +275,7 @@ export function collectMaterialsConfig(palette: CategoryPalette): MaterialsConfi
     rastaakColor: palette.rastaakColor,
     logoColor: palette.logoColor,
     groundColor: palette.groundColor,
+    plateColor: palette.plateColor,
     borderColor: palette.borderColor,
     treeTrunkColor: palette.treeTrunkColor,
     treeLeafColor: palette.treeLeafColor,
