@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { BuildingMaterialOverride, MaterialsConfig } from './sceneTypes';
+import { STORY_CONFIG } from './storyConfig';
 
 export type MaterialRole = 'facade' | 'window';
 

@@ -1393,6 +1393,29 @@ export class SceneStudioGUI {
       buildings.set(entry.buildingId, group);
     }
 
+    const clientSlugs = new Set(STORY_CONFIG.clients.map((client) => client.building.replace(/\s+/g, '_')));
+    const clientFolder = matFolder.addFolder('Story client buildings (idle color)');
+    buildings.forEach((group, buildingId) => {
+      if (!clientSlugs.has(buildingId)) return;
+      const sub = clientFolder.addFolder(group.name);
+      if (group.facade) {
+        addMaterialControls(
+          sub,
+          group.facade.params,
+          (patch) => applyGroup([group.facade!], patch),
+          { color: 'Building Color' },
+        );
+      }
+      if (group.window) {
+        addMaterialControls(
+          sub,
+          group.window.params,
+          (patch) => applyGroup([group.window!], patch),
+          { color: 'Window Color' },
+        );
+      }
+    });
+
     const indBldgSub = matFolder.addFolder('Each Building (Body + Windows)');
     buildings.forEach((group) => {
       const sub = indBldgSub.addFolder(group.name);

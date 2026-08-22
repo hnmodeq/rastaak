@@ -111,14 +111,14 @@ export const SCENE_CONFIG: SceneConfig = {
         metalness: 0.44
       },
       Hyper_Market_Building__facade: {
-        color: 0x000762,
+        color: 0xdfdfdf,
         roughness: 0.7,
-        metalness: 0
+        metalness: 0.44
       },
       Hyper_Market_Building__window: {
-        color: 0xffffff,
+        color: 0x454545,
         roughness: 0.6,
-        metalness: 0
+        metalness: 0.12
       },
       Building_30__facade: {
         color: 0x8c8c8c,
@@ -131,14 +131,14 @@ export const SCENE_CONFIG: SceneConfig = {
         metalness: 0
       },
       Building_7__facade: {
-        color: 0x000762,
+        color: 0xdfdfdf,
         roughness: 0.7,
-        metalness: 0
+        metalness: 0.44
       },
       Building_7__window: {
-        color: 0xffffff,
+        color: 0x454545,
         roughness: 0.6,
-        metalness: 0
+        metalness: 0.12
       },
       Rastaak_Building__facade: {
         color: 0x09006a,

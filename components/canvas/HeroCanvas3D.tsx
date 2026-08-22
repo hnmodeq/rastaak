@@ -163,8 +163,12 @@ export const HeroCanvas3D: React.FC = () => {
 
     const onStudioBeforeSave = () => story.restoreBase();
     const onStudioAfterSave = () => story.captureBase();
+    const onStudioMaterialsChanged = () => {
+      story.captureBase();
+    };
     window.addEventListener('rastaak-studio-before-save', onStudioBeforeSave);
     window.addEventListener('rastaak-studio-after-save', onStudioAfterSave);
+    window.addEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
 
     if (studioEnabled) {
       studioGUI = new SceneStudioGUI(
