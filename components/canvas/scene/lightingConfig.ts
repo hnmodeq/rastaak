@@ -9,9 +9,9 @@ export type { LightConfig };
 
 export const LIGHTS_CONFIG: LightConfig[] = [
   {
-    id: 'blender_single_point_light',
-    type: 'point',
-    color: 0x2607d8,
+    id: "blender_single_point_light",
+    type: "point",
+    color: 0xc8c0dc,
     intensity: 1200,
     position: [13.5, 18, -4],
     distance: 50,
@@ -19,6 +19,6 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     radius: 2.27,
     castShadow: true,
     shadowMapSize: 2048,
-    shadowBias: -0.0001,
-  },
+    shadowBias: -0.0001
+  }
 ];

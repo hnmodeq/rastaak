@@ -1,7 +1,6 @@
 /**
  * Homepage 3D story — source of truth.
- * Camera stops live in sceneConfig.ts and are framed in 3D Studio.
- * Timings are progress 0..1 across the transparent hero + flow runway.
+ * Saved automatically from 3D Studio.
  */
 
 export type StoryBuildingState = 'idle' | 'need' | 'resolved';
@@ -42,86 +41,100 @@ export interface StoryConfig {
   captions: StoryCaptionConfig[];
   chipHoldAfterArrive: number;
   captionFadeIn: number;
-  /** Point-light power that bounces onto nearby buildings. */
   packetIntensity: number;
-  /** How far that bounce light reaches. */
   packetDistance: number;
-  /** Self-glow strength on the packet (fireworks halo). */
   packetGlow: number;
-  /** Halo radius around the packet core. */
   packetGlowSize: number;
-  /** Visible core radius. */
   packetCoreSize: number;
-  /** Trail opacity. */
   packetTrail: number;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
 
 export const STORY_CONFIG: StoryConfig = {
-  hub: 'Rastaak Building',
-  logo: 'Logo',
+  hub: "Rastaak Building",
+  logo: "Logo",
   colors: {
-    need: 0xe0a01a,
-    needWindow: 0x8a5a08,
-    packet: 0x57cdff,
-    packetBounce: 0x57cdff,
-    resolved: 0x0e94fb,
-    resolvedWindow: 0x57cdff,
-    hubPulse: 0x57cdff,
-    hubPulseWindow: 0x9ae6ff,
-    chipNeed: 0xe0a01a,
-    chipResolved: 0x0e94fb,
+    need: 0x9f0000,
+    needWindow: 0x585858,
+    packet: 0x010492,
+    packetBounce: 0xffffff,
+    resolved: 0x000762,
+    resolvedWindow: 0xffffff,
+    hubPulse: 0x09006a,
+    hubPulseWindow: 0xffffff,
+    chipNeed: 0xfb0000,
+    chipResolved: 0x229afd
   },
   clients: [
     {
-      id: 'hyper',
-      building: 'Hyper Market Building',
-      need: '۲ ترابایت فضای ذخیره',
+      id: "hyper",
+      building: "Hyper Market Building",
+      need: "۲ ترابایت فضای ذخیره",
       appear: 0.14,
       dispatch: 0.2,
-      arrive: 0.3,
+      arrive: 0.3
     },
     {
-      id: 'b7',
-      building: 'Building 7',
-      need: 'سرور ۲۴ سینی',
+      id: "b7",
+      building: "Building 7",
+      need: "سرور ۲۴ سینی",
       appear: 0.4,
       dispatch: 0.46,
-      arrive: 0.56,
+      arrive: 0.56
     },
     {
-      id: 'b30',
-      building: 'Building 30',
-      need: 'شبکه ۱۰ گیگابیت',
+      id: "b30",
+      building: "Building 30",
+      need: "شبکه ۱۰ گیگابیت",
       appear: 0.58,
       dispatch: 0.64,
-      arrive: 0.72,
+      arrive: 0.72
     },
     {
-      id: 'b34',
-      building: 'Building 34',
-      need: 'SSD سازمانی',
+      id: "b34",
+      building: "Building 34",
+      need: "SSD سازمانی",
       appear: 0.72,
       dispatch: 0.78,
-      arrive: 0.86,
-    },
+      arrive: 0.86
+    }
   ],
   captions: [
-    { id: 'city', text: 'زیرساخت شهر', range: [0.0, 0.12] },
-    { id: 'request', text: 'درخواست ثبت شد', range: [0.12, 0.32] },
-    { id: 'answer', text: 'رستاک پاسخ می‌دهد', range: [0.32, 0.48] },
-    { id: 'network', text: 'یک مرکز، چند سایت', range: [0.48, 0.78] },
-    { id: 'done', text: 'زیرساخت، نصب شد', range: [0.78, 1.01] },
+    {
+      id: "city",
+      text: "زیرساخت شهر",
+      range: [0, 0.12]
+    },
+    {
+      id: "request",
+      text: "درخواست ثبت شد",
+      range: [0.12, 0.32]
+    },
+    {
+      id: "answer",
+      text: "رستاک پاسخ می‌دهد",
+      range: [0.32, 0.48]
+    },
+    {
+      id: "network",
+      text: "یک مرکز، چند سایت",
+      range: [0.48, 0.78]
+    },
+    {
+      id: "done",
+      text: "زیرساخت، نصب شد",
+      range: [0.78, 1.01]
+    }
   ],
   chipHoldAfterArrive: 0.14,
   captionFadeIn: 0.06,
-  packetIntensity: 260,
-  packetDistance: 9,
-  packetGlow: 1,
-  packetGlowSize: 0.22,
-  packetCoreSize: 0.07,
-  packetTrail: 0.7,
+  packetIntensity: 5,
+  packetDistance: 2.1,
+  packetGlow: 1.05,
+  packetGlowSize: 0.05,
+  packetCoreSize: 0.2,
+  packetTrail: 1
 };
 
 export interface StoryChipFrame {
@@ -153,7 +166,6 @@ function hexCss(value: number): string {
   return '#' + (value >>> 0).toString(16).padStart(6, '0');
 }
 
-/** Pushes story colors into CSS variables used by chips / ticks. */
 export function applyStoryTheme(root: HTMLElement | null = typeof document === 'undefined' ? null : document.documentElement) {
   if (!root) return;
   const colors = STORY_CONFIG.colors;
