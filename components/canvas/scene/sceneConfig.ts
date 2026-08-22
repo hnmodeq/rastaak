@@ -85,23 +85,23 @@ export const SCENE_CONFIG: SceneConfig = {
   lights: LIGHTS_CONFIG,
 
   environment: {
-    backgroundColor: 0x1c1d22,
-    fogColor: 0x1c1d22,
-    fogStart: 7,
-    fogEnd: 20,
+    backgroundColor: 0xffffff,
+    fogColor: 0xffffff,
+    fogStart: 0,
+    fogEnd: 34,
     shadowColor: 0xffffff,
-    shadowOpacity: 0.79
+    shadowOpacity: 1
   },
 
   renderer: {
-    toneMappingExposure: 1.7
+    toneMappingExposure: 1.9
   },
 
   materials: {
-    globalFacadeColor: 0xdfdfdf,
-    globalWindowColor: 0x454545,
-    globalFacadeRoughness: 0.7,
-    globalFacadeMetalness: 0.44,
+    globalFacadeColor: 0xa3a3a3,
+    globalWindowColor: 0xffffff,
+    globalFacadeRoughness: 0,
+    globalFacadeMetalness: 0,
     globalWindowRoughness: 0.6,
     globalWindowMetalness: 0.12,
     overrides: {

@@ -46,27 +46,22 @@ export const TYPE_WEIGHTS = {
 
 export const TYPE_CHROME: TypeChromeConfig = {
   siteName: "هونامیک ارتباط رستاک",
-  siteNameColor: 0xffffff,
-  siteNameLayoutColor: 0x1a1b22,
+  siteNameColor: 0x555555,
   studioCorner: "top-left",
   heroTitle: {
     size: 119,
     weight: 700,
-    lineHeight: 0.9,
-    letterSpacing: -5.76,
     shadowColor: 0x000000,
-    shadowOpacity: 0,
-    shadowBlur: 0,
-    shadowX: -1,
-    shadowY: 0
+    shadowOpacity: 0.3,
+    shadowBlur: 7,
+    shadowX: 5,
+    shadowY: 6.5
   },
   heroSubtitle: {
     size: 22,
     weight: 400,
-    lineHeight: 1.2,
-    letterSpacing: 0,
     shadowColor: 0x000000,
-    shadowOpacity: 1,
+    shadowOpacity: 0.52,
     shadowBlur: 4,
     shadowX: 2,
     shadowY: 3.5
@@ -74,10 +69,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   scrollHint: {
     size: 14,
     weight: 400,
-    lineHeight: 1,
-    letterSpacing: 0.28,
     shadowColor: 0x000000,
-    shadowOpacity: 0,
+    shadowOpacity: 0.09,
     shadowBlur: 0,
     shadowX: 0,
     shadowY: 0
@@ -85,19 +78,15 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowTitle: {
     size: 24,
     weight: 500,
-    lineHeight: 1.3,
-    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
-    shadowBlur: 0,
-    shadowX: 0,
-    shadowY: 0
+    shadowBlur: 8.5,
+    shadowX: 1.5,
+    shadowY: 2
   },
   flowNumber: {
     size: 14,
     weight: 500,
-    lineHeight: 1,
-    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -107,19 +96,15 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowDescription: {
     size: 18,
     weight: 400,
-    lineHeight: 1.4,
-    letterSpacing: 0,
     shadowColor: 0x000000,
-    shadowOpacity: 0,
-    shadowBlur: 0,
-    shadowX: 0,
-    shadowY: 0
+    shadowOpacity: 1,
+    shadowBlur: 2.5,
+    shadowX: 1.5,
+    shadowY: 0.5
   },
   chipText: {
     size: 13,
     weight: 600,
-    lineHeight: 1.2,
-    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -129,11 +114,9 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteNameType: {
     size: 21,
     weight: 600,
-    lineHeight: 1,
-    letterSpacing: -0.4,
     shadowColor: 0x272727,
-    shadowOpacity: 1,
-    shadowBlur: 4.5,
+    shadowOpacity: 0,
+    shadowBlur: 1.5,
     shadowX: 3,
     shadowY: 1.5
   }

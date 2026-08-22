@@ -57,12 +57,12 @@ export const FLOW_CONFIG: FlowStepConfig[] = [
 export const FLOW_CHROME: FlowChromeConfig = {
   align: "right",
   dir: "rtl",
-  titleColor: 0xffffff,
-  numberColor: 0xffffff,
-  numberActiveColor: 0x7a7a7a,
-  numberBg: 0xffffff,
+  titleColor: 0x535353,
+  numberColor: 0x1f1f1f,
+  numberActiveColor: 0xffffff,
+  numberBg: 0x585858,
   descriptionColor: 0xffffff,
-  trackColor: 0xd8d8d8,
+  trackColor: 0xcecece,
   trackFillColor: 0x585858
 };
 

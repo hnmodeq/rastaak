@@ -17,10 +17,10 @@ export interface HeroCopyConfig {
 export const HERO_COPY: HeroCopyConfig = {
   titleLine1: "از آنچه برایتان مهم است،",
   titleLine2: "محافظت کنید.",
-  titleColor: 0xf5f5f2,
+  titleColor: 0xffffff,
   subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
   subtitleLine2: "",
-  subtitleColor: 0xe8e8e4,
+  subtitleColor: 0xffffff,
   scrollHint: "اسکرول کنید",
   scrollHintColor: 0xf5f5f2
 };
@@ -54,3 +54,4 @@ export function applyHeroCopy() {
   const hint = document.querySelector<HTMLElement>('.hsbtn-in');
   if (hint) hint.textContent = ' ' + HERO_COPY.scrollHint + ' ';
 }
+
