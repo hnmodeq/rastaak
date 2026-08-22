@@ -3,25 +3,22 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
-import { HomeInteractions } from './HomeInteractions';
 
-/** The legacy Astro/WebGL bundle only understands the site route DOM. */
+/** The legacy Astro bundle drives homepage scroll, FAQ, flow, and page transitions. */
 export const ClientScripts: React.FC = () => {
   const pathname = usePathname();
   const isTokenStudio = pathname?.startsWith('/token-studio') ?? false;
-  const isHome = pathname === '/';
 
   useEffect(() => {
     document.documentElement.classList.remove('preload');
 
-    if (isTokenStudio || isHome) {
+    if (isTokenStudio) {
       document.body.style.overflow = '';
       document.getElementById('loader')?.setAttribute('hidden', '');
     }
-  }, [isTokenStudio, isHome]);
+  }, [isTokenStudio]);
 
   if (isTokenStudio) return null;
-  if (isHome) return <HomeInteractions />;
 
   return (
     <Script

@@ -54,7 +54,7 @@ export const HeroCanvas3D: React.FC = () => {
 
     containerRef.current.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
-    renderer.domElement.style.zIndex = '0';
+    renderer.domElement.style.zIndex = '-1';
     containerRef.current.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -349,10 +349,11 @@ export const HeroCanvas3D: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className={`fixed inset-0 pointer-events-none z-0 transition-opacity duration-700 ${
+      className={`fixed inset-0 pointer-events-none transition-opacity duration-700 ${
         isLoaded ? 'opacity-100' : 'opacity-0'
       }`}
-      style={{ width: '100vw', height: '100vh' }}
+      id="rastaak-hero-canvas"
+      style={{ width: '100vw', height: '100vh', zIndex: -1 }}
     />
   );
 };

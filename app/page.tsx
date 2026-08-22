@@ -1,4 +1,5 @@
 import { HomeContent } from '@/components/home/HomeContent';
+import { HeroScrollMotion } from '@/components/home/HeroScrollMotion';
 import { HeroSceneBoot } from '@/components/canvas/HeroSceneBoot';
 import { HeroCanvasWrapper } from '@/components/canvas/HeroCanvasWrapper';
 
@@ -10,6 +11,7 @@ export default function HomePage() {
           while leaving the rest of the legacy bundle untouched. */}
       <HeroSceneBoot />
       <HeroCanvasWrapper />
+      <HeroScrollMotion />
       <HomeContent />
     </>
   );
