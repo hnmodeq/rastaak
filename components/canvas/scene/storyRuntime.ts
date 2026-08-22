@@ -13,6 +13,9 @@ interface TrackedSlot {
   baseColor: THREE.Color;
   baseEmissive: THREE.Color;
   baseEmissiveIntensity: number;
+  baseMetalness: number;
+  baseMap: THREE.Texture | null;
+  baseVertexColors: boolean;
   role: 'facade' | 'window';
 }
 
@@ -49,7 +52,6 @@ const _needColor = new THREE.Color(STORY_CONFIG.colors.need);
 const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
 const _packetColor = new THREE.Color(STORY_CONFIG.colors.packet);
 const _hubPulse = new THREE.Color(STORY_CONFIG.colors.hubPulse);
-const _workColor = new THREE.Color();
 
 function normalizeName(value: string): string {
   return value
@@ -114,6 +116,9 @@ function collectSlots(object: THREE.Object3D): TrackedSlot[] {
         baseColor: std.color.clone(),
         baseEmissive: std.emissive ? std.emissive.clone() : new THREE.Color(0x000000),
         baseEmissiveIntensity: std.emissiveIntensity ?? 1,
+        baseMetalness: typeof std.metalness === 'number' ? std.metalness : 0,
+        baseMap: std.map ?? null,
+        baseVertexColors: Boolean(std.vertexColors),
         role: classifyRole(mesh, index, mats.length),
       });
     });
@@ -137,6 +142,9 @@ function restoreSlots(slots: TrackedSlot[]) {
     slot.mat.color.copy(slot.baseColor);
     if (slot.mat.emissive) slot.mat.emissive.copy(slot.baseEmissive);
     slot.mat.emissiveIntensity = slot.baseEmissiveIntensity;
+    if ('metalness' in slot.mat) slot.mat.metalness = slot.baseMetalness;
+    if (slot.mat.map !== slot.baseMap) slot.mat.map = slot.baseMap;
+    slot.mat.vertexColors = slot.baseVertexColors;
     slot.mat.needsUpdate = true;
   }
 }
@@ -146,7 +154,32 @@ function recaptureSlots(slots: TrackedSlot[]) {
     slot.baseColor.copy(slot.mat.color);
     if (slot.mat.emissive) slot.baseEmissive.copy(slot.mat.emissive);
     slot.baseEmissiveIntensity = slot.mat.emissiveIntensity ?? 1;
+    slot.baseMetalness = typeof slot.mat.metalness === 'number' ? slot.mat.metalness : 0;
+    slot.baseMap = slot.mat.map ?? null;
+    slot.baseVertexColors = Boolean(slot.mat.vertexColors);
   }
+}
+
+function paintSlot(slot: TrackedSlot, target: THREE.Color | null, amount: number) {
+  const k = Math.max(0, Math.min(1, amount));
+  if (!target || k <= 0) {
+    restoreSlots([slot]);
+    return;
+  }
+
+  if (k >= 0.995) {
+    slot.mat.color.copy(target);
+  } else {
+    slot.mat.color.copy(slot.baseColor).lerp(target, k);
+  }
+
+  // Drop texture / vertex color / metal so the Studio swatch IS the building.
+  if (slot.mat.map) slot.mat.map = null;
+  slot.mat.vertexColors = false;
+  if ('metalness' in slot.mat) slot.mat.metalness = 0;
+  if (slot.mat.emissive) slot.mat.emissive.setHex(0x000000);
+  slot.mat.emissiveIntensity = 0;
+  slot.mat.needsUpdate = true;
 }
 
 function syncStoryColors() {
@@ -157,27 +190,14 @@ function syncStoryColors() {
 }
 
 function applyBuildingLook(slots: TrackedSlot[], blend: number) {
-  // 0 idle, 1 need, 2 resolved — paint the mesh albedo, not a glow overlay.
+  // 0 idle, 1 need, 2 resolved — replace the mesh color itself.
   const needK = blend <= 1 ? blend : Math.max(0, 2 - blend);
   const resolvedK = blend <= 1 ? 0 : blend - 1;
   const amount = resolvedK > 0 ? resolvedK : needK;
-  const target = resolvedK > 0 ? _resolvedColor : _needColor;
+  const target = amount <= 0 ? null : resolvedK > 0 ? _resolvedColor : _needColor;
 
   for (const slot of slots) {
-    _workColor.copy(slot.baseColor);
-    if (amount > 0) {
-      _workColor.lerp(target, slot.role === 'window' ? amount * 0.55 : amount);
-    }
-    slot.mat.color.copy(_workColor);
-
-    if (slot.mat.emissive) {
-      slot.mat.emissive.copy(slot.baseEmissive);
-      if (slot.role === 'window' && amount > 0) {
-        slot.mat.emissive.lerp(target, amount * 0.2);
-      }
-    }
-    slot.mat.emissiveIntensity = slot.baseEmissiveIntensity + (slot.role === 'window' ? amount * 0.15 : 0);
-    slot.mat.needsUpdate = true;
+    paintSlot(slot, target, amount);
   }
 }
 
@@ -433,8 +453,15 @@ export class StoryRuntime {
     const u = Math.max(0, Math.min(1, (t - client.config.dispatch) / span));
     packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;
-    packet.light.intensity = 28 + Math.sin(u * Math.PI) * 18;
-    (packet.core.material as THREE.MeshBasicMaterial).opacity = 0.75 + Math.sin(u * Math.PI) * 0.25;
+    packet.light.color.copy(_packetColor);
+    packet.light.intensity = 260 + Math.sin(u * Math.PI) * 180;
+    packet.light.distance = 9;
+    packet.light.decay = 2;
+    const coreMat = packet.core.material as THREE.MeshBasicMaterial;
+    coreMat.color.copy(_packetColor);
+    coreMat.opacity = 0.85 + Math.sin(u * Math.PI) * 0.15;
+    const trailMat = packet.trail.material as THREE.LineBasicMaterial;
+    trailMat.color.copy(_packetColor);
 
     const from = Math.max(0, u - 0.2);
     for (let i = 0; i < TRAIL_POINTS; i++) {
