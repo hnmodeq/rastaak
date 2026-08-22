@@ -47,6 +47,17 @@ function colorToHexNumber(color: THREE.Color): number {
   return color.getHex();
 }
 
+const MIN_FLIGHT = 0.02;
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
+}
+
+function clampOrdered(value: number, min: number, max: number): number {
+  if (max < min) return clamp01(value);
+  return Math.min(max, Math.max(min, value));
+}
+
 export class SceneStudioGUI {
   private gui: any = null;
   private toggleButton: HTMLButtonElement | null = null;
@@ -617,6 +628,7 @@ export class SceneStudioGUI {
       this.populateLightsAndShadows();
       this.populateMaterials();
       this.populateStoryControls();
+      this.populateStoryTiming();
 
       const envFolder = this.gui.addFolder('Environment & Fog');
       const currentBgHex = '#' + (
@@ -1207,6 +1219,162 @@ export class SceneStudioGUI {
           .name('Decay Exponent')
           .listen()
           .onChange((v: number) => {
+            (light as THREE.PointLight).decay = v;
+            persistLight();
+          });
+      }
+
+      const shadowSub = sub.addFolder('Shadows Settings');
+      const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
+      const shadowParams = {
+        castShadow: light.castShadow ?? true,
+        radius: sh ? sh.radius ?? 2.27 : 2.27,
+        bias: sh ? sh.bias ?? -0.0001 : -0.0001,
+        mapSize: sh?.mapSize?.width ?? 2048,
+      };
+
+      shadowSub
+        .add(shadowParams, 'castShadow')
+        .name('Enable Shadows')
+        .listen()
+        .onChange((v: boolean) => {
+          light.castShadow = v;
+          this.renderer.shadowMap.needsUpdate = true;
+          persistLight();
+        });
+
+      shadowSub
+        .add(shadowParams, 'radius', 0, 20, 0.1)
+        .name('Soft Shadow Radius')
+        .listen()
+        .onChange((v: number) => {
+          if (sh) {
+            sh.radius = v;
+            sh.needsUpdate = true;
+          }
+          this.renderer.shadowMap.needsUpdate = true;
+          persistLight();
+        });
+
+      shadowSub
+        .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
+        .name('Shadow Bias')
+        .listen()
+        .onChange((v: number) => {
+          if (sh) {
+            sh.bias = v;
+            sh.needsUpdate = true;
+          }
+          this.renderer.shadowMap.needsUpdate = true;
+          persistLight();
+        });
+
+      shadowSub
+        .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
+        .name('Shadow Resolution')
+        .onChange((v: number) => {
+          const size = parseInt(String(v), 10);
+          if (sh?.mapSize) {
+            sh.mapSize.width = size;
+            sh.mapSize.height = size;
+            if (sh.map) {
+              sh.map.dispose();
+              sh.map = null as unknown as THREE.WebGLRenderTarget;
+            }
+            sh.needsUpdate = true;
+          }
+          this.renderer.shadowMap.needsUpdate = true;
+          persistLight();
+        });
+    }
+  }
+
+  public populateMaterials() {
+    if (!this.gui || this.materialsFolderPopulated) return;
+
+    const worldGroup = this.worldGroupSupplier();
+    if (!worldGroup) return;
+
+    const liveGroups = () => collectCategoryGroups(worldGroup);
+    const groups = liveGroups();
+    const seed = (key: keyof typeof this.palette, category: Exclude<MaterialCategory, 'ignore'>) => {
+      const live = sampleCategoryColor(groups[category]);
+      if (live === undefined) return;
+      const already = resolvePalette(SCENE_CONFIG.materials);
+      const named = `${category}Color` as keyof CategoryPalette;
+      if (already[named] === undefined) {
+        this.palette[key] = '#' + new THREE.Color(live).getHexString();
+      }
+    };
+    seed('building', 'building');
+    seed('window', 'window');
+    seed('rastaak', 'rastaak');
+    seed('logo', 'logo');
+    seed('ground', 'ground');
+    seed('plate', 'plate');
+    seed('border', 'border');
+    seed('treeTrunk', 'treeTrunk');
+    seed('treeLeaf', 'treeLeaf');
+
+    const matFolder = this.gui.addFolder('Scene colors');
+    this.materialsFolderPopulated = true;
+
+    const persistPalette = () => {
+      SCENE_CONFIG.materials = {
+        ...SCENE_CONFIG.materials,
+        ...collectMaterialsConfig({
+          buildingColor: new THREE.Color(this.palette.building).getHex(),
+          windowColor: new THREE.Color(this.palette.window).getHex(),
+          rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
+          logoColor: new THREE.Color(this.palette.logo).getHex(),
+          groundColor: new THREE.Color(this.palette.ground).getHex(),
+          plateColor: new THREE.Color(this.palette.plate).getHex(),
+          borderColor: new THREE.Color(this.palette.border).getHex(),
+          treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
+          treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
+        }),
+      };
+    };
+
+    const paint = (category: Exclude<MaterialCategory, 'ignore'>, hex: string, storyIdle = false) => {
+      applyCategoryColor(liveGroups()[category], hex);
+      persistPalette();
+      if (storyIdle) {
+        window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
+      }
+    };
+
+    matFolder.addColor(this.palette, 'building').name('Buildings').onChange((hex: string) => paint('building', hex, true));
+    matFolder.addColor(this.palette, 'window').name('Windows').onChange((hex: string) => paint('window', hex, true));
+    matFolder.addColor(this.palette, 'rastaak').name('Rastaak building').onChange((hex: string) => paint('rastaak', hex, true));
+    matFolder.addColor(this.palette, 'logo').name('Logo').onChange((hex: string) => paint('logo', hex));
+    matFolder.addColor(this.palette, 'ground').name('Ground').onChange((hex: string) => paint('ground', hex));
+    matFolder.addColor(this.palette, 'plate').name('Plates').onChange((hex: string) => paint('plate', hex));
+    matFolder.addColor(this.palette, 'border').name('Ground borders').onChange((hex: string) => paint('border', hex));
+    matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
+    matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));
+
+    persistPalette();
+  }
+
+  private refreshCamDisplay = () => {};
+
+  public destroy() {
+    if (this.pointerHandler) {
+      window.removeEventListener('pointerdown', this.pointerHandler);
+      this.pointerHandler = null;
+    }
+    if (this.toggleButton) {
+      this.toggleButton.remove();
+      this.toggleButton = null;
+    }
+    if (this.gui) {
+      this.gui.destroy();
+      this.gui = null;
+    }
+  }
+}
+      .onChange((v: number) => {
             (light as THREE.PointLight).decay = v;
             persistLight();
           });

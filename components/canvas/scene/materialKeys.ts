@@ -56,6 +56,24 @@ function isPlateObject(object: THREE.Object3D): boolean {
   return false;
 }
 
+const _plateSize = new THREE.Vector3();
+
+function isFlatPlateMesh(mesh: THREE.Mesh): boolean {
+  const geom = mesh.geometry;
+  if (!geom) return false;
+  if (!geom.boundingBox) geom.computeBoundingBox();
+  const box = geom.boundingBox;
+  if (!box) return false;
+  box.getSize(_plateSize);
+  const minXZ = Math.min(_plateSize.x, _plateSize.z);
+  const maxXZ = Math.max(_plateSize.x, _plateSize.z);
+  return _plateSize.y <= 0.05 && minXZ > 0.4 && maxXZ > 1;
+}
+
+function isTreeNodeName(name: string): boolean {
+  return TREE_NODE.test((name || '').trim());
+}
+
 export function getMeshMaterials(mesh: THREE.Mesh): THREE.Material[] {
   return Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
 }
@@ -118,9 +136,19 @@ export function classifyCategory(
 
   // Grounds uses "Ground Inside". The park (Plane.003) reuses Material.012,
   // the same slot trees use for leaves — keep that fill on plates, not trees.
-  const onPlate = isPlateObject(mesh) || PLATE_NODE.test(nodeL) || PLATE_NODE.test(meshL);
+  const taggedNode = String(mat.userData?.nodeName || '').toLowerCase();
+  const onPlate =
+    isPlateObject(mesh) ||
+    PLATE_NODE.test(nodeL) ||
+    PLATE_NODE.test(meshL) ||
+    PLATE_NODE.test(taggedNode);
   if (matName.includes('ground inside') || (onPlate && !matName.includes('ground edge'))) {
     return 'plate';
+  }
+  if (TREE_LEAF_MAT.test(matName)) {
+    const namedTree =
+      isTreeNodeName(node) || isTreeNodeName(mesh.name || '') || isTreeNodeName(mesh.parent?.name || '');
+    if (onPlate || isFlatPlateMesh(mesh) || !namedTree) return 'plate';
   }
 
   if (nodeL.includes('logo') || meshL.includes('logo')) return 'logo';

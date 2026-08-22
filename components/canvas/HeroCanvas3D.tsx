@@ -212,6 +212,7 @@ export const HeroCanvas3D: React.FC = () => {
               mesh.material = mesh.material.map((m, idx) => {
                 const cloned = m.clone() as THREE.MeshStandardMaterial;
                 cloned.userData.gltfName = m.name || '';
+                cloned.userData.nodeName = mesh.name || mesh.parent?.name || '';
                 cloned.name = m.name || `${mesh.name || 'Building'}_Mat_${idx}`;
                 if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.12);
                 if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 1, 0.6);
@@ -220,6 +221,7 @@ export const HeroCanvas3D: React.FC = () => {
             } else {
               const cloned = mesh.material.clone() as THREE.MeshStandardMaterial;
               cloned.userData.gltfName = mesh.material.name || '';
+              cloned.userData.nodeName = mesh.name || mesh.parent?.name || '';
               cloned.name = mesh.material.name || `${mesh.name || 'Building'}_Mat_0`;
               if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.12);
               if ('roughness' in cloned) cloned.roughness = Math.max(cloned.roughness ?? 1, 0.6);
