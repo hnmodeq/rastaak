@@ -1,30 +1,110 @@
 import * as THREE from 'three';
 import type { BuildingMaterialOverride, MaterialsConfig } from './sceneTypes';
 
-const GENERIC_NAME = /^(cube|plane|mesh|object|scene|group|node)/i;
+export type MaterialRole = 'facade' | 'window';
 
-export function isValidNamedObject(name: string | undefined | null): boolean {
-  if (!name) return false;
-  return !GENERIC_NAME.test(name.trim());
+export type TrackedMaterial = {
+  key: string;
+  buildingId: string;
+  displayName: string;
+  role: MaterialRole;
+  slot: number;
+  mat: THREE.MeshStandardMaterial;
+  mats: THREE.MeshStandardMaterial[];
+  params: { color: string; roughness: number; metalness: number };
+};
+
+const GENERIC_NODE = /^(scene|node|root|armature)$/i;
+const WINDOW_NAME = /window|glass|inset|pane|casement/i;
+const FEATURED_NAME = /building|market|rastaak|logo/i;
+const SITE_NAME = /^(earth|grounds|ground|plane)(\.\d+)?$/i;
+
+export function slugName(name: string): string {
+  const slugged = name.trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_-]/g, '_');
+  return slugged || 'Unnamed';
 }
 
-export function materialSlotKey(displayName: string, slot: number): string {
-  return `${displayName}_mat_${slot}`;
+export function materialKey(buildingName: string, role: MaterialRole): string {
+  return `${slugName(buildingName)}__${role}`;
 }
 
-/** Copy a usable parent name onto generic Blender mesh names, once, before keying. */
-export function prepareMeshNames(root: THREE.Object3D): void {
-  root.traverse((child) => {
-    const parent = child.parent;
-    if (!parent || !isValidNamedObject(parent.name)) return;
-    if (!child.name || !isValidNamedObject(child.name)) {
-      child.name = parent.name;
-    }
-  });
+export function isSiteMesh(name: string): boolean {
+  return SITE_NAME.test(name.trim());
 }
 
 export function getMeshMaterials(mesh: THREE.Mesh): THREE.Material[] {
   return Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
+}
+
+export function resolveBuildingName(object: THREE.Object3D): string {
+  let current: THREE.Object3D | null = object;
+  let fallback = '';
+
+  while (current) {
+    const name = (current.name || '').trim();
+    if (name && !GENERIC_NODE.test(name)) {
+      if (FEATURED_NAME.test(name)) return name;
+      if (!fallback) fallback = name;
+    }
+    current = current.parent;
+  }
+
+  return fallback || 'Unnamed';
+}
+
+function meshSiblings(mesh: THREE.Mesh): THREE.Mesh[] {
+  const parent = mesh.parent;
+  if (!parent) return [mesh];
+  return parent.children.filter((child): child is THREE.Mesh =>
+    Boolean((child as THREE.Mesh & { isMesh?: boolean }).isMesh),
+  );
+}
+
+export function classifyRole(mesh: THREE.Mesh, slot: number, materialCount: number): MaterialRole {
+  const haystack = `${mesh.name} ${mesh.parent?.name || ''}`;
+  if (WINDOW_NAME.test(haystack)) return 'window';
+  if (materialCount > 1) return slot === 0 ? 'facade' : 'window';
+
+  const siblings = meshSiblings(mesh);
+  if (siblings.length > 1) {
+    return siblings.indexOf(mesh) <= 0 ? 'facade' : 'window';
+  }
+
+  return 'facade';
+}
+
+export function forEachStudioMaterial(
+  root: THREE.Object3D,
+  callback: (entry: {
+    mesh: THREE.Mesh;
+    mat: THREE.MeshStandardMaterial;
+    slot: number;
+    buildingName: string;
+    role: MaterialRole;
+    key: string;
+  }) => void,
+): void {
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
+
+    const mats = getMeshMaterials(mesh);
+    const buildingName = resolveBuildingName(mesh);
+
+    mats.forEach((mat, slot) => {
+      const std = mat as THREE.MeshStandardMaterial;
+      if (!std?.color) return;
+      const role = classifyRole(mesh, slot, mats.length);
+      callback({
+        mesh,
+        mat: std,
+        slot,
+        buildingName,
+        role,
+        key: materialKey(buildingName, role),
+      });
+    });
+  });
 }
 
 function applyOverride(mat: THREE.MeshStandardMaterial, ov: BuildingMaterialOverride | undefined) {
@@ -34,71 +114,64 @@ function applyOverride(mat: THREE.MeshStandardMaterial, ov: BuildingMaterialOver
   if (ov.metalness !== undefined && 'metalness' in mat) mat.metalness = ov.metalness;
 }
 
-/**
- * Codes → scene.
- * Globals first, then per-slot overrides so a refresh restores the last Apply.
- */
+function lookupOverride(
+  overrides: Record<string, BuildingMaterialOverride> | undefined,
+  buildingName: string,
+  role: MaterialRole,
+  slot: number,
+): BuildingMaterialOverride | undefined {
+  if (!overrides) return undefined;
+  const slugged = slugName(buildingName);
+  return (
+    overrides[materialKey(buildingName, role)] ||
+    overrides[`${slugged}__mat_${slot}`] ||
+    overrides[`${slugged}_mat_${slot}`] ||
+    overrides[`${buildingName}_mat_${slot}`] ||
+    overrides[`${buildingName.replace(/\s+/g, '_')}_mat_${slot}`]
+  );
+}
+
+/** Codes → scene. Globals first, then per-building facade/window overrides. */
 export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConfig | undefined): void {
   if (!config) return;
 
-  root.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
-    if (!isValidNamedObject(mesh.name)) return;
-
-    getMeshMaterials(mesh).forEach((mat, index) => {
-      const std = mat as THREE.MeshStandardMaterial;
-      if (!std?.color) return;
-
-      if (index === 0) {
-        if (config.globalFacadeColor !== undefined) std.color.set(config.globalFacadeColor);
-        if (config.globalFacadeRoughness !== undefined && 'roughness' in std) {
-          std.roughness = config.globalFacadeRoughness;
-        }
-        if (config.globalFacadeMetalness !== undefined && 'metalness' in std) {
-          std.metalness = config.globalFacadeMetalness;
-        }
-      } else if (index === 1) {
-        if (config.globalWindowColor !== undefined) std.color.set(config.globalWindowColor);
-        if (config.globalWindowRoughness !== undefined && 'roughness' in std) {
-          std.roughness = config.globalWindowRoughness;
-        }
-        if (config.globalWindowMetalness !== undefined && 'metalness' in std) {
-          std.metalness = config.globalWindowMetalness;
-        }
+  forEachStudioMaterial(root, ({ mat, buildingName, role, slot }) => {
+    if (role === 'window') {
+      if (config.globalWindowColor !== undefined) mat.color.set(config.globalWindowColor);
+      if (config.globalWindowRoughness !== undefined && 'roughness' in mat) {
+        mat.roughness = config.globalWindowRoughness;
       }
+      if (config.globalWindowMetalness !== undefined && 'metalness' in mat) {
+        mat.metalness = config.globalWindowMetalness;
+      }
+    } else {
+      if (config.globalFacadeColor !== undefined) mat.color.set(config.globalFacadeColor);
+      if (config.globalFacadeRoughness !== undefined && 'roughness' in mat) {
+        mat.roughness = config.globalFacadeRoughness;
+      }
+      if (config.globalFacadeMetalness !== undefined && 'metalness' in mat) {
+        mat.metalness = config.globalFacadeMetalness;
+      }
+    }
 
-      applyOverride(std, config.overrides?.[materialSlotKey(mesh.name, index)]);
-      std.needsUpdate = true;
-    });
+    applyOverride(mat, lookupOverride(config.overrides, buildingName, role, slot));
+    mat.needsUpdate = true;
   });
 }
 
-/**
- * Scene → codes.
- * Every named slot is stored under a stable `objectName_mat_slot` key so
- * refresh cannot swap colors between buildings.
- */
+/** Scene → codes. One record per building facade and one per building windows. */
 export function collectMaterialsConfig(
   root: THREE.Object3D,
   globals: Omit<MaterialsConfig, 'overrides'>,
 ): MaterialsConfig {
   const overrides: Record<string, BuildingMaterialOverride> = {};
 
-  root.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
-    if (!isValidNamedObject(mesh.name)) return;
-
-    getMeshMaterials(mesh).forEach((mat, index) => {
-      const std = mat as THREE.MeshStandardMaterial;
-      if (!std?.color) return;
-      overrides[materialSlotKey(mesh.name, index)] = {
-        color: std.color.getHex(),
-        roughness: typeof std.roughness === 'number' ? std.roughness : undefined,
-        metalness: typeof std.metalness === 'number' ? std.metalness : undefined,
-      };
-    });
+  forEachStudioMaterial(root, ({ mat, key }) => {
+    overrides[key] = {
+      color: mat.color.getHex(),
+      roughness: typeof mat.roughness === 'number' ? mat.roughness : undefined,
+      metalness: typeof mat.metalness === 'number' ? mat.metalness : undefined,
+    };
   });
 
   return {
@@ -107,42 +180,45 @@ export function collectMaterialsConfig(
   };
 }
 
-export type TrackedMaterial = {
-  key: string;
-  displayName: string;
-  slot: number;
-  mat: THREE.MeshStandardMaterial;
-  params: { color: string; roughness: number; metalness: number };
-};
-
 export function collectTrackedMaterials(root: THREE.Object3D): TrackedMaterial[] {
-  const entries: TrackedMaterial[] = [];
-  const seen = new Set<string>();
+  const grouped = new Map<string, TrackedMaterial>();
 
-  root.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
-    if (!isValidNamedObject(mesh.name)) return;
+  forEachStudioMaterial(root, ({ mat, key, buildingName, role, slot }) => {
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.mats.push(mat);
+      existing.mat = mat;
+      existing.params.color = '#' + mat.color.getHexString();
+      existing.params.roughness = mat.roughness ?? existing.params.roughness;
+      existing.params.metalness = mat.metalness ?? existing.params.metalness;
+      return;
+    }
 
-    getMeshMaterials(mesh).forEach((mat, index) => {
-      const std = mat as THREE.MeshStandardMaterial;
-      if (!std?.color) return;
-      const key = materialSlotKey(mesh.name, index);
-      if (seen.has(key)) return;
-      seen.add(key);
-      entries.push({
-        key,
-        displayName: mesh.name,
-        slot: index,
-        mat: std,
-        params: {
-          color: '#' + std.color.getHexString(),
-          roughness: std.roughness ?? 0.6,
-          metalness: std.metalness ?? 0,
-        },
-      });
+    grouped.set(key, {
+      key,
+      buildingId: slugName(buildingName),
+      displayName: buildingName,
+      role,
+      slot,
+      mat,
+      mats: [mat],
+      params: {
+        color: '#' + mat.color.getHexString(),
+        roughness: mat.roughness ?? 0.6,
+        metalness: mat.metalness ?? 0,
+      },
     });
   });
 
-  return entries;
+  return Array.from(grouped.values()).sort((a, b) => {
+    const aFeatured = FEATURED_NAME.test(a.displayName) ? 0 : 1;
+    const bFeatured = FEATURED_NAME.test(b.displayName) ? 0 : 1;
+    if (aFeatured !== bFeatured) return aFeatured - bFeatured;
+    if (a.displayName !== b.displayName) return a.displayName.localeCompare(b.displayName);
+    return a.role.localeCompare(b.role);
+  });
+}
+
+export function countMaterialOverrides(config: MaterialsConfig | undefined): number {
+  return config?.overrides ? Object.keys(config.overrides).length : 0;
 }

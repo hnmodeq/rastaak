@@ -40,8 +40,10 @@ function sanitizeId(value: unknown, fallback: string): string {
 }
 
 function sanitizeOverrideKey(value: string): string | null {
-  const cleaned = value.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 160);
-  return cleaned || null;
+  const trimmed = value.trim().slice(0, 160);
+  if (/^[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed;
+  const slugged = trimmed.replace(/\s+/g, '_').replace(/[^A-Za-z0-9_-]/g, '_');
+  return slugged || null;
 }
 
 function emit(value: unknown, indent: number): string {

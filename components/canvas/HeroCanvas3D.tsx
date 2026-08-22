@@ -13,7 +13,7 @@ import { SCENE_CONFIG } from './scene/sceneConfig';
 import { sampleSceneJourney } from './scene/journeyMath';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
-import { applyMaterialsConfig, prepareMeshNames } from './scene/materialKeys';
+import { applyMaterialsConfig } from './scene/materialKeys';
 
 const studioEnabled = process.env.NODE_ENV === 'development';
 
@@ -50,7 +50,7 @@ export const HeroCanvas3D: React.FC = () => {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = SCENE_CONFIG.renderer.toneMappingExposure ?? 1.15;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     containerRef.current.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
@@ -166,6 +166,9 @@ export const HeroCanvas3D: React.FC = () => {
         },
         (orbitEnabled: boolean) => {
           controls.enabled = orbitEnabled;
+          if (containerRef.current) {
+            containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
+          }
         },
       );
     }
@@ -181,8 +184,6 @@ export const HeroCanvas3D: React.FC = () => {
       (gltf: { scene: THREE.Group }) => {
         if (isDisposed) return;
         world = gltf.scene;
-
-        prepareMeshNames(world);
 
         world.traverse((child) => {
           const mesh = child as THREE.Mesh;
@@ -255,7 +256,8 @@ export const HeroCanvas3D: React.FC = () => {
     };
     window.addEventListener('resize', handleResize);
 
-    const clock = new THREE.Clock();
+    const startTime = performance.now();
+    let lastTime = startTime;
     const sample = {
       camera: [0, 0, 0] as [number, number, number],
       target: [0, 0, 0] as [number, number, number],
@@ -267,8 +269,10 @@ export const HeroCanvas3D: React.FC = () => {
 
     const animate = () => {
       if (isDisposed) return;
-      const delta = clock.getDelta();
-      const elapsed = clock.getElapsedTime();
+      const now = performance.now();
+      const delta = Math.min(0.05, (now - lastTime) / 1000);
+      const elapsed = (now - startTime) / 1000;
+      lastTime = now;
 
       if (studioGUI?.isOrbitMode) {
         controls.update();

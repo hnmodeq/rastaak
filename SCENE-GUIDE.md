@@ -15,7 +15,10 @@ values inside the canvas.
 1. Refresh the homepage in development. The panel and the scene both read the config files.
 2. Move sliders. The scene updates immediately.
 3. Click **Apply & Save directly to Code**. The panel writes the live scene back to the two config files.
-4. Refresh. The same values load again. Building materials are keyed as `objectName_mat_slot` so they cannot swap.
+4. Refresh. The same values load again. Each building stores two keys:
+   `Building_9__facade` and `Building_9__window`.
+   In 3D Studio open **Each Building (Body + Windows)** to color the
+   building and its windows separately.
 
 ---
 

@@ -6,7 +6,8 @@ import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
 import {
   collectMaterialsConfig,
   collectTrackedMaterials,
-  isValidNamedObject,
+  countMaterialOverrides,
+  isSiteMesh,
   type TrackedMaterial,
 } from './materialKeys';
 
@@ -154,7 +155,7 @@ export class SceneStudioGUI {
       const intersects = raycaster.intersectObjects(worldGroup.children, true);
       if (intersects.length > 0) {
         const clickedObj = intersects[0].object;
-        if (clickedObj?.name && isValidNamedObject(clickedObj.name)) {
+        if (clickedObj?.name) {
           console.log(`[3D Studio] Clicked Object: '${clickedObj.name}'`);
         }
       }
@@ -855,13 +856,16 @@ export class SceneStudioGUI {
     if (!worldGroup) return;
 
     this.trackedMaterials = collectTrackedMaterials(worldGroup);
-    if (this.trackedMaterials.length === 0) return;
+    if (this.trackedMaterials.length === 0) {
+      console.warn('[3D Studio] No building materials found to edit.');
+      return;
+    }
 
     const matFolder = this.gui.addFolder('Materials Controller');
     this.materialsFolderPopulated = true;
 
-    const facades = this.trackedMaterials.filter((entry) => entry.slot === 0);
-    const windows = this.trackedMaterials.filter((entry) => entry.slot === 1);
+    const facades = this.trackedMaterials.filter((entry) => entry.role === 'facade');
+    const windows = this.trackedMaterials.filter((entry) => entry.role === 'window');
 
     const applyGroup = (
       entries: TrackedMaterial[],
@@ -869,94 +873,90 @@ export class SceneStudioGUI {
     ) => {
       const col = patch.color ? new THREE.Color(patch.color) : null;
       entries.forEach((entry) => {
-        if (col) {
-          entry.mat.color.copy(col);
-          entry.params.color = patch.color!;
-        }
-        if (patch.roughness !== undefined && 'roughness' in entry.mat) {
-          entry.mat.roughness = patch.roughness;
-          entry.params.roughness = patch.roughness;
-        }
-        if (patch.metalness !== undefined && 'metalness' in entry.mat) {
-          entry.mat.metalness = patch.metalness;
-          entry.params.metalness = patch.metalness;
-        }
-        entry.mat.needsUpdate = true;
+        const targets = entry.mats?.length ? entry.mats : [entry.mat];
+        targets.forEach((mat) => {
+          if (col) mat.color.copy(col);
+          if (patch.roughness !== undefined && 'roughness' in mat) mat.roughness = patch.roughness;
+          if (patch.metalness !== undefined && 'metalness' in mat) mat.metalness = patch.metalness;
+          mat.needsUpdate = true;
+        });
+        if (col) entry.params.color = patch.color!;
+        if (patch.roughness !== undefined) entry.params.roughness = patch.roughness;
+        if (patch.metalness !== undefined) entry.params.metalness = patch.metalness;
       });
     };
 
-    if (facades.length > 0) {
-      if (!SCENE_CONFIG.materials.globalFacadeColor) {
-        this.globalFacade.color = facades[0].params.color;
-        this.globalFacade.roughness = facades[0].params.roughness;
-        this.globalFacade.metalness = facades[0].params.metalness;
-      }
-
-      const facadeGroupSub = matFolder.addFolder('Light Building Facades (Main Body)');
-      facadeGroupSub
-        .addColor(this.globalFacade, 'color')
-        .name('Light Facades Color')
+    const addMaterialControls = (
+      folder: any,
+      params: { color: string; roughness: number; metalness: number },
+      onChange: (patch: Partial<{ color: string; roughness: number; metalness: number }>) => void,
+      labels: { color: string },
+    ) => {
+      folder
+        .addColor(params, 'color')
+        .name(labels.color)
         .listen()
-        .onChange((hex: string) => applyGroup(facades, { color: hex }));
-      facadeGroupSub
-        .add(this.globalFacade, 'roughness', 0.0, 1.0, 0.02)
+        .onChange((hex: string) => onChange({ color: hex }));
+      folder
+        .add(params, 'roughness', 0.0, 1.0, 0.02)
         .name('Roughness')
         .listen()
-        .onChange((v: number) => applyGroup(facades, { roughness: v }));
-      facadeGroupSub
-        .add(this.globalFacade, 'metalness', 0.0, 1.0, 0.02)
+        .onChange((v: number) => onChange({ roughness: v }));
+      folder
+        .add(params, 'metalness', 0.0, 1.0, 0.02)
         .name('Metalness')
         .listen()
-        .onChange((v: number) => applyGroup(facades, { metalness: v }));
+        .onChange((v: number) => onChange({ metalness: v }));
+    };
+
+    if (facades.length > 0) {
+      const facadeGroupSub = matFolder.addFolder('All Building Facades');
+      addMaterialControls(
+        facadeGroupSub,
+        this.globalFacade,
+        (patch) => applyGroup(facades, patch),
+        { color: 'Facade Color' },
+      );
     }
 
     if (windows.length > 0) {
-      if (!SCENE_CONFIG.materials.globalWindowColor) {
-        this.globalWindow.color = windows[0].params.color;
-        this.globalWindow.roughness = windows[0].params.roughness;
-        this.globalWindow.metalness = windows[0].params.metalness;
-      }
-
-      const windowGroupSub = matFolder.addFolder('Building Windows & Insets (Dark Accents)');
-      windowGroupSub
-        .addColor(this.globalWindow, 'color')
-        .name('Windows & Insets Color')
-        .listen()
-        .onChange((hex: string) => applyGroup(windows, { color: hex }));
-      windowGroupSub
-        .add(this.globalWindow, 'roughness', 0.0, 1.0, 0.02)
-        .name('Roughness')
-        .listen()
-        .onChange((v: number) => applyGroup(windows, { roughness: v }));
+      const windowGroupSub = matFolder.addFolder('All Building Windows');
+      addMaterialControls(
+        windowGroupSub,
+        this.globalWindow,
+        (patch) => applyGroup(windows, patch),
+        { color: 'Window Color' },
+      );
     }
 
-    const indBldgSub = matFolder.addFolder('Individual Building Facades');
-    facades.forEach((entry) => {
-      const sub = indBldgSub.addFolder(`${entry.displayName} (Facade)`);
-      sub
-        .addColor(entry.params, 'color')
-        .name('Main Body Color')
-        .listen()
-        .onChange((hex: string) => {
-          entry.mat.color.set(hex);
-          entry.mat.needsUpdate = true;
-        });
-      sub
-        .add(entry.params, 'roughness', 0.0, 1.0, 0.02)
-        .name('Roughness')
-        .listen()
-        .onChange((v: number) => {
-          entry.mat.roughness = v;
-          entry.mat.needsUpdate = true;
-        });
-      sub
-        .add(entry.params, 'metalness', 0.0, 1.0, 0.02)
-        .name('Metalness')
-        .listen()
-        .onChange((v: number) => {
-          entry.mat.metalness = v;
-          entry.mat.needsUpdate = true;
-        });
+    const buildings = new Map<string, { name: string; facade?: TrackedMaterial; window?: TrackedMaterial }>();
+    for (const entry of this.trackedMaterials) {
+      if (isSiteMesh(entry.displayName)) continue;
+      const group = buildings.get(entry.buildingId) ?? { name: entry.displayName };
+      if (entry.role === 'window') group.window = entry;
+      else group.facade = entry;
+      buildings.set(entry.buildingId, group);
+    }
+
+    const indBldgSub = matFolder.addFolder('Each Building (Body + Windows)');
+    buildings.forEach((group) => {
+      const sub = indBldgSub.addFolder(group.name);
+      if (group.facade) {
+        addMaterialControls(
+          sub,
+          group.facade.params,
+          (patch) => applyGroup([group.facade!], patch),
+          { color: 'Building Color' },
+        );
+      }
+      if (group.window) {
+        addMaterialControls(
+          sub,
+          group.window.params,
+          (patch) => applyGroup([group.window!], patch),
+          { color: 'Window Color' },
+        );
+      }
     });
   }
 
