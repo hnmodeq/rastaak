@@ -166,8 +166,20 @@ export function collectMaterialsConfig(
   globals: Omit<MaterialsConfig, 'overrides'>,
 ): MaterialsConfig {
   const overrides: Record<string, BuildingMaterialOverride> = {};
+  const clientSlugs = new Set(STORY_CONFIG.clients.map((client) => slugName(client.building)));
+  const storyPaint = new Set(
+    [
+      STORY_CONFIG.colors.need,
+      STORY_CONFIG.colors.needWindow,
+      STORY_CONFIG.colors.resolved,
+      STORY_CONFIG.colors.resolvedWindow,
+    ].map((value) => value >>> 0),
+  );
 
-  forEachStudioMaterial(root, ({ mat, key, role }) => {
+  forEachStudioMaterial(root, ({ mat, key, role, buildingName }) => {
+    if (clientSlugs.has(slugName(buildingName)) && storyPaint.has(mat.color.getHex() >>> 0)) {
+      return;
+    }
     const globalColor = role === 'window' ? globals.globalWindowColor : globals.globalFacadeColor;
     const globalRoughness = role === 'window' ? globals.globalWindowRoughness : globals.globalFacadeRoughness;
     const globalMetalness = role === 'window' ? globals.globalWindowMetalness : globals.globalFacadeMetalness;

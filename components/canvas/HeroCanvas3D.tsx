@@ -355,6 +355,7 @@ export const HeroCanvas3D: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('rastaak-studio-before-save', onStudioBeforeSave);
       window.removeEventListener('rastaak-studio-after-save', onStudioAfterSave);
+      window.removeEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
       story.dispose();
       controls.dispose();
       studioGUI?.destroy();
