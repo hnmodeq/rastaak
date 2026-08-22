@@ -742,6 +742,23 @@ export class SceneStudioGUI {
     };
 
     storyFolder.addColor(colorParams, 'packet').name('Shooting light').onChange((v: string) => applyColor('packet', v));
+
+    const bounceParams = {
+      packetIntensity: STORY_CONFIG.packetIntensity ?? 260,
+      packetDistance: STORY_CONFIG.packetDistance ?? 9,
+    };
+    storyFolder
+      .add(bounceParams, 'packetIntensity', 0, 800, 5)
+      .name('Shooting light reflection')
+      .onChange((value: number) => {
+        STORY_CONFIG.packetIntensity = value;
+      });
+    storyFolder
+      .add(bounceParams, 'packetDistance', 0.5, 20, 0.1)
+      .name('Shooting light reach')
+      .onChange((value: number) => {
+        STORY_CONFIG.packetDistance = value;
+      });
     storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak building').onChange((v: string) => applyColor('hubPulse', v));
     storyFolder.addColor(colorParams, 'hubPulseWindow').name('Rastaak window').onChange((v: string) => applyColor('hubPulseWindow', v));
     storyFolder.addColor(colorParams, 'need').name('Client before — building').onChange((v: string) => applyColor('need', v));
