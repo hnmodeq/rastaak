@@ -1112,6 +1112,166 @@ export class SceneStudioGUI {
     });
   }
 
+  private seekStory(t: number) {
+    this.onProgressChange?.(clamp01(t));
+  }
+
+  private populateStoryTiming() {
+    if (!this.gui) return;
+
+    const root = this.gui.addFolder('Story Timing');
+    root.open();
+
+    const playhead = { t: SCENE_CONFIG.stops[0]?.progress ?? 0 };
+    root
+      .add(playhead, 't', 0, 1, 0.01)
+      .name('Playhead')
+      .listen()
+      .onChange((value: number) => {
+        this.seekStory(value);
+      });
+
+    const cameraFolder = root.addFolder('Camera moves');
+    SCENE_CONFIG.stops.forEach((stop, index) => {
+      const row = { progress: stop.progress };
+      const ctrl = cameraFolder
+        .add(row, 'progress', 0, 1, 0.01)
+        .name(`${index + 1}. ${stop.id}`)
+        .listen()
+        .onChange((value: number) => {
+          const prev = index > 0 ? SCENE_CONFIG.stops[index - 1].progress : 0;
+          const next = index < SCENE_CONFIG.stops.length - 1 ? SCENE_CONFIG.stops[index + 1].progress : 1;
+          const clamped = clampOrdered(value, prev, next);
+          row.progress = clamped;
+          stop.progress = clamped;
+          ctrl.updateDisplay();
+          this.seekStory(clamped);
+        });
+    });
+
+    const beatsFolder = root.addFolder('Story beats');
+    beatsFolder.open();
+
+    STORY_CONFIG.clients.forEach((client) => {
+      const folder = beatsFolder.addFolder(client.building);
+      const row = {
+        appear: client.appear,
+        dispatch: client.dispatch,
+        arrive: client.arrive,
+        flight: Math.max(MIN_FLIGHT, client.arrive - client.dispatch),
+        previewRed: () => this.seekStory(client.appear),
+        previewLaunch: () => this.seekStory(client.dispatch),
+        previewArrive: () => this.seekStory(client.arrive),
+      };
+
+      const syncRow = () => {
+        row.appear = client.appear;
+        row.dispatch = client.dispatch;
+        row.arrive = client.arrive;
+        row.flight = Math.max(MIN_FLIGHT, client.arrive - client.dispatch);
+        appearCtrl.updateDisplay();
+        dispatchCtrl.updateDisplay();
+        arriveCtrl.updateDisplay();
+        flightCtrl.updateDisplay();
+      };
+
+      const appearCtrl = folder
+        .add(row, 'appear', 0, 1, 0.01)
+        .name('Turns red')
+        .onChange((value: number) => {
+          client.appear = clampOrdered(value, 0, client.arrive - MIN_FLIGHT);
+          if (client.dispatch < client.appear) client.dispatch = client.appear;
+          if (client.arrive < client.dispatch + MIN_FLIGHT) {
+            client.arrive = Math.min(1, client.dispatch + MIN_FLIGHT);
+          }
+          syncRow();
+          this.seekStory(client.appear);
+        });
+
+      const dispatchCtrl = folder
+        .add(row, 'dispatch', 0, 1, 0.01)
+        .name('Logo launches')
+        .onChange((value: number) => {
+          client.dispatch = clampOrdered(value, client.appear, client.arrive - MIN_FLIGHT);
+          syncRow();
+          this.seekStory(client.dispatch);
+        });
+
+      const arriveCtrl = folder
+        .add(row, 'arrive', 0, 1, 0.01)
+        .name('Logo arrives')
+        .onChange((value: number) => {
+          client.arrive = clampOrdered(value, client.dispatch + MIN_FLIGHT, 1);
+          syncRow();
+          this.seekStory(client.arrive);
+        });
+
+      const flightCtrl = folder
+        .add(row, 'flight', MIN_FLIGHT, 0.4, 0.01)
+        .name('Flight duration')
+        .onChange((value: number) => {
+          const duration = clampOrdered(value, MIN_FLIGHT, 1 - client.dispatch);
+          client.arrive = client.dispatch + duration;
+          syncRow();
+          this.seekStory(client.arrive);
+        });
+
+      folder.add(row, 'previewRed').name('Preview — turns red');
+      folder.add(row, 'previewLaunch').name('Preview — logo launches');
+      folder.add(row, 'previewArrive').name('Preview — logo arrives');
+    });
+
+    const captionFolder = root.addFolder('Captions');
+    STORY_CONFIG.captions.forEach((caption) => {
+      const folder = captionFolder.addFolder(caption.text || caption.id);
+      const row = {
+        start: caption.range[0],
+        end: caption.range[1],
+        preview: () => this.seekStory(caption.range[0]),
+      };
+      const sync = () => {
+        row.start = caption.range[0];
+        row.end = caption.range[1];
+        startCtrl.updateDisplay();
+        endCtrl.updateDisplay();
+      };
+      const startCtrl = folder
+        .add(row, 'start', 0, 1, 0.01)
+        .name('Start')
+        .onChange((value: number) => {
+          caption.range[0] = clampOrdered(value, 0, caption.range[1] - 0.01);
+          sync();
+          this.seekStory(caption.range[0]);
+        });
+      const endCtrl = folder
+        .add(row, 'end', 0, 1, 0.01)
+        .name('End')
+        .onChange((value: number) => {
+          caption.range[1] = clampOrdered(value, caption.range[0] + 0.01, 1);
+          sync();
+          this.seekStory(caption.range[1]);
+        });
+      folder.add(row, 'preview').name('Preview start');
+    });
+
+    const hold = {
+      chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
+      captionFadeIn: STORY_CONFIG.captionFadeIn,
+    };
+    root
+      .add(hold, 'chipHoldAfterArrive', 0, 0.4, 0.01)
+      .name('Chip hold after arrive')
+      .onChange((value: number) => {
+        STORY_CONFIG.chipHoldAfterArrive = clamp01(value);
+      });
+    root
+      .add(hold, 'captionFadeIn', 0, 0.3, 0.01)
+      .name('Captions appear after')
+      .onChange((value: number) => {
+        STORY_CONFIG.captionFadeIn = clamp01(value);
+      });
+  }
+
   public populateLightsAndShadows() {
     if (!this.gui || this.lightsFolderPopulated) return;
     this.lightsFolderPopulated = true;
@@ -1219,162 +1379,6 @@ export class SceneStudioGUI {
           .name('Decay Exponent')
           .listen()
           .onChange((v: number) => {
-            (light as THREE.PointLight).decay = v;
-            persistLight();
-          });
-      }
-
-      const shadowSub = sub.addFolder('Shadows Settings');
-      const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
-      const shadowParams = {
-        castShadow: light.castShadow ?? true,
-        radius: sh ? sh.radius ?? 2.27 : 2.27,
-        bias: sh ? sh.bias ?? -0.0001 : -0.0001,
-        mapSize: sh?.mapSize?.width ?? 2048,
-      };
-
-      shadowSub
-        .add(shadowParams, 'castShadow')
-        .name('Enable Shadows')
-        .listen()
-        .onChange((v: boolean) => {
-          light.castShadow = v;
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
-        });
-
-      shadowSub
-        .add(shadowParams, 'radius', 0, 20, 0.1)
-        .name('Soft Shadow Radius')
-        .listen()
-        .onChange((v: number) => {
-          if (sh) {
-            sh.radius = v;
-            sh.needsUpdate = true;
-          }
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
-        });
-
-      shadowSub
-        .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
-        .name('Shadow Bias')
-        .listen()
-        .onChange((v: number) => {
-          if (sh) {
-            sh.bias = v;
-            sh.needsUpdate = true;
-          }
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
-        });
-
-      shadowSub
-        .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
-        .name('Shadow Resolution')
-        .onChange((v: number) => {
-          const size = parseInt(String(v), 10);
-          if (sh?.mapSize) {
-            sh.mapSize.width = size;
-            sh.mapSize.height = size;
-            if (sh.map) {
-              sh.map.dispose();
-              sh.map = null as unknown as THREE.WebGLRenderTarget;
-            }
-            sh.needsUpdate = true;
-          }
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
-        });
-    }
-  }
-
-  public populateMaterials() {
-    if (!this.gui || this.materialsFolderPopulated) return;
-
-    const worldGroup = this.worldGroupSupplier();
-    if (!worldGroup) return;
-
-    const liveGroups = () => collectCategoryGroups(worldGroup);
-    const groups = liveGroups();
-    const seed = (key: keyof typeof this.palette, category: Exclude<MaterialCategory, 'ignore'>) => {
-      const live = sampleCategoryColor(groups[category]);
-      if (live === undefined) return;
-      const already = resolvePalette(SCENE_CONFIG.materials);
-      const named = `${category}Color` as keyof CategoryPalette;
-      if (already[named] === undefined) {
-        this.palette[key] = '#' + new THREE.Color(live).getHexString();
-      }
-    };
-    seed('building', 'building');
-    seed('window', 'window');
-    seed('rastaak', 'rastaak');
-    seed('logo', 'logo');
-    seed('ground', 'ground');
-    seed('plate', 'plate');
-    seed('border', 'border');
-    seed('treeTrunk', 'treeTrunk');
-    seed('treeLeaf', 'treeLeaf');
-
-    const matFolder = this.gui.addFolder('Scene colors');
-    this.materialsFolderPopulated = true;
-
-    const persistPalette = () => {
-      SCENE_CONFIG.materials = {
-        ...SCENE_CONFIG.materials,
-        ...collectMaterialsConfig({
-          buildingColor: new THREE.Color(this.palette.building).getHex(),
-          windowColor: new THREE.Color(this.palette.window).getHex(),
-          rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
-          logoColor: new THREE.Color(this.palette.logo).getHex(),
-          groundColor: new THREE.Color(this.palette.ground).getHex(),
-          plateColor: new THREE.Color(this.palette.plate).getHex(),
-          borderColor: new THREE.Color(this.palette.border).getHex(),
-          treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
-          treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
-        }),
-      };
-    };
-
-    const paint = (category: Exclude<MaterialCategory, 'ignore'>, hex: string, storyIdle = false) => {
-      applyCategoryColor(liveGroups()[category], hex);
-      persistPalette();
-      if (storyIdle) {
-        window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
-      }
-    };
-
-    matFolder.addColor(this.palette, 'building').name('Buildings').onChange((hex: string) => paint('building', hex, true));
-    matFolder.addColor(this.palette, 'window').name('Windows').onChange((hex: string) => paint('window', hex, true));
-    matFolder.addColor(this.palette, 'rastaak').name('Rastaak building').onChange((hex: string) => paint('rastaak', hex, true));
-    matFolder.addColor(this.palette, 'logo').name('Logo').onChange((hex: string) => paint('logo', hex));
-    matFolder.addColor(this.palette, 'ground').name('Ground').onChange((hex: string) => paint('ground', hex));
-    matFolder.addColor(this.palette, 'plate').name('Plates').onChange((hex: string) => paint('plate', hex));
-    matFolder.addColor(this.palette, 'border').name('Ground borders').onChange((hex: string) => paint('border', hex));
-    matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
-    matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));
-
-    persistPalette();
-  }
-
-  private refreshCamDisplay = () => {};
-
-  public destroy() {
-    if (this.pointerHandler) {
-      window.removeEventListener('pointerdown', this.pointerHandler);
-      this.pointerHandler = null;
-    }
-    if (this.toggleButton) {
-      this.toggleButton.remove();
-      this.toggleButton = null;
-    }
-    if (this.gui) {
-      this.gui.destroy();
-      this.gui = null;
-    }
-  }
-}
-      .onChange((v: number) => {
             (light as THREE.PointLight).decay = v;
             persistLight();
           });
