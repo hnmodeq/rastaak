@@ -87,23 +87,23 @@ export const SCENE_CONFIG: SceneConfig = {
   environment: {
     backgroundColor: 0xc5c5c5,
     fogColor: 0xc4c4c4,
-    fogStart: 0,
-    fogEnd: 34,
+    fogStart: 4,
+    fogEnd: 38,
     shadowColor: 0xffffff,
     shadowOpacity: 1
   },
 
   renderer: {
-    toneMappingExposure: 1.25
+    toneMappingExposure: 0.95
   },
 
   materials: {
     buildingColor: 0x000000,
     windowColor: 0x949494,
     rastaakColor: 0x000000,
-    logoColor: 0x000000,
+    logoColor: 0xffffff,
     groundColor: 0x3e3e3e,
-    borderColor: 0x383838,
+    borderColor: 0x191919,
     treeTrunkColor: 0x6b4f2a,
     treeLeafColor: 0x3d6b3a,
     globalFacadeColor: 0x000000,

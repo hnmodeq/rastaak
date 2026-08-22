@@ -72,9 +72,9 @@ export const STORY_CONFIG: StoryConfig = {
     packetInner: 0xffffff,
     packetOuter: 0xffffff,
     packetSpark: 0x000000,
-    resolved: 0x060136,
+    resolved: 0x1c04ee,
     resolvedWindow: 0xffffff,
-    hubPulse: 0x040035,
+    hubPulse: 0x3700dd,
     hubPulseWindow: 0xffffff,
     chipNeed: 0xfb0000,
     chipResolved: 0x229afd
