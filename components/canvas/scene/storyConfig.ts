@@ -25,6 +25,7 @@ export interface StoryColors {
   need: number;
   needWindow: number;
   packet: number;
+  packetBounce: number;
   resolved: number;
   resolvedWindow: number;
   hubPulse: number;
@@ -41,10 +42,18 @@ export interface StoryConfig {
   captions: StoryCaptionConfig[];
   chipHoldAfterArrive: number;
   captionFadeIn: number;
-  /** Point-light power that bounces the packet color onto nearby buildings. */
+  /** Point-light power that bounces onto nearby buildings. */
   packetIntensity: number;
   /** How far that bounce light reaches. */
   packetDistance: number;
+  /** Self-glow strength on the packet (fireworks halo). */
+  packetGlow: number;
+  /** Halo radius around the packet core. */
+  packetGlowSize: number;
+  /** Visible core radius. */
+  packetCoreSize: number;
+  /** Trail opacity. */
+  packetTrail: number;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -56,6 +65,7 @@ export const STORY_CONFIG: StoryConfig = {
     need: 0xe0a01a,
     needWindow: 0x8a5a08,
     packet: 0x57cdff,
+    packetBounce: 0x57cdff,
     resolved: 0x0e94fb,
     resolvedWindow: 0x57cdff,
     hubPulse: 0x57cdff,
@@ -108,6 +118,10 @@ export const STORY_CONFIG: StoryConfig = {
   captionFadeIn: 0.06,
   packetIntensity: 260,
   packetDistance: 9,
+  packetGlow: 1,
+  packetGlowSize: 0.22,
+  packetCoreSize: 0.07,
+  packetTrail: 0.7,
 };
 
 export interface StoryChipFrame {

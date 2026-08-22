@@ -263,6 +263,7 @@ export const SCENE_CONFIG: SceneConfig = {
           need: hexLit(asHexNumber(rawStory.colors?.need, 0xe0a01a)),
           needWindow: hexLit(asHexNumber(rawStory.colors?.needWindow, 0x8a5a08)),
           packet: hexLit(asHexNumber(rawStory.colors?.packet, 0x57cdff)),
+          packetBounce: hexLit(asHexNumber(rawStory.colors?.packetBounce, 0x57cdff)),
           resolved: hexLit(asHexNumber(rawStory.colors?.resolved, 0x0e94fb)),
           resolvedWindow: hexLit(asHexNumber(rawStory.colors?.resolvedWindow, 0x57cdff)),
           hubPulse: hexLit(asHexNumber(rawStory.colors?.hubPulse, 0x57cdff)),
@@ -290,6 +291,10 @@ export const SCENE_CONFIG: SceneConfig = {
         captionFadeIn: asFinite(rawStory.captionFadeIn, 0.06),
         packetIntensity: asFinite(rawStory.packetIntensity, 260),
         packetDistance: asFinite(rawStory.packetDistance, 9),
+        packetGlow: asFinite(rawStory.packetGlow, 1),
+        packetGlowSize: asFinite(rawStory.packetGlowSize, 0.22),
+        packetCoreSize: asFinite(rawStory.packetCoreSize, 0.07),
+        packetTrail: asFinite(rawStory.packetTrail, 0.7),
       };
 
       const storyPath = path.join(rootDir, 'components', 'canvas', 'scene', 'storyConfig.ts');
@@ -317,9 +322,13 @@ export interface StoryCaptionConfig {
 
 export interface StoryColors {
   need: number;
+  needWindow: number;
   packet: number;
+  packetBounce: number;
   resolved: number;
+  resolvedWindow: number;
   hubPulse: number;
+  hubPulseWindow: number;
   chipNeed: number;
   chipResolved: number;
 }
@@ -332,6 +341,12 @@ export interface StoryConfig {
   captions: StoryCaptionConfig[];
   chipHoldAfterArrive: number;
   captionFadeIn: number;
+  packetIntensity: number;
+  packetDistance: number;
+  packetGlow: number;
+  packetGlowSize: number;
+  packetCoreSize: number;
+  packetTrail: number;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';

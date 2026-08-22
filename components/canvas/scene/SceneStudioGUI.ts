@@ -315,6 +315,10 @@ export class SceneStudioGUI {
         captionFadeIn: STORY_CONFIG.captionFadeIn,
         packetIntensity: STORY_CONFIG.packetIntensity,
         packetDistance: STORY_CONFIG.packetDistance,
+        packetGlow: STORY_CONFIG.packetGlow,
+        packetGlowSize: STORY_CONFIG.packetGlowSize,
+        packetCoreSize: STORY_CONFIG.packetCoreSize,
+        packetTrail: STORY_CONFIG.packetTrail,
       },
       flowSteps: FLOW_CONFIG.map((step) => ({
         ...step,
@@ -726,6 +730,7 @@ export class SceneStudioGUI {
 
     const colorParams = {
       packet: hex(STORY_CONFIG.colors.packet),
+      packetBounce: hex(STORY_CONFIG.colors.packetBounce ?? STORY_CONFIG.colors.packet),
       hubPulse: hex(STORY_CONFIG.colors.hubPulse),
       hubPulseWindow: hex(STORY_CONFIG.colors.hubPulseWindow ?? STORY_CONFIG.colors.hubPulse),
       need: hex(STORY_CONFIG.colors.need),
@@ -742,10 +747,15 @@ export class SceneStudioGUI {
     };
 
     storyFolder.addColor(colorParams, 'packet').name('Shooting light').onChange((v: string) => applyColor('packet', v));
+    storyFolder.addColor(colorParams, 'packetBounce').name('Shooting light reflection color').onChange((v: string) => applyColor('packetBounce', v));
 
     const bounceParams = {
       packetIntensity: STORY_CONFIG.packetIntensity ?? 260,
       packetDistance: STORY_CONFIG.packetDistance ?? 9,
+      packetGlow: STORY_CONFIG.packetGlow ?? 1,
+      packetGlowSize: STORY_CONFIG.packetGlowSize ?? 0.22,
+      packetCoreSize: STORY_CONFIG.packetCoreSize ?? 0.07,
+      packetTrail: STORY_CONFIG.packetTrail ?? 0.7,
     };
     storyFolder
       .add(bounceParams, 'packetIntensity', 0, 800, 5)
@@ -758,6 +768,30 @@ export class SceneStudioGUI {
       .name('Shooting light reach')
       .onChange((value: number) => {
         STORY_CONFIG.packetDistance = value;
+      });
+    storyFolder
+      .add(bounceParams, 'packetGlow', 0, 2, 0.05)
+      .name('Shooting light glow')
+      .onChange((value: number) => {
+        STORY_CONFIG.packetGlow = value;
+      });
+    storyFolder
+      .add(bounceParams, 'packetGlowSize', 0.04, 0.8, 0.01)
+      .name('Shooting light glow size')
+      .onChange((value: number) => {
+        STORY_CONFIG.packetGlowSize = value;
+      });
+    storyFolder
+      .add(bounceParams, 'packetCoreSize', 0.02, 0.25, 0.005)
+      .name('Shooting light core size')
+      .onChange((value: number) => {
+        STORY_CONFIG.packetCoreSize = value;
+      });
+    storyFolder
+      .add(bounceParams, 'packetTrail', 0, 1, 0.02)
+      .name('Shooting light trail')
+      .onChange((value: number) => {
+        STORY_CONFIG.packetTrail = value;
       });
     storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak building').onChange((v: string) => applyColor('hubPulse', v));
     storyFolder.addColor(colorParams, 'hubPulseWindow').name('Rastaak window').onChange((v: string) => applyColor('hubPulseWindow', v));

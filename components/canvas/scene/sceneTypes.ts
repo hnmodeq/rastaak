@@ -82,6 +82,7 @@ export interface StudioStorySave {
     need: number;
     needWindow: number;
     packet: number;
+    packetBounce: number;
     resolved: number;
     resolvedWindow: number;
     hubPulse: number;

@@ -31,6 +31,9 @@ interface ClientActor {
 interface PacketRig {
   group: THREE.Group;
   core: THREE.Mesh;
+  glowInner: THREE.Mesh;
+  glowOuter: THREE.Mesh;
+  sparks: THREE.Points;
   light: THREE.PointLight;
   trail: THREE.Line;
   trailPositions: Float32Array;
@@ -53,6 +56,7 @@ const _needWindow = new THREE.Color(STORY_CONFIG.colors.needWindow ?? STORY_CONF
 const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
 const _resolvedWindow = new THREE.Color(STORY_CONFIG.colors.resolvedWindow ?? STORY_CONFIG.colors.resolved);
 const _packetColor = new THREE.Color(STORY_CONFIG.colors.packet);
+const _packetBounce = new THREE.Color(STORY_CONFIG.colors.packetBounce ?? STORY_CONFIG.colors.packet);
 const _hubPulse = new THREE.Color(STORY_CONFIG.colors.hubPulse);
 const _hubWindow = new THREE.Color(STORY_CONFIG.colors.hubPulseWindow ?? STORY_CONFIG.colors.hubPulse);
 
@@ -192,6 +196,7 @@ function syncStoryColors() {
   _resolvedColor.set(colors.resolved);
   _resolvedWindow.set(colors.resolvedWindow ?? colors.resolved);
   _packetColor.set(colors.packet);
+  _packetBounce.set(colors.packetBounce ?? colors.packet);
   _hubPulse.set(colors.hubPulse);
   _hubWindow.set(colors.hubPulseWindow ?? colors.hubPulse);
 }
@@ -217,12 +222,22 @@ function applyBuildingLook(slots: TrackedSlot[], blend: number) {
   }
 }
 
+function glowMaterial(opacity: number): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({
+    color: _packetColor,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+}
+
 function createPacketRig(): PacketRig {
   const group = new THREE.Group();
   group.visible = false;
 
   const core = new THREE.Mesh(
-    new THREE.SphereGeometry(0.07, 16, 16),
+    new THREE.SphereGeometry(1, 16, 16),
     new THREE.MeshBasicMaterial({
       color: _packetColor,
       transparent: true,
@@ -230,9 +245,32 @@ function createPacketRig(): PacketRig {
       depthWrite: false,
     }),
   );
+  core.scale.setScalar(0.07);
   group.add(core);
 
-  const light = new THREE.PointLight(_packetColor, 0, 3.6, 2);
+  const glowInner = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), glowMaterial(0.45));
+  const glowOuter = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), glowMaterial(0.18));
+  group.add(glowInner, glowOuter);
+
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkCount = 10;
+  const sparkPos = new Float32Array(sparkCount * 3);
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+  const sparks = new THREE.Points(
+    sparkGeo,
+    new THREE.PointsMaterial({
+      color: _packetColor,
+      size: 0.045,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    }),
+  );
+  group.add(sparks);
+
+  const light = new THREE.PointLight(_packetBounce, 0, 3.6, 2);
   light.castShadow = false;
   group.add(light);
 
@@ -247,6 +285,7 @@ function createPacketRig(): PacketRig {
       transparent: true,
       opacity: 0.7,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
     }),
   );
   group.add(trail);
@@ -254,6 +293,9 @@ function createPacketRig(): PacketRig {
   return {
     group,
     core,
+    glowInner,
+    glowOuter,
+    sparks,
     light,
     trail,
     trailPositions,
@@ -469,16 +511,52 @@ export class StoryRuntime {
     const u = Math.max(0, Math.min(1, (t - client.config.dispatch) / span));
     packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;
-    packet.light.color.copy(_packetColor);
+    const pulse = 0.65 + Math.sin(u * Math.PI) * 0.35;
+    const flicker = 0.75 + Math.sin(u * 42) * 0.25;
+    const glow = Math.max(0, STORY_CONFIG.packetGlow ?? 1);
+    const glowSize = Math.max(0.02, STORY_CONFIG.packetGlowSize ?? 0.22);
+    const coreSize = Math.max(0.02, STORY_CONFIG.packetCoreSize ?? 0.07);
+    const trailAmt = Math.max(0, Math.min(1, STORY_CONFIG.packetTrail ?? 0.7));
+
+    packet.light.color.copy(_packetBounce);
     const bounce = Math.max(0, STORY_CONFIG.packetIntensity ?? 260);
     packet.light.intensity = bounce + Math.sin(u * Math.PI) * bounce * 0.7;
     packet.light.distance = Math.max(0.5, STORY_CONFIG.packetDistance ?? 9);
     packet.light.decay = 2;
+
+    packet.core.scale.setScalar(coreSize);
     const coreMat = packet.core.material as THREE.MeshBasicMaterial;
     coreMat.color.copy(_packetColor);
-    coreMat.opacity = 0.85 + Math.sin(u * Math.PI) * 0.15;
+    coreMat.opacity = 0.9 * pulse;
+
+    const innerMat = packet.glowInner.material as THREE.MeshBasicMaterial;
+    const outerMat = packet.glowOuter.material as THREE.MeshBasicMaterial;
+    innerMat.color.copy(_packetColor);
+    outerMat.color.copy(_packetColor);
+    packet.glowInner.scale.setScalar(glowSize * (1.15 + flicker * 0.2));
+    packet.glowOuter.scale.setScalar(glowSize * 2.15 * (1 + flicker * 0.15));
+    innerMat.opacity = 0.55 * glow * pulse;
+    outerMat.opacity = 0.22 * glow * pulse;
+    packet.glowInner.visible = glow > 0.01;
+    packet.glowOuter.visible = glow > 0.01;
+
+    const sparkMat = packet.sparks.material as THREE.PointsMaterial;
+    sparkMat.color.copy(_packetColor);
+    sparkMat.opacity = Math.min(1, glow * 0.85 * flicker);
+    sparkMat.size = coreSize * 0.7;
+    packet.sparks.visible = glow > 0.05;
+    const sparkPos = packet.sparks.geometry.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < sparkPos.count; i++) {
+      const a = i * 2.399 + u * 18;
+      const r = glowSize * (0.35 + (i % 4) * 0.18) * flicker;
+      sparkPos.setXYZ(i, Math.cos(a) * r, Math.sin(a * 1.7) * r * 0.7, Math.sin(a) * r);
+    }
+    sparkPos.needsUpdate = true;
+
     const trailMat = packet.trail.material as THREE.LineBasicMaterial;
     trailMat.color.copy(_packetColor);
+    trailMat.opacity = trailAmt * (0.45 + pulse * 0.55);
+    packet.trail.visible = trailAmt > 0.02;
 
     const from = Math.max(0, u - 0.2);
     for (let i = 0; i < TRAIL_POINTS; i++) {
@@ -515,11 +593,18 @@ export class StoryRuntime {
       this.scene.remove(this.packetRoot);
     }
     for (const client of this.clients) {
-      client.packet.core.geometry.dispose();
-      (client.packet.core.material as THREE.Material).dispose();
-      client.packet.trail.geometry.dispose();
-      (client.packet.trail.material as THREE.Material).dispose();
-      client.packet.light.dispose();
+      const packet = client.packet;
+      packet.core.geometry.dispose();
+      (packet.core.material as THREE.Material).dispose();
+      packet.glowInner.geometry.dispose();
+      (packet.glowInner.material as THREE.Material).dispose();
+      packet.glowOuter.geometry.dispose();
+      (packet.glowOuter.material as THREE.Material).dispose();
+      packet.sparks.geometry.dispose();
+      (packet.sparks.material as THREE.Material).dispose();
+      packet.trail.geometry.dispose();
+      (packet.trail.material as THREE.Material).dispose();
+      packet.light.dispose();
     }
     this.clients = [];
     this.hub = null;
