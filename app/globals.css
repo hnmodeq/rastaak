@@ -371,16 +371,16 @@ header,
   font-family: 'Kalameh', sans-serif !important;
 }
 
-.site-name {
+.site-name,
+header .header__logo .site-name,
+header.header--white .site-name,
+.mobile-nav .site-name,
+.footer .site-name {
   font-family: 'Kalameh', sans-serif !important;
   font-size: var(--site-name-size, 50px) !important;
   font-weight: var(--site-name-weight, 800) !important;
-  color: var(--site-name-color, inherit);
+  color: var(--site-name-color, var(--color-text)) !important;
   text-shadow: var(--site-name-shadow, none);
-}
-
-header.header--white .site-name {
-  color: var(--color-text-light);
 }
 
 #rastaak-studio-btn {

@@ -747,9 +747,11 @@ export function applyTypeChrome() {
   applyFace('flow-description', TYPE_CHROME.flowDescription, root);
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
-  root.style.setProperty('--site-name-color', hexCss(TYPE_CHROME.siteNameColor));
+  const nameColor = hexCss(TYPE_CHROME.siteNameColor);
+  root.style.setProperty('--site-name-color', nameColor);
   document.querySelectorAll<HTMLElement>('.site-name').forEach((el) => {
     if (el.textContent !== TYPE_CHROME.siteName) el.textContent = TYPE_CHROME.siteName;
+    el.style.setProperty('color', nameColor, 'important');
   });
   applyStudioChrome();
 }
