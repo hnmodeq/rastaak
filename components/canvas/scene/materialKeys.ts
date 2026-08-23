@@ -275,11 +275,34 @@ export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConf
       const category = classifyCategory(mesh, slot, mats.length, std);
       if (category === 'ignore') return;
       const color = colorForCategory(category, palette);
-      if (color === undefined) return;
-      std.color.set(color);
-      std.vertexColors = false;
+      if (color !== undefined) {
+        std.color.set(color);
+        std.vertexColors = false;
+      }
+      applySurfaceToMaterial(std, config);
       std.needsUpdate = true;
     });
+  });
+}
+
+function applySurfaceToMaterial(
+  mat: THREE.MeshStandardMaterial,
+  surface: { roughness?: number; metalness?: number; envMapIntensity?: number },
+) {
+  if (surface.roughness !== undefined && 'roughness' in mat) mat.roughness = surface.roughness;
+  if (surface.metalness !== undefined && 'metalness' in mat) mat.metalness = surface.metalness;
+  if (surface.envMapIntensity !== undefined && 'envMapIntensity' in mat) {
+    mat.envMapIntensity = surface.envMapIntensity;
+  }
+}
+
+export function applyCategorySurface(
+  mats: THREE.MeshStandardMaterial[],
+  surface: { roughness?: number; metalness?: number; envMapIntensity?: number },
+): void {
+  mats.forEach((mat) => {
+    applySurfaceToMaterial(mat, surface);
+    mat.needsUpdate = true;
   });
 }
 
@@ -296,7 +319,10 @@ export function applyCategoryColor(
 }
 
 /** Scene palette → codes. Does not write per-mesh overrides. */
-export function collectMaterialsConfig(palette: CategoryPalette): MaterialsConfig {
+export function collectMaterialsConfig(
+  palette: CategoryPalette,
+  surface?: { roughness?: number; metalness?: number; envMapIntensity?: number },
+): MaterialsConfig {
   return {
     buildingColor: palette.buildingColor,
     windowColor: palette.windowColor,
@@ -309,6 +335,9 @@ export function collectMaterialsConfig(palette: CategoryPalette): MaterialsConfi
     treeLeafColor: palette.treeLeafColor,
     globalFacadeColor: palette.buildingColor,
     globalWindowColor: palette.windowColor,
+    ...(surface?.roughness !== undefined ? { roughness: surface.roughness } : {}),
+    ...(surface?.metalness !== undefined ? { metalness: surface.metalness } : {}),
+    ...(surface?.envMapIntensity !== undefined ? { envMapIntensity: surface.envMapIntensity } : {}),
     overrides: {},
   };
 }

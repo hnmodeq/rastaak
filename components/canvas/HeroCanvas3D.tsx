@@ -20,8 +20,7 @@ import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 import { subscribeLive } from '@/components/live/liveChannel';
-import type { LightConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
-import { applyCategoryColor, collectCategoryGroups } from './scene/materialKeys';
+import type { LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
 
 type HeroCanvasMode = 'public' | 'admin';
 
@@ -206,7 +205,6 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     window.addEventListener('rastaak-studio-after-save', onStudioAfterSave);
     window.addEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
 
-    const hexToCss = (value: number) => '#' + (value >>> 0).toString(16).padStart(6, '0');
     const unsubscribeLive = subscribeLive((patch) => {
       if (mode !== 'public') return;
       if (Array.isArray(patch.lights)) {
@@ -250,21 +248,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         renderer.toneMappingExposure = Number((patch.renderer as { toneMappingExposure: number }).toneMappingExposure);
       }
       if (patch.materials && world) {
-        const mats = patch.materials as Record<string, number>;
-        const groups = collectCategoryGroups(world);
-        const paint = (key: keyof typeof groups, color?: number) => {
-          if (color === undefined) return;
-          applyCategoryColor(groups[key], hexToCss(color));
-        };
-        paint('building', mats.buildingColor);
-        paint('window', mats.windowColor);
-        paint('rastaak', mats.rastaakColor);
-        paint('logo', mats.logoColor);
-        paint('ground', mats.groundColor);
-        paint('plate', mats.plateColor);
-        paint('border', mats.borderColor);
-        paint('treeTrunk', mats.treeTrunkColor);
-        paint('treeLeaf', mats.treeLeafColor);
+        applyMaterialsConfig(world, patch.materials as import('./scene/sceneTypes').MaterialsConfig);
         story.rebindIdlePalette();
       }
     });

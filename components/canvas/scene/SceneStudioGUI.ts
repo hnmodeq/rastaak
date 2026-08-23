@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import { applySceneShadows } from './shadowTint';
@@ -16,6 +15,7 @@ import {
 } from '@/components/home/typeChrome';
 import {
   applyCategoryColor,
+  applyCategorySurface,
   collectCategoryGroups,
   collectMaterialsConfig,
   resolvePalette,
@@ -67,11 +67,12 @@ function clampOrdered(value: number, min: number, max: number): number {
 export class SceneStudioGUI {
   private gui: any = null;
   private disposed = false;
-  private toggleButton: HTMLButtonElement | null = null;
-  private logoutButton: HTMLButtonElement | null = null;
-  private opacityControl: HTMLLabelElement | null = null;
+  private studioEdge: HTMLButtonElement | null = null;
+  private foldAllBtn: HTMLButtonElement | null = null;
   private panelOpacity = 1;
-  private isOpen = false;
+  private isOpen = true;
+  private studioCollapsed = false;
+  private foldersExpanded = false;
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
@@ -112,6 +113,12 @@ export class SceneStudioGUI {
     treeTrunk: '#6b4f2a',
     treeLeaf: '#3d6b3a',
   };
+  private surface = {
+    roughness: 0.72,
+    metalness: 0.04,
+    envMapIntensity: 1,
+  };
+  private surfaceTouched = false;
 
   public isManualMode = false;
   public isOrbitMode = false;
@@ -153,9 +160,12 @@ export class SceneStudioGUI {
       console.warn('[studio] lamp gizmos failed to start', error);
       this.lightGizmos = null;
     }
-    this.createToggleButton();
-    this.createLogoutButton();
-    this.createOpacityControl();
+    const mats = SCENE_CONFIG.materials;
+    if (mats.roughness !== undefined) this.surface.roughness = mats.roughness;
+    if (mats.metalness !== undefined) this.surface.metalness = mats.metalness;
+    if (mats.envMapIntensity !== undefined) this.surface.envMapIntensity = mats.envMapIntensity;
+    this.surfaceTouched =
+      mats.roughness !== undefined || mats.metalness !== undefined || mats.envMapIntensity !== undefined;
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     this.initGUI();
     this.initRaycaster();
@@ -174,109 +184,30 @@ export class SceneStudioGUI {
     if (palette.treeLeafColor !== undefined) this.palette.treeLeaf = '#' + new THREE.Color(palette.treeLeafColor).getHexString();
   }
 
-  private createToggleButton() {
-    if (document.getElementById('rastaak-studio-btn')) return;
-
-    const btn = document.createElement('button');
-    btn.id = 'rastaak-studio-btn';
-    btn.type = 'button';
-    btn.textContent = 'Hide panels';
-    btn.style.cssText = `
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      bottom: auto;
-      right: auto;
-      z-index: 1000001;
-      background: ${tokens.colors.debugPanelBg};
-      color: ${tokens.colors.textLight};
-      border: 1px solid ${tokens.colors.borderDarkSubtle};
-      padding: 10px 18px;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-family: monospace;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: ${tokens.shadows.glass};
-      backdrop-filter: blur(10px);
-      transition: all 0.2s ease;
-      pointer-events: auto;
-    `;
-
-    btn.addEventListener('click', () => {
-      if (!this.gui) {
-        this.initGUI(true);
-      } else {
-        this.setStudioOpen(!this.isOpen);
-      }
-    });
-
-    document.body.appendChild(btn);
-    this.toggleButton = btn;
-  }
-
-  private createLogoutButton() {
-    if (document.getElementById('rastaak-studio-logout')) return;
-    const btn = document.createElement('button');
-    btn.id = 'rastaak-studio-logout';
-    btn.type = 'button';
-    btn.textContent = 'Log out';
-    btn.style.cssText = `
-      position: fixed;
-      top: 24px;
-      left: 170px;
-      bottom: auto;
-      right: auto;
-      z-index: 999999;
-      background: ${tokens.colors.debugPanelBg};
-      color: ${tokens.colors.textLight};
-      border: 1px solid ${tokens.colors.borderDarkSubtle};
-      padding: 10px 16px;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-family: inherit;
-      font-weight: bold;
-      cursor: pointer;
-      pointer-events: auto;
-    `;
-    btn.addEventListener('click', () => {
-      void fetch('/api/admin/logout', { method: 'POST' }).finally(() => {
-        window.location.reload();
-      });
-    });
-    document.body.appendChild(btn);
-    this.logoutButton = btn;
-  }
-
-  private createOpacityControl() {
-    if (document.getElementById('rastaak-studio-opacity')) return;
-    const wrap = document.createElement('label');
-    wrap.id = 'rastaak-studio-opacity';
-    wrap.title = 'Panel opacity';
-    wrap.innerHTML = '<span>Opacity</span><input type="range" min="0.2" max="1" step="0.05" value="1" />';
-    const input = wrap.querySelector('input');
-    input?.addEventListener('input', () => {
-      this.applyPanelOpacity(Number(input.value));
-    });
-    document.body.appendChild(wrap);
-    this.opacityControl = wrap;
-  }
-
   private applyPanelOpacity(value: number) {
     const next = Math.min(1, Math.max(0.2, Number.isFinite(value) ? value : 1));
     this.panelOpacity = next;
     const host = document.getElementById('rastaak-studio-panel');
-    const timeline = document.getElementById('rastaak-story-timeline');
+    const sheet = this.timelinePanel?.sheetElement() ?? document.querySelector('#rastaak-story-timeline .stl-sheet');
     if (host) host.style.opacity = String(next);
-    if (timeline) timeline.style.opacity = String(next);
+    if (sheet instanceof HTMLElement) sheet.style.opacity = String(next);
+  }
+
+  private studioEdgeSvg(collapsed: boolean) {
+    return collapsed
+      ? '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M8 2L4 6l4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 
   private injectPanelCss() {
-    if (document.getElementById('rastaak-studio-panel-css')) return;
-    const style = document.createElement('style');
-    style.id = 'rastaak-studio-panel-css';
+    let style = document.getElementById('rastaak-studio-panel-css') as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'rastaak-studio-panel-css';
+      document.head.appendChild(style);
+    }
     style.textContent = `
-      #rastaak-studio-panel {
+      #rastaak-studio-dock {
         position: fixed !important;
         top: 0 !important;
         right: 0 !important;
@@ -286,13 +217,77 @@ export class SceneStudioGUI {
         width: 300px !important;
         height: 100vh !important;
         height: 100dvh !important;
-        max-height: none !important;
+        pointer-events: none !important;
+        transform: translateX(0);
+        transition: transform 0.28s ease;
+      }
+      #rastaak-studio-dock[data-collapsed='true'] {
+        transform: translateX(calc(100% - 22px));
+      }
+      #rastaak-studio-dock[data-collapsed='true'] #rastaak-studio-panel {
+        visibility: hidden;
+        pointer-events: none !important;
+      }
+      #rastaak-studio-dock .rastaak-studio-edge {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        transform: translate(-100%, -50%);
+        width: 22px;
+        height: 64px;
+        border: 1px solid rgba(255,255,255,0.14);
+        border-right: 0;
+        border-radius: 8px 0 0 8px;
+        background: rgba(12, 13, 18, 0.92);
+        color: #f3f3f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 3;
+      }
+      #rastaak-studio-dock[data-collapsed='true'] .rastaak-studio-edge {
+        transform: translate(0, -50%);
+        border-right: 1px solid rgba(255,255,255,0.14);
+        border-radius: 8px 0 0 8px;
+      }
+      #rastaak-studio-panel {
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         pointer-events: auto !important;
         background: rgba(12, 13, 18, 0.72);
+        display: flex;
+        flex-direction: column;
       }
-      #rastaak-studio-panel[hidden] { display: none !important; }
+      #rastaak-studio-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(12, 13, 18, 0.94);
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      #rastaak-studio-foldall {
+        border: 1px solid rgba(255,255,255,0.16);
+        background: rgba(255,255,255,0.08);
+        color: #f3f3f0;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font: 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
       #rastaak-studio-panel .lil-gui,
       #rastaak-studio-panel .lil-gui.root,
       #rastaak-studio-panel .rastaak-studio-gui {
@@ -304,6 +299,7 @@ export class SceneStudioGUI {
         width: 100% !important;
         max-height: none !important;
         z-index: 1 !important;
+        flex: 1 1 auto;
       }
       #rastaak-studio-panel .lil-gui:not(.root) {
         position: static !important;
@@ -312,56 +308,65 @@ export class SceneStudioGUI {
         left: auto !important;
         bottom: auto !important;
       }
-      html[data-studio='true'] #rastaak-studio-btn {
-        top: 16px !important;
-        left: 16px !important;
-        right: auto !important;
-        bottom: auto !important;
-      }
-      html[data-studio='true'] #rastaak-studio-logout {
-        top: 16px !important;
-        left: 148px !important;
-        right: auto !important;
-        bottom: auto !important;
-      }
+      html[data-studio='true'] #rastaak-studio-btn,
+      html[data-studio='true'] #rastaak-studio-logout,
       html[data-studio='true'] #rastaak-studio-opacity {
-        position: fixed;
-        top: 16px;
-        left: 250px;
-        z-index: 1000001;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        height: 36px;
-        padding: 0 12px;
-        border-radius: 999px;
-        background: rgba(12, 13, 18, 0.72);
-        color: #f3f3f0;
-        border: 1px solid rgba(255,255,255,0.12);
-        font-size: 12px;
-        pointer-events: auto;
-      }
-      html[data-studio='true'] #rastaak-studio-opacity input {
-        width: 88px;
-        accent-color: #f3f3f0;
+        display: none !important;
       }
     `;
-    document.head.appendChild(style);
   }
 
   private ensurePanelHost(): HTMLDivElement {
     this.injectPanelCss();
-    let host = document.getElementById('rastaak-studio-panel') as HTMLDivElement | null;
-    if (!host) {
-      host = document.createElement('div');
+    let dock = document.getElementById('rastaak-studio-dock') as HTMLDivElement | null;
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'rastaak-studio-dock';
+      const edge = document.createElement('button');
+      edge.type = 'button';
+      edge.className = 'rastaak-studio-edge';
+      edge.title = 'Hide 3D Studio';
+      edge.setAttribute('aria-label', 'Hide 3D Studio');
+      edge.innerHTML = this.studioEdgeSvg(false);
+      edge.addEventListener('click', () => {
+        this.setStudioCollapsed(!this.studioCollapsed);
+      });
+      const host = document.createElement('div');
       host.id = 'rastaak-studio-panel';
-      document.body.appendChild(host);
+      const toolbar = document.createElement('div');
+      toolbar.id = 'rastaak-studio-toolbar';
+      const fold = document.createElement('button');
+      fold.type = 'button';
+      fold.id = 'rastaak-studio-foldall';
+      fold.textContent = 'Expand all';
+      fold.addEventListener('click', () => this.setAllFoldersOpen(!this.foldersExpanded));
+      toolbar.appendChild(fold);
+      host.appendChild(toolbar);
+      dock.appendChild(edge);
+      dock.appendChild(host);
+      document.body.appendChild(dock);
+      this.studioEdge = edge;
+      this.foldAllBtn = fold;
+    } else {
+      this.studioEdge = dock.querySelector('.rastaak-studio-edge');
+      this.foldAllBtn = dock.querySelector('#rastaak-studio-foldall');
     }
-    return host;
+    return document.getElementById('rastaak-studio-panel') as HTMLDivElement;
   }
 
-  private syncToggleLabel() {
-    if (this.toggleButton) this.toggleButton.textContent = this.isOpen ? 'Hide panels' : 'Show panels';
+  private setAllFoldersOpen(open: boolean) {
+    const walk = (folder: { folders?: Array<{ open: () => void; close: () => void; folders?: unknown[] }> }) => {
+      const kids = folder?.folders;
+      if (!Array.isArray(kids)) return;
+      for (const child of kids) {
+        if (open) child.open();
+        else child.close();
+        walk(child);
+      }
+    };
+    if (this.gui) walk(this.gui);
+    this.foldersExpanded = open;
+    if (this.foldAllBtn) this.foldAllBtn.textContent = open ? 'Collapse all' : 'Expand all';
   }
 
   private initRaycaster() {
@@ -372,9 +377,8 @@ export class SceneStudioGUI {
       if (!this.isOpen && !this.isManualMode && !this.isOrbitMode && !this.grabMode) return;
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
-        (e.target as HTMLElement)?.id === 'rastaak-studio-btn' ||
-        (e.target as HTMLElement)?.closest('#rastaak-story-timeline') ||
-        (e.target as HTMLElement)?.closest('#rastaak-studio-opacity')
+        (e.target as HTMLElement)?.closest('#rastaak-studio-dock') ||
+        (e.target as HTMLElement)?.closest('#rastaak-story-timeline')
       ) {
         return;
       }
@@ -494,8 +498,39 @@ export class SceneStudioGUI {
       treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
       treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
     };
-    SCENE_CONFIG.materials = { ...SCENE_CONFIG.materials, ...palette, overrides: {} };
-    return collectMaterialsConfig(palette);
+    const surface = this.surfaceTouched
+      ? {
+          roughness: this.surface.roughness,
+          metalness: this.surface.metalness,
+          envMapIntensity: this.surface.envMapIntensity,
+        }
+      : undefined;
+    SCENE_CONFIG.materials = { ...SCENE_CONFIG.materials, ...palette, ...surface, overrides: {} };
+    return collectMaterialsConfig(palette, surface);
+  }
+
+  private notifyTimingChanged() {
+    this.timelinePanel?.refresh();
+    window.dispatchEvent(new CustomEvent('rastaak-studio-timing-changed'));
+  }
+
+  private async applyAndSave() {
+    window.dispatchEvent(new CustomEvent('rastaak-studio-before-save'));
+    const payload = this.buildSavePayload();
+    this.writePayloadIntoMemory(payload);
+
+    const res = await fetch('/api/save-studio-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('rastaak-studio-after-save'));
+      return;
+    }
+    throw new Error(data.error || 'Unknown error');
   }
 
   private buildSavePayload(): StudioSavePayload {
@@ -605,7 +640,7 @@ export class SceneStudioGUI {
   private async initGUI(forceOpen = false) {
     if (this.disposed) return;
     if (this.gui) {
-      if (forceOpen) this.setStudioOpen(true);
+      if (forceOpen) this.setStudioCollapsed(false);
       return;
     }
 
@@ -697,6 +732,7 @@ export class SceneStudioGUI {
 
           stopDropdownController.options(getStopNames());
           stopDropdownController.setValue(`${SCENE_CONFIG.stops.length}. ${newId}`);
+          this.notifyTimingChanged();
           alert(`Added new stop point '${newId}'!`);
         },
 
@@ -775,6 +811,7 @@ export class SceneStudioGUI {
             SCENE_CONFIG.stops[currentStopIndex].progress = val;
           }
           if (this.onProgressChange) this.onProgressChange(val);
+          this.notifyTimingChanged();
         });
 
       const camXCtrl = camFolder
@@ -880,9 +917,27 @@ export class SceneStudioGUI {
       this.populateStoryControls();
       this.populateStoryTiming();
       if (!this.timelinePanel) {
-        this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t));
+        this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t), {
+          onApply: async () => {
+            try {
+              await this.applyAndSave();
+            } catch (error: unknown) {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              alert(`Error saving config: ${message}`);
+              throw error;
+            }
+          },
+          onLogout: () => {
+            void fetch('/api/admin/logout', { method: 'POST' }).finally(() => {
+              window.location.reload();
+            });
+          },
+          onOpacity: (value) => this.applyPanelOpacity(value),
+          initialOpacity: this.panelOpacity,
+        });
         const dock = document.getElementById('admin-timeline-dock');
         this.timelinePanel.mount(dock);
+        this.timelinePanel.layout({ studioCollapsed: this.studioCollapsed });
         this.applyPanelOpacity(this.panelOpacity);
       }
 
@@ -979,32 +1034,6 @@ export class SceneStudioGUI {
 
       const exportFolder = this.gui.addFolder('Save & Export Tools');
       const exportParams = {
-        applyAndSaveToCode: async () => {
-          try {
-            window.dispatchEvent(new CustomEvent('rastaak-studio-before-save'));
-            const payload = this.buildSavePayload();
-            this.writePayloadIntoMemory(payload);
-
-            const res = await fetch('/api/save-studio-config', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-              window.dispatchEvent(new CustomEvent('rastaak-studio-after-save'));
-              alert(
-                'Saved. Camera, lights, story, hero copy, timeline, chip box, and materials were written to code. Refresh will restore this exact scene.',
-              );
-            } else {
-              alert(`Error saving config: ${data.error || 'Unknown error'}`);
-            }
-          } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : 'Unknown error';
-            alert(`Error saving config: ${message}`);
-          }
-        },
         exportSceneJSON: () => {
           if (!this.scene) return;
           const json = this.scene.toJSON();
@@ -1015,12 +1044,12 @@ export class SceneStudioGUI {
         },
       };
 
-      exportFolder.add(exportParams, 'applyAndSaveToCode').name('💾 Apply & Save directly to Code');
       exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
       if (guiEl.parentElement !== host) host.appendChild(guiEl);
-      this.setStudioOpen(true);
+      this.setAllFoldersOpen(false);
+      this.setStudioCollapsed(false);
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
@@ -1132,9 +1161,11 @@ export class SceneStudioGUI {
       titleLine1: HERO_COPY.titleLine1,
       titleLine2: HERO_COPY.titleLine2,
       titleColor: hex(HERO_COPY.titleColor),
+      titlePaddingTop: HERO_COPY.titlePaddingTop ?? 0,
       subtitleLine1: HERO_COPY.subtitleLine1,
       subtitleLine2: HERO_COPY.subtitleLine2,
       subtitleColor: hex(HERO_COPY.subtitleColor),
+      subtitlePaddingTop: HERO_COPY.subtitlePaddingTop ?? 0,
       scrollHint: HERO_COPY.scrollHint,
       scrollHintColor: hex(HERO_COPY.scrollHintColor),
     };
@@ -1384,7 +1415,6 @@ export class SceneStudioGUI {
     if (!this.gui) return;
 
     const root = this.gui.addFolder('Story Timing');
-    root.open();
 
     const playhead = { t: SCENE_CONFIG.stops[0]?.progress ?? 0 };
     root
@@ -1410,11 +1440,11 @@ export class SceneStudioGUI {
           stop.progress = clamped;
           ctrl.updateDisplay();
           this.seekStory(clamped);
+          this.notifyTimingChanged();
         });
     });
 
     const timelineFolder = root.addFolder('Timeline steps');
-    timelineFolder.open();
     const stepCtrls: Array<{ refresh: () => void }> = [];
     const refreshTimelineSteps = () => {
       stepCtrls.forEach((item) => item.refresh());
@@ -1437,6 +1467,7 @@ export class SceneStudioGUI {
           if (index > 0) FLOW_CONFIG[index - 1].progressRange[1] = next;
           refreshTimelineSteps();
           this.seekStory(next);
+          this.notifyTimingChanged();
         });
       const endCtrl = folder
         .add(row, 'end', 0, 1, 0.01)
@@ -1450,6 +1481,7 @@ export class SceneStudioGUI {
           if (index < FLOW_CONFIG.length - 1) FLOW_CONFIG[index + 1].progressRange[0] = next;
           refreshTimelineSteps();
           this.seekStory(next);
+          this.notifyTimingChanged();
         });
       folder.add(row, 'preview').name('Preview this step');
       stepCtrls.push({
@@ -1463,7 +1495,6 @@ export class SceneStudioGUI {
     });
 
     const beatsFolder = root.addFolder('Story beats');
-    beatsFolder.open();
 
     STORY_CONFIG.clients.forEach((client) => {
       const folder = beatsFolder.addFolder(client.building);
@@ -1499,6 +1530,7 @@ export class SceneStudioGUI {
           }
           syncRow();
           this.seekStory(client.appear);
+          this.notifyTimingChanged();
         });
 
       const dispatchCtrl = folder
@@ -1508,6 +1540,7 @@ export class SceneStudioGUI {
           client.dispatch = clampOrdered(value, client.appear, client.arrive - MIN_FLIGHT);
           syncRow();
           this.seekStory(client.dispatch);
+          this.notifyTimingChanged();
         });
 
       const arriveCtrl = folder
@@ -1517,6 +1550,7 @@ export class SceneStudioGUI {
           client.arrive = clampOrdered(value, client.dispatch + MIN_FLIGHT, 1);
           syncRow();
           this.seekStory(client.arrive);
+          this.notifyTimingChanged();
         });
 
       const flightCtrl = folder
@@ -1527,6 +1561,7 @@ export class SceneStudioGUI {
           client.arrive = client.dispatch + duration;
           syncRow();
           this.seekStory(client.arrive);
+          this.notifyTimingChanged();
         });
 
       folder.add(row, 'previewRed').name('Preview — turns red');
@@ -1555,6 +1590,7 @@ export class SceneStudioGUI {
           caption.range[0] = clampOrdered(value, 0, caption.range[1] - 0.01);
           sync();
           this.seekStory(caption.range[0]);
+          this.notifyTimingChanged();
         });
       const endCtrl = folder
         .add(row, 'end', 0, 1, 0.01)
@@ -1563,6 +1599,7 @@ export class SceneStudioGUI {
           caption.range[1] = clampOrdered(value, caption.range[0] + 0.01, 1);
           sync();
           this.seekStory(caption.range[1]);
+          this.notifyTimingChanged();
         });
       folder.add(row, 'preview').name('Preview start');
     });
@@ -1576,6 +1613,7 @@ export class SceneStudioGUI {
       .name('Chip hold after arrive')
       .onChange((value: number) => {
         STORY_CONFIG.chipHoldAfterArrive = clamp01(value);
+        this.notifyTimingChanged();
       });
     root
       .add(hold, 'captionFadeIn', 0, 0.3, 0.01)
@@ -1590,7 +1628,6 @@ export class SceneStudioGUI {
     this.lightsFolderPopulated = true;
 
     const lightFolder = this.gui.addFolder('Lighting Controller');
-    lightFolder.open();
 
     const view = {
       showGizmos: this.showGizmos,
@@ -1612,7 +1649,6 @@ export class SceneStudioGUI {
 
     for (const [id, light] of this.lightsMap.entries()) {
       const sub = lightFolder.addFolder(id);
-      if (isAreaLight(light)) sub.open();
       const isPt = isPointLight(light);
       const isSpot = isSpotLight(light);
       const isArea = isAreaLight(light);
@@ -1907,20 +1943,38 @@ export class SceneStudioGUI {
     const matFolder = this.gui.addFolder('Scene colors');
     this.materialsFolderPopulated = true;
 
+    const sampleMat =
+      groups.building[0] || groups.ground[0] || groups.plate[0] || groups.window[0];
+    if (!this.surfaceTouched && sampleMat) {
+      if (typeof sampleMat.roughness === 'number') this.surface.roughness = sampleMat.roughness;
+      if (typeof sampleMat.metalness === 'number') this.surface.metalness = sampleMat.metalness;
+      if (typeof sampleMat.envMapIntensity === 'number') this.surface.envMapIntensity = sampleMat.envMapIntensity;
+    }
+
     const persistPalette = () => {
+      const surface = this.surfaceTouched
+        ? {
+            roughness: this.surface.roughness,
+            metalness: this.surface.metalness,
+            envMapIntensity: this.surface.envMapIntensity,
+          }
+        : undefined;
       SCENE_CONFIG.materials = {
         ...SCENE_CONFIG.materials,
-        ...collectMaterialsConfig({
-          buildingColor: new THREE.Color(this.palette.building).getHex(),
-          windowColor: new THREE.Color(this.palette.window).getHex(),
-          rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
-          logoColor: new THREE.Color(this.palette.logo).getHex(),
-          groundColor: new THREE.Color(this.palette.ground).getHex(),
-          plateColor: new THREE.Color(this.palette.plate).getHex(),
-          borderColor: new THREE.Color(this.palette.border).getHex(),
-          treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
-          treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
-        }),
+        ...collectMaterialsConfig(
+          {
+            buildingColor: new THREE.Color(this.palette.building).getHex(),
+            windowColor: new THREE.Color(this.palette.window).getHex(),
+            rastaakColor: new THREE.Color(this.palette.rastaak).getHex(),
+            logoColor: new THREE.Color(this.palette.logo).getHex(),
+            groundColor: new THREE.Color(this.palette.ground).getHex(),
+            plateColor: new THREE.Color(this.palette.plate).getHex(),
+            borderColor: new THREE.Color(this.palette.border).getHex(),
+            treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
+            treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
+          },
+          surface,
+        ),
       };
     };
 
@@ -1942,6 +1996,23 @@ export class SceneStudioGUI {
     matFolder.addColor(this.palette, 'border').name('Ground borders').onChange((hex: string) => paint('border', hex));
     matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
     matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));
+
+    const applySurface = () => {
+      this.surfaceTouched = true;
+      const groupsNow = liveGroups();
+      (Object.keys(groupsNow) as Array<keyof typeof groupsNow>).forEach((category) => {
+        applyCategorySurface(groupsNow[category], this.surface);
+      });
+      persistPalette();
+      this.broadcastLive();
+      window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
+    };
+    matFolder.add(this.surface, 'metalness', 0, 1, 0.01).name('Metalness').onChange(applySurface);
+    matFolder.add(this.surface, 'roughness', 0, 1, 0.01).name('Roughness').onChange(applySurface);
+    matFolder
+      .add(this.surface, 'envMapIntensity', 0, 3, 0.05)
+      .name('Reflection')
+      .onChange(applySurface);
 
     persistPalette();
   }
@@ -1970,26 +2041,23 @@ export class SceneStudioGUI {
       void this.initGUI(true);
       return;
     }
-    this.setStudioOpen(!this.isOpen);
+    this.setStudioCollapsed(!this.studioCollapsed);
   };
 
-  private setStudioOpen(open: boolean) {
-    this.isOpen = open;
-    const host = document.getElementById('rastaak-studio-panel');
-    if (host) host.hidden = !open;
-    if (this.gui) {
-      if (open) {
-        this.gui.show();
-        this.gui.open();
-      } else {
-        this.gui.hide();
-      }
+  private setStudioCollapsed(collapsed: boolean) {
+    this.studioCollapsed = collapsed;
+    this.isOpen = !collapsed;
+    const dock = document.getElementById('rastaak-studio-dock');
+    if (dock) dock.dataset.collapsed = collapsed ? 'true' : 'false';
+    if (this.studioEdge) {
+      this.studioEdge.title = collapsed ? 'Show 3D Studio' : 'Hide 3D Studio';
+      this.studioEdge.setAttribute('aria-label', this.studioEdge.title);
+      this.studioEdge.innerHTML = this.studioEdgeSvg(collapsed);
     }
-    this.timelinePanel?.setVisible(open);
-    this.syncToggleLabel();
+    this.timelinePanel?.layout({ studioCollapsed: collapsed });
     this.syncGizmoVisibility();
-    if (!open) this.setGrabMode(false);
-    window.dispatchEvent(new CustomEvent('rastaak-studio-open', { detail: { open } }));
+    if (collapsed) this.setGrabMode(false);
+    window.dispatchEvent(new CustomEvent('rastaak-studio-open', { detail: { open: !collapsed } }));
   }
 
   private syncGizmoVisibility() {
@@ -2027,23 +2095,17 @@ export class SceneStudioGUI {
       window.removeEventListener('pointerdown', this.pointerHandler, true);
       this.pointerHandler = null;
     }
-    if (this.toggleButton) {
-      this.toggleButton.remove();
-      this.toggleButton = null;
-    }
-    if (this.logoutButton) {
-      this.logoutButton.remove();
-      this.logoutButton = null;
-    }
-    if (this.opacityControl) {
-      this.opacityControl.remove();
-      this.opacityControl = null;
-    }
+    document.getElementById('rastaak-studio-btn')?.remove();
+    document.getElementById('rastaak-studio-logout')?.remove();
+    document.getElementById('rastaak-studio-opacity')?.remove();
     if (this.gui) {
       this.gui.destroy();
       this.gui = null;
     }
+    document.getElementById('rastaak-studio-dock')?.remove();
     document.getElementById('rastaak-studio-panel')?.remove();
+    this.studioEdge = null;
+    this.foldAllBtn = null;
     this.lightGizmos?.dispose();
     this.lightGizmos = null;
     this.lightUi.clear();

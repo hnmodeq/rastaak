@@ -51,6 +51,9 @@ export interface MaterialsConfig {
   globalFacadeMetalness?: number;
   globalWindowRoughness?: number;
   globalWindowMetalness?: number;
+  roughness?: number;
+  metalness?: number;
+  envMapIntensity?: number;
   overrides?: Record<string, BuildingMaterialOverride>;
 }
 

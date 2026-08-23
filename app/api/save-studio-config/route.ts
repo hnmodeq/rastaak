@@ -202,6 +202,15 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         treeLeafColor: hexLit(asHexNumber(body.materials?.treeLeafColor, 0x3d6b3a)),
         globalFacadeColor: hexLit(asHexNumber(body.materials?.buildingColor ?? body.materials?.globalFacadeColor, 0xa3a3a3)),
         globalWindowColor: hexLit(asHexNumber(body.materials?.windowColor ?? body.materials?.globalWindowColor, 0xffffff)),
+        ...(body.materials?.roughness !== undefined
+          ? { roughness: Math.min(1, Math.max(0, asFinite(body.materials.roughness, 0.72))) }
+          : {}),
+        ...(body.materials?.metalness !== undefined
+          ? { metalness: Math.min(1, Math.max(0, asFinite(body.materials.metalness, 0.04))) }
+          : {}),
+        ...(body.materials?.envMapIntensity !== undefined
+          ? { envMapIntensity: Math.min(5, Math.max(0, asFinite(body.materials.envMapIntensity, 1))) }
+          : {}),
         overrides: {},
       };
 

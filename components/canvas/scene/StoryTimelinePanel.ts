@@ -5,6 +5,7 @@ import { FLOW_CONFIG } from '@/components/home/flowConfig';
 const MIN_FLIGHT = 0.02;
 const MIN_SPAN = 0.01;
 const LABEL_W = 118;
+const TIMING_EVENT = 'rastaak-studio-timing-changed';
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0));
@@ -35,22 +36,38 @@ type TimingSnapshot = {
   chipHoldAfterArrive: number;
 };
 
+export type StoryTimelineChrome = {
+  onApply?: () => void | Promise<void>;
+  onLogout?: () => void;
+  onOpacity?: (value: number) => void;
+  initialOpacity?: number;
+};
+
 export class StoryTimelinePanel {
   private root: HTMLDivElement | null = null;
+  private sheet: HTMLDivElement | null = null;
   private lanes: HTMLDivElement | null = null;
   private needle: HTMLDivElement | null = null;
   private readout: HTMLSpanElement | null = null;
   private undoBtn: HTMLButtonElement | null = null;
   private redoBtn: HTMLButtonElement | null = null;
+  private applyBtn: HTMLButtonElement | null = null;
+  private edgeBtn: HTMLButtonElement | null = null;
   private playhead = 0;
   private dragging: DragState | null = null;
   private undoStack: TimingSnapshot[] = [];
   private redoStack: TimingSnapshot[] = [];
   private dragSnapshot: TimingSnapshot | null = null;
+  private collapsed = false;
+  private studioCollapsed = false;
   private onFrame = (event: Event) => {
     const detail = (event as CustomEvent<StoryFrame>).detail;
     if (!detail || this.dragging) return;
     this.setPlayhead(detail.t);
+  };
+  private onTiming = () => {
+    if (this.dragging) return;
+    this.paint();
   };
   private onPointerMove = (event: PointerEvent) => this.handleMove(event);
   private onPointerUp = () => {
@@ -67,7 +84,7 @@ export class StoryTimelinePanel {
     this.syncUndoButtons();
   };
   private onKeyDown = (event: KeyboardEvent) => {
-    if (!this.root || this.root.style.display === 'none') return;
+    if (!this.root || this.collapsed) return;
     const target = event.target as HTMLElement | null;
     if (target?.closest('input, textarea, select')) return;
     const key = event.key.toLowerCase();
@@ -85,7 +102,10 @@ export class StoryTimelinePanel {
     }
   };
 
-  constructor(private onSeek: (t: number) => void) {}
+  constructor(
+    private onSeek: (t: number) => void,
+    private chrome: StoryTimelineChrome = {},
+  ) {}
 
   mount(host?: HTMLElement | null) {
     if (typeof document === 'undefined' || this.root) return;
@@ -94,35 +114,61 @@ export class StoryTimelinePanel {
     root.id = 'rastaak-story-timeline';
     if (host) root.dataset.docked = 'true';
     root.innerHTML = `
-      <div class="stl-head">
-        <strong>Story Timeline</strong>
-        <div class="stl-actions">
-          <button type="button" data-undo>Undo</button>
-          <button type="button" data-redo>Redo</button>
-          <span data-readout>t 0.00</span>
+      <button type="button" class="stl-edge" title="Hide story timeline" aria-label="Hide story timeline">
+        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="stl-sheet">
+        <div class="stl-head">
+          <strong>Story Timeline</strong>
+          <div class="stl-actions">
+            <button type="button" data-undo>Undo</button>
+            <button type="button" data-redo>Redo</button>
+            <button type="button" data-apply>Apply &amp; Save</button>
+            <label class="stl-opacity" title="Panel opacity">
+              <span>Opacity</span>
+              <input type="range" min="0.2" max="1" step="0.05" value="${this.chrome.initialOpacity ?? 1}" />
+            </label>
+            <button type="button" data-logout>Log out</button>
+            <span data-readout>t 0.00</span>
+          </div>
         </div>
+        <div class="stl-legend">
+          <i class="stl-swatch" style="background:#6f0000"></i>red
+          <i class="stl-swatch" style="background:#1c6bff"></i>logo
+          <i class="stl-swatch" style="background:#7a5cff"></i>page
+          <i class="stl-swatch" style="background:#c9a227"></i>camera
+        </div>
+        <div class="stl-lanes"></div>
       </div>
-      <div class="stl-legend">
-        <i class="stl-swatch" style="background:#6f0000"></i>red
-        <i class="stl-swatch" style="background:#1c6bff"></i>logo
-        <i class="stl-swatch" style="background:#7a5cff"></i>page
-        <i class="stl-swatch" style="background:#c9a227"></i>camera
-      </div>
-      <div class="stl-lanes"></div>
     `;
     this.injectCss();
     (host ?? document.body).appendChild(root);
     this.root = root;
+    this.sheet = root.querySelector('.stl-sheet');
     this.lanes = root.querySelector('.stl-lanes');
     this.readout = root.querySelector('[data-readout]');
     this.undoBtn = root.querySelector('[data-undo]');
     this.redoBtn = root.querySelector('[data-redo]');
+    this.applyBtn = root.querySelector('[data-apply]');
+    this.edgeBtn = root.querySelector('.stl-edge');
     this.undoBtn?.addEventListener('click', () => this.undo());
     this.redoBtn?.addEventListener('click', () => this.redo());
+    this.applyBtn?.addEventListener('click', () => {
+      void this.handleApply();
+    });
+    root.querySelector('[data-logout]')?.addEventListener('click', () => {
+      this.chrome.onLogout?.();
+    });
+    const opacityInput = root.querySelector<HTMLInputElement>('.stl-opacity input');
+    opacityInput?.addEventListener('input', () => {
+      this.chrome.onOpacity?.(Number(opacityInput.value));
+    });
+    this.edgeBtn?.addEventListener('click', () => this.setCollapsed(!this.collapsed));
     this.layout();
     this.paint();
     this.syncUndoButtons();
     window.addEventListener(STORY_FRAME_EVENT, this.onFrame);
+    window.addEventListener(TIMING_EVENT, this.onTiming);
     window.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('pointercancel', this.onPointerUp);
@@ -137,31 +183,81 @@ export class StoryTimelinePanel {
   }
 
   setVisible(visible: boolean) {
+    if (!visible) this.setCollapsed(true);
+    else this.setCollapsed(false);
+  }
+
+  setCollapsed(collapsed: boolean) {
+    this.collapsed = collapsed;
     if (!this.root) return;
-    this.root.style.display = visible ? 'flex' : 'none';
-    if (visible) {
+    this.root.dataset.collapsed = collapsed ? 'true' : 'false';
+    if (this.edgeBtn) {
+      this.edgeBtn.title = collapsed ? 'Show story timeline' : 'Hide story timeline';
+      this.edgeBtn.setAttribute('aria-label', this.edgeBtn.title);
+      this.edgeBtn.innerHTML = collapsed
+        ? '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    if (!collapsed) {
       this.layout();
       this.paint();
     }
   }
 
-  layout() {
+  isCollapsed() {
+    return this.collapsed;
+  }
+
+  sheetElement() {
+    return this.sheet;
+  }
+
+  layout(opts?: { studioCollapsed?: boolean }) {
+    if (opts?.studioCollapsed !== undefined) this.studioCollapsed = opts.studioCollapsed;
     if (!this.root) return;
     this.root.style.left = '16px';
-    this.root.style.right = '312px';
+    this.root.style.right = this.studioCollapsed ? '36px' : '312px';
+  }
+
+  refresh() {
+    this.paint();
   }
 
   destroy() {
     window.removeEventListener(STORY_FRAME_EVENT, this.onFrame);
+    window.removeEventListener(TIMING_EVENT, this.onTiming);
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerup', this.onPointerUp);
     window.removeEventListener('pointercancel', this.onPointerUp);
     window.removeEventListener('keydown', this.onKeyDown);
     this.root?.remove();
     this.root = null;
+    this.sheet = null;
     this.lanes = null;
     this.needle = null;
     this.readout = null;
+    this.applyBtn = null;
+    this.edgeBtn = null;
+  }
+
+  private async handleApply() {
+    if (!this.applyBtn || !this.chrome.onApply) return;
+    const previous = this.applyBtn.textContent;
+    this.applyBtn.disabled = true;
+    this.applyBtn.textContent = 'Saving…';
+    try {
+      await this.chrome.onApply();
+      this.applyBtn.textContent = 'Saved';
+      window.setTimeout(() => {
+        if (this.applyBtn && this.applyBtn.textContent === 'Saved') {
+          this.applyBtn.textContent = previous || 'Apply & Save';
+        }
+      }, 1400);
+    } catch {
+      this.applyBtn.textContent = previous || 'Apply & Save';
+    } finally {
+      this.applyBtn.disabled = false;
+    }
   }
 
   private needleLeft(t: number): string {
@@ -212,6 +308,7 @@ export class StoryTimelinePanel {
     });
     STORY_CONFIG.chipHoldAfterArrive = snapshot.chipHoldAfterArrive;
     this.paint();
+    window.dispatchEvent(new CustomEvent(TIMING_EVENT));
   }
 
   private undo() {
@@ -485,43 +582,93 @@ export class StoryTimelinePanel {
   }
 
   private injectCss() {
-    if (document.getElementById('rastaak-story-timeline-css')) return;
-    const style = document.createElement('style');
-    style.id = 'rastaak-story-timeline-css';
+    let style = document.getElementById('rastaak-story-timeline-css') as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'rastaak-story-timeline-css';
+      document.head.appendChild(style);
+    }
     style.textContent = `
       #rastaak-story-timeline {
         position: fixed;
         left: 16px;
         right: 312px;
-        bottom: 16px;
+        bottom: 0;
         top: auto;
-        height: min(268px, 34vh);
+        height: auto;
         width: auto;
         z-index: 999998;
-        display: none;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        color: #f3f3f0;
+        border: 0;
+        box-shadow: none;
+        pointer-events: none;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        transform: translateY(0);
+        transition: transform 0.28s ease, right 0.28s ease;
+      }
+      #rastaak-story-timeline .stl-sheet {
+        display: flex;
         flex-direction: column;
         gap: 8px;
-        padding: 10px 12px 12px;
+        margin: 0 0 12px;
+        padding: 12px 14px 14px;
         border-radius: 14px;
         background: rgba(12, 13, 18, 0.92);
-        color: #f3f3f0;
         border: 1px solid rgba(255,255,255,0.12);
         box-shadow: 0 16px 40px rgba(0,0,0,0.28);
         backdrop-filter: blur(14px);
         pointer-events: auto;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      #rastaak-story-timeline .stl-edge {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -100%);
+        width: 56px;
+        height: 22px;
+        border: 1px solid rgba(255,255,255,0.14);
+        border-bottom: 0;
+        border-radius: 8px 8px 0 0;
+        background: rgba(12, 13, 18, 0.92);
+        color: #f3f3f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 2;
+      }
+      #rastaak-story-timeline[data-collapsed='true'] {
+        transform: translateY(calc(100% - 22px));
+      }
+      #rastaak-story-timeline[data-collapsed='true'] .stl-sheet {
+        visibility: hidden;
+        pointer-events: none;
+      }
+      #rastaak-story-timeline[data-collapsed='true'] .stl-edge {
+        transform: translate(-50%, 0);
+        border-radius: 8px 8px 0 0;
+        border-bottom: 1px solid rgba(255,255,255,0.14);
       }
       #rastaak-story-timeline .stl-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 10px;
         font-size: 12px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
+        flex-wrap: wrap;
       }
       #rastaak-story-timeline .stl-actions {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
       }
       #rastaak-story-timeline .stl-actions button {
@@ -536,9 +683,25 @@ export class StoryTimelinePanel {
         text-transform: uppercase;
         cursor: pointer;
       }
+      #rastaak-story-timeline .stl-actions button[data-apply] {
+        background: rgba(56, 132, 255, 0.28);
+        border-color: rgba(120, 170, 255, 0.45);
+      }
       #rastaak-story-timeline .stl-actions button:disabled {
         opacity: 0.35;
         cursor: default;
+      }
+      #rastaak-story-timeline .stl-opacity {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      #rastaak-story-timeline .stl-opacity input {
+        width: 78px;
+        accent-color: #f3f3f0;
       }
       #rastaak-story-timeline .stl-legend {
         display: flex;
@@ -556,8 +719,8 @@ export class StoryTimelinePanel {
       }
       #rastaak-story-timeline .stl-lanes {
         position: relative;
-        flex: 1;
-        overflow: auto;
+        flex: 0 0 auto;
+        overflow: visible;
         display: flex;
         flex-direction: column;
         gap: 7px;
@@ -646,9 +809,8 @@ export class StoryTimelinePanel {
         height: 100%;
         max-height: none;
         z-index: 1;
-        border-radius: 18px;
+        transform: none;
       }
     `;
-    document.head.appendChild(style);
   }
 }
