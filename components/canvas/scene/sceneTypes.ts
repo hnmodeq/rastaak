@@ -93,6 +93,13 @@ export interface LookConfigSave {
   grain: number;
   grainSize: number;
   vignette: number;
+  vignetteStart?: number;
+  vignetteSoft?: number;
+  bloom?: number;
+  bloomRadius?: number;
+  gradeShadows?: number;
+  gradeMids?: number;
+  gradeHighlights?: number;
 }
 
 export interface SceneConfig {

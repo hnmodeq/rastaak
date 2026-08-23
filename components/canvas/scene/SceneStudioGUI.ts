@@ -1260,6 +1260,13 @@ export class SceneStudioGUI {
         grain: LOOK_CONFIG.grain,
         grainSize: LOOK_CONFIG.grainSize,
         vignette: LOOK_CONFIG.vignette,
+        vignetteStart: LOOK_CONFIG.vignetteStart ?? 0.42,
+        vignetteSoft: LOOK_CONFIG.vignetteSoft ?? 0.55,
+        bloom: LOOK_CONFIG.bloom ?? 0.4,
+        bloomRadius: LOOK_CONFIG.bloomRadius ?? 0.55,
+        gradeShadows: LOOK_CONFIG.gradeShadows ?? 0,
+        gradeMids: LOOK_CONFIG.gradeMids ?? 0,
+        gradeHighlights: LOOK_CONFIG.gradeHighlights ?? 0,
       };
       const applyLook = () => {
         LOOK_CONFIG.envEnabled = lookParams.envEnabled;
@@ -1267,15 +1274,29 @@ export class SceneStudioGUI {
         LOOK_CONFIG.grain = lookParams.grain;
         LOOK_CONFIG.grainSize = lookParams.grainSize;
         LOOK_CONFIG.vignette = lookParams.vignette;
+        LOOK_CONFIG.vignetteStart = lookParams.vignetteStart;
+        LOOK_CONFIG.vignetteSoft = lookParams.vignetteSoft;
+        LOOK_CONFIG.bloom = lookParams.bloom;
+        LOOK_CONFIG.bloomRadius = lookParams.bloomRadius;
+        LOOK_CONFIG.gradeShadows = lookParams.gradeShadows;
+        LOOK_CONFIG.gradeMids = lookParams.gradeMids;
+        LOOK_CONFIG.gradeHighlights = lookParams.gradeHighlights;
         applySceneEnvironment(this.scene, this.renderer);
         applyLookOverlay();
         this.broadcastLive();
       };
       lookFolder.add(lookParams, 'envEnabled').name('Environment reflections').onChange(applyLook);
       lookFolder.add(lookParams, 'envIntensity', 0, 3, 0.05).name('Reflection strength').onChange(applyLook);
+      lookFolder.add(lookParams, 'bloom', 0, 2, 0.02).name('Story light bloom').onChange(applyLook);
+      lookFolder.add(lookParams, 'bloomRadius', 0.15, 1.2, 0.02).name('Bloom size').onChange(applyLook);
+      lookFolder.add(lookParams, 'gradeShadows', 0, 0.5, 0.01).name('Grade shadows').onChange(applyLook);
+      lookFolder.add(lookParams, 'gradeMids', -0.4, 0.5, 0.01).name('Grade contrast').onChange(applyLook);
+      lookFolder.add(lookParams, 'gradeHighlights', 0, 0.4, 0.01).name('Grade highlights').onChange(applyLook);
       lookFolder.add(lookParams, 'grain', 0, 0.45, 0.01).name('Film grain').onChange(applyLook);
       lookFolder.add(lookParams, 'grainSize', 0.5, 2.5, 0.05).name('Grain size').onChange(applyLook);
       lookFolder.add(lookParams, 'vignette', 0, 0.8, 0.01).name('Vignette').onChange(applyLook);
+      lookFolder.add(lookParams, 'vignetteStart', 0.15, 0.7, 0.01).name('Vignette start').onChange(applyLook);
+      lookFolder.add(lookParams, 'vignetteSoft', 0.2, 0.85, 0.01).name('Vignette softness').onChange(applyLook);
 
       this.setAllFoldersOpen(false);
       this.setStudioCollapsed(true);
@@ -2414,6 +2435,7 @@ export class SceneStudioGUI {
       siteContent: SITE_CONTENT,
       cameraStops: SCENE_CONFIG.stops,
       scroll: SCENE_CONFIG.scroll,
+      look: LOOK_CONFIG,
     });
   }
 

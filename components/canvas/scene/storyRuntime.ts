@@ -10,6 +10,7 @@ import {
 } from './storyConfig';
 import { classifyRole, getMeshMaterials, resolvePalette } from './materialKeys';
 import { SCENE_CONFIG } from './sceneConfig';
+import { markStoryBloom } from './lookConfig';
 
 interface TrackedSlot {
   mat: THREE.MeshStandardMaterial;
@@ -463,6 +464,15 @@ function createPacketRig(): PacketRig {
     }),
   );
   group.add(trail);
+
+  markStoryBloom(core);
+  markStoryBloom(glowInner);
+  markStoryBloom(glowOuter);
+  markStoryBloom(sparks);
+  markStoryBloom(burstCore);
+  markStoryBloom(burstRing);
+  markStoryBloom(burstSparks);
+  markStoryBloom(trail);
 
   return {
     group,

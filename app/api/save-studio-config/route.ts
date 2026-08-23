@@ -883,6 +883,13 @@ export function applyTypeChrome() {
         grain: Math.min(0.55, Math.max(0, asFinite(rawLook.grain, 0))),
         grainSize: Math.min(3, Math.max(0.4, asFinite(rawLook.grainSize, 1.15))),
         vignette: Math.min(0.9, Math.max(0, asFinite(rawLook.vignette, 0))),
+        vignetteStart: Math.min(0.75, Math.max(0.12, asFinite(rawLook.vignetteStart, 0.42))),
+        vignetteSoft: Math.min(0.85, Math.max(0.15, asFinite(rawLook.vignetteSoft, 0.55))),
+        bloom: Math.min(2, Math.max(0, asFinite(rawLook.bloom, 0.4))),
+        bloomRadius: Math.min(1.4, Math.max(0.15, asFinite(rawLook.bloomRadius, 0.55))),
+        gradeShadows: Math.min(0.55, Math.max(0, asFinite(rawLook.gradeShadows, 0))),
+        gradeMids: Math.min(0.5, Math.max(-0.4, asFinite(rawLook.gradeMids, 0))),
+        gradeHighlights: Math.min(0.45, Math.max(0, asFinite(rawLook.gradeHighlights, 0))),
       };
       const lookPath = path.join(rootDir, 'components', 'canvas', 'scene', 'lookConfig.ts');
       const existing = fs.readFileSync(lookPath, 'utf8');

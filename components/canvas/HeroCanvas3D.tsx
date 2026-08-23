@@ -24,6 +24,8 @@ import { subscribeLive } from '@/components/live/liveChannel';
 import type { LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
 import {
   LOOK_CONFIG,
+  LookComposer,
+  STORY_BLOOM_LAYER,
   applyLookOverlay,
   applySceneEnvironment,
   disposeSceneEnvironment,
@@ -64,6 +66,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       camConfig.near,
       camConfig.far,
     );
+    camera.layers.enable(STORY_BLOOM_LAYER);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(viewW(), viewH());
@@ -72,6 +75,8 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     renderer.toneMappingExposure = SCENE_CONFIG.renderer.toneMappingExposure ?? 1.15;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    const lookPost = new LookComposer(renderer);
+    lookPost.setSize(viewW(), viewH());
 
     host.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
@@ -429,6 +434,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       camera.aspect = viewW() / viewH();
       camera.updateProjectionMatrix();
       renderer.setSize(viewW(), viewH(), false);
+      lookPost.setSize(viewW(), viewH());
       handleScroll();
     };
     window.addEventListener('resize', handleResize);
@@ -534,6 +540,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       studioGUI?.tick();
       tickLookOverlay(elapsed);
       renderer.render(scene, camera);
+      lookPost.composite(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -576,6 +583,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         world = null;
       }
 
+      lookPost.dispose();
       dracoLoader.dispose();
       renderer.dispose();
 
