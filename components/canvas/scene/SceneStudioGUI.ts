@@ -80,7 +80,11 @@ export class SceneStudioGUI {
   private lightGizmos: LightGizmoSet | null = null;
   private cameraGizmos: CameraGizmoSet | null = null;
   private showLightGizmos = true;
-  private showCameraGizmos = true;
+  private showCamGizmo = true;
+  private showTargetGizmo = true;
+  private showCamPath = true;
+  private showTargetPath = true;
+  private cameraPathMode: 'Full path' | 'Current segment' = 'Full path';
   private grabMode = false;
   private grabCamera = false;
   private preGrabOrbit = false;
@@ -892,7 +896,11 @@ export class SceneStudioGUI {
         targetY: SCENE_CONFIG.stops[0]?.target[1] ?? 2.0,
         targetZ: SCENE_CONFIG.stops[0]?.target[2] ?? 0.0,
         fov: SCENE_CONFIG.stops[0]?.fov ?? 45,
-        showCameraGizmos: this.showCameraGizmos,
+        showCamGizmo: this.showCamGizmo,
+        showTargetGizmo: this.showTargetGizmo,
+        showCamPath: this.showCamPath,
+        showTargetPath: this.showTargetPath,
+        cameraPathMode: this.cameraPathMode,
         grabCamera: this.grabCamera,
 
         addNewStop: () => {
@@ -945,10 +953,38 @@ export class SceneStudioGUI {
         });
 
       camFolder
-        .add(camParams, 'showCameraGizmos')
-        .name('Show camera gizmos')
+        .add(camParams, 'showCamGizmo')
+        .name('Show camera gizmo')
         .onChange((value: boolean) => {
-          this.showCameraGizmos = value;
+          this.showCamGizmo = value;
+          this.syncGizmoVisibility();
+        });
+      camFolder
+        .add(camParams, 'showTargetGizmo')
+        .name('Show target gizmo')
+        .onChange((value: boolean) => {
+          this.showTargetGizmo = value;
+          this.syncGizmoVisibility();
+        });
+      camFolder
+        .add(camParams, 'showCamPath')
+        .name('Show camera path')
+        .onChange((value: boolean) => {
+          this.showCamPath = value;
+          this.syncGizmoVisibility();
+        });
+      camFolder
+        .add(camParams, 'showTargetPath')
+        .name('Show target path')
+        .onChange((value: boolean) => {
+          this.showTargetPath = value;
+          this.syncGizmoVisibility();
+        });
+      camFolder
+        .add(camParams, 'cameraPathMode', ['Full path', 'Current segment'])
+        .name('Path range')
+        .onChange((value: 'Full path' | 'Current segment') => {
+          this.cameraPathMode = value;
           this.syncGizmoVisibility();
         });
       camFolder
@@ -2414,9 +2450,20 @@ export class SceneStudioGUI {
     return this.grabMode || this.grabCamera;
   }
 
+  private anyCameraOverlay() {
+    return this.showCamGizmo || this.showTargetGizmo || this.showCamPath || this.showTargetPath;
+  }
+
   private syncGizmoVisibility() {
     this.lightGizmos?.setVisible(this.isOpen && this.showLightGizmos);
-    this.cameraGizmos?.setVisible(this.isOpen && this.showCameraGizmos);
+    this.cameraGizmos?.setVisible(this.isOpen && this.anyCameraOverlay());
+    this.cameraGizmos?.setDisplay({
+      camGizmo: this.showCamGizmo,
+      targetGizmo: this.showTargetGizmo,
+      camPath: this.showCamPath,
+      targetPath: this.showTargetPath,
+      pathMode: this.cameraPathMode === 'Current segment' ? 'segment' : 'full',
+    });
   }
 
   private applyGrabChrome(wasGrabbing: boolean) {
@@ -2454,14 +2501,14 @@ export class SceneStudioGUI {
   public tick() {
     this.lightGizmos?.syncAll();
     if (!this.cameraGizmos) return;
-    this.cameraGizmos.syncPath(SCENE_CONFIG.stops);
+    this.cameraGizmos.syncPath(SCENE_CONFIG.stops, this.playheadT);
     const aspect = this.camera.aspect;
     if (this.grabCamera) {
       const stop = SCENE_CONFIG.stops[this.currentStopIndex];
       if (stop) this.cameraGizmos.sync(stop, aspect);
       return;
     }
-    if (this.isOrbitMode && this.showCameraGizmos) {
+    if (this.isOrbitMode && this.anyCameraOverlay()) {
       sampleSceneJourney(this.playheadT, this.journeySample);
       this.cameraGizmos.syncPose(this.journeySample, aspect);
       return;
