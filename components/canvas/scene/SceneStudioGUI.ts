@@ -1660,6 +1660,9 @@ export class SceneStudioGUI {
         dispatch: client.dispatch,
         arrive: client.arrive,
         flight: Math.max(MIN_FLIGHT, client.arrive - client.dispatch),
+        landX: client.land?.[0] ?? 0,
+        landY: client.land?.[1] ?? 0,
+        landZ: client.land?.[2] ?? 0,
         previewRed: () => this.seekStory(client.appear),
         previewBlue: () => this.seekStory(resolveAt(client)),
         previewLaunch: () => this.seekStory(client.dispatch),
@@ -1673,11 +1676,17 @@ export class SceneStudioGUI {
         row.dispatch = client.dispatch;
         row.arrive = client.arrive;
         row.flight = Math.max(MIN_FLIGHT, client.arrive - client.dispatch);
+        row.landX = client.land?.[0] ?? 0;
+        row.landY = client.land?.[1] ?? 0;
+        row.landZ = client.land?.[2] ?? 0;
         appearCtrl.updateDisplay();
         resolveCtrl.updateDisplay();
         dispatchCtrl.updateDisplay();
         arriveCtrl.updateDisplay();
         flightCtrl.updateDisplay();
+        landXCtrl.updateDisplay();
+        landYCtrl.updateDisplay();
+        landZCtrl.updateDisplay();
       };
 
       const appearCtrl = folder
@@ -1735,6 +1744,23 @@ export class SceneStudioGUI {
           this.seekStory(client.arrive);
           this.notifyTimingChanged();
         });
+
+      const writeLand = () => {
+        client.land = [row.landX, row.landY, row.landZ];
+        this.seekStory(client.arrive);
+      };
+      const landXCtrl = folder
+        .add(row, 'landX', -8, 8, 0.05)
+        .name('Land X')
+        .onChange(writeLand);
+      const landYCtrl = folder
+        .add(row, 'landY', -6, 8, 0.05)
+        .name('Land Y')
+        .onChange(writeLand);
+      const landZCtrl = folder
+        .add(row, 'landZ', -8, 8, 0.05)
+        .name('Land Z')
+        .onChange(writeLand);
 
       folder.add(row, 'previewRed').name('Preview — turns red');
       folder.add(row, 'previewBlue').name('Preview — turns blue');

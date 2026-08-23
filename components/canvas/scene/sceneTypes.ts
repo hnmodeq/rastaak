@@ -132,6 +132,7 @@ export interface StudioStorySave {
     dispatch: number;
     arrive: number;
     resolve?: number;
+    land?: [number, number, number];
   }>;
   captions: Array<{ id: string; text: string; range: [number, number] }>;
   chipHoldAfterArrive: number;

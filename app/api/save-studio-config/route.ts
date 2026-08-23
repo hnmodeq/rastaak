@@ -322,6 +322,7 @@ export const SCENE_CONFIG: SceneConfig = {
             client?.resolve,
             asFinite(client?.arrive, 0.24),
           ),
+          land: asVec3(client?.land, [0, 0, 0]),
         })),
         captions: rawCaptions.map((caption, index) => ({
           id: sanitizeId(caption?.id, `caption_${index + 1}`),
@@ -369,6 +370,7 @@ export interface StoryClientConfig {
   dispatch: number;
   arrive: number;
   resolve?: number;
+  land?: [number, number, number];
 }
 
 export interface StoryCaptionConfig {

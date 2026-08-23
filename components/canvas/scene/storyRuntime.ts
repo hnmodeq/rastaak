@@ -166,6 +166,7 @@ function burstSettings() {
 const _box = new THREE.Box3();
 const _size = new THREE.Vector3();
 const _projected = new THREE.Vector3();
+const _landing = new THREE.Vector3();
 const _needColor = new THREE.Color(STORY_CONFIG.colors.need);
 const _needWindow = new THREE.Color(STORY_CONFIG.colors.needWindow ?? STORY_CONFIG.colors.need);
 const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
@@ -250,6 +251,15 @@ function collectSlots(object: THREE.Object3D): TrackedSlot[] {
     });
   });
   return slots;
+}
+
+function applyLanding(client: ClientActor, target: THREE.Vector3) {
+  target.copy(client.roof);
+  const land = client.config.land;
+  if (!land || land.length < 3) return;
+  target.x += land[0];
+  target.y += land[1];
+  target.z += land[2];
 }
 
 function roofPoint(object: THREE.Object3D, target: THREE.Vector3) {
@@ -536,16 +546,17 @@ export class StoryRuntime {
       roofPoint(object, roof);
       const packet = createPacketRig();
       this.packetRoot.add(packet.group);
-      if (this.hub) updatePacketCurve(packet, this.hub.origin, roof);
-
-      this.clients.push({
+      const actor: ClientActor = {
         config,
         object,
         roof,
         slots: collectSlots(object),
         blend: 0,
         packet,
-      });
+      };
+      applyLanding(actor, _landing);
+      if (this.hub) updatePacketCurve(packet, this.hub.origin, _landing);
+      this.clients.push(actor);
     }
 
     void loadPacketMarkTexture()
@@ -655,7 +666,8 @@ export class StoryRuntime {
             ? Math.max(0, (holdEnd - t) / 0.05)
             : 1;
 
-      _projected.copy(client.roof).project(input.camera);
+      applyLanding(client, _landing);
+      _projected.copy(_landing).project(input.camera);
       const onScreen =
         _projected.z > -1 &&
         _projected.z < 1 &&
@@ -709,7 +721,9 @@ export class StoryRuntime {
     const onTarget = t >= client.config.arrive;
     const bursting = t >= blastStart;
     const burstK = bursting ? Math.max(0, Math.min(1, (t - blastStart) / burst.span)) : 0;
-    if (onTarget) packet.group.position.copy(client.roof);
+    applyLanding(client, _landing);
+    if (this.hub) updatePacketCurve(packet, this.hub.origin, _landing);
+    if (onTarget) packet.group.position.copy(_landing);
     else packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;
 

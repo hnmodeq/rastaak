@@ -13,6 +13,7 @@ export interface StoryClientConfig {
   dispatch: number;
   arrive: number;
   resolve?: number;
+  land?: [number, number, number];
 }
 
 export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
