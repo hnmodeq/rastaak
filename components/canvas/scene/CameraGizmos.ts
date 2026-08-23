@@ -54,6 +54,55 @@ function overlayLine(color: number, dashed = false): THREE.LineBasicMaterial | T
     : new THREE.LineBasicMaterial(shared);
 }
 
+function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+function makeNumberSprite(text: string, color: number): THREE.Sprite {
+  const size = 64;
+  const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+  const ctx = canvas?.getContext('2d') ?? null;
+  if (!canvas || !ctx) {
+    return new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        color,
+        depthTest: false,
+        depthWrite: false,
+        fog: false,
+        toneMapped: false,
+      }),
+    );
+  }
+  canvas.width = size;
+  canvas.height = size;
+  ctx.clearRect(0, 0, size, size);
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+  ctx.fillStyle = hexCss(color);
+  ctx.fill();
+  ctx.fillStyle = color === LAMP ? '#1a1404' : '#1a0a06';
+  ctx.font = '700 34px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, size / 2, size / 2 + 1);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false,
+      transparent: true,
+    }),
+  );
+  sprite.scale.setScalar(0.46);
+  sprite.renderOrder = 1102;
+  sprite.userData.labelTexture = texture;
+  return sprite;
+}
+
 function overlayMesh(color: number, opacity: number): THREE.MeshBasicMaterial {
   return new THREE.MeshBasicMaterial({
     color,
@@ -396,6 +445,8 @@ export class CameraGizmoSet {
       this.stopMarks.remove(child);
       const mesh = child as THREE.Mesh;
       mesh.geometry?.dispose?.();
+      const texture = child.userData.labelTexture as THREE.Texture | undefined;
+      texture?.dispose?.();
       const material = mesh.material;
       if (Array.isArray(material)) material.forEach((item) => item.dispose());
       else material?.dispose?.();
@@ -405,13 +456,21 @@ export class CameraGizmoSet {
         ? [stops[range.from], stops[range.to]].filter((item, index, all) => item && all.indexOf(item) === index)
         : stops;
     for (const stop of markStops) {
+      const index = Math.max(0, stops.indexOf(stop));
+      const label = String(index + 1);
       const camMark = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), overlayMesh(LAMP, 0.9));
       camMark.position.set(stop.camera[0], stop.camera[1], stop.camera[2]);
       camMark.userData.kind = 'cam';
+      const camLabel = makeNumberSprite(label, LAMP);
+      camLabel.position.set(stop.camera[0], stop.camera[1] + 0.38, stop.camera[2]);
+      camLabel.userData.kind = 'cam';
       const aimMark = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), overlayMesh(AIM, 0.9));
       aimMark.position.set(stop.target[0], stop.target[1], stop.target[2]);
       aimMark.userData.kind = 'aim';
-      this.stopMarks.add(camMark, aimMark);
+      const aimLabel = makeNumberSprite(label, AIM);
+      aimLabel.position.set(stop.target[0], stop.target[1] + 0.38, stop.target[2]);
+      aimLabel.userData.kind = 'aim';
+      this.stopMarks.add(camMark, camLabel, aimMark, aimLabel);
     }
     this.applyPartVisibility();
   }
