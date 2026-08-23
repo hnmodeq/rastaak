@@ -813,10 +813,28 @@ export function applyTypeChrome() {
       fs.writeFileSync(typePath, typeCode, 'utf8');
     }
 
+    if (body.look) {
+      const rawLook = body.look;
+      const look = {
+        envEnabled: rawLook.envEnabled !== false,
+        envIntensity: Math.min(3, Math.max(0, asFinite(rawLook.envIntensity, 0.85))),
+        grain: Math.min(0.55, Math.max(0, asFinite(rawLook.grain, 0))),
+        grainSize: Math.min(3, Math.max(0.4, asFinite(rawLook.grainSize, 1.15))),
+        vignette: Math.min(0.9, Math.max(0, asFinite(rawLook.vignette, 0))),
+      };
+      const lookPath = path.join(rootDir, 'components', 'canvas', 'scene', 'lookConfig.ts');
+      const existing = fs.readFileSync(lookPath, 'utf8');
+      const next = existing.replace(
+        /export const LOOK_CONFIG: LookConfig = \{[\s\S]*?\};/,
+        `export const LOOK_CONFIG: LookConfig = ${emit(look, 0)};`,
+      );
+      fs.writeFileSync(lookPath, next, 'utf8');
+    }
+
     return NextResponse.json({
       success: true,
       message:
-        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, and typeChrome.ts',
+        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, and lookConfig.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

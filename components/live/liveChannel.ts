@@ -14,6 +14,7 @@ export type LivePatch = {
   renderer?: unknown;
   cameraStops?: unknown;
   scroll?: unknown;
+  look?: unknown;
 };
 
 export function publishLive(patch: LivePatch) {

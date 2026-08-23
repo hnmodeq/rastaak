@@ -84,6 +84,14 @@ export interface SceneRendererConfig {
   toneMappingExposure: number;
 }
 
+export interface LookConfigSave {
+  envEnabled: boolean;
+  envIntensity: number;
+  grain: number;
+  grainSize: number;
+  vignette: number;
+}
+
 export interface SceneConfig {
   stops: CameraStop[];
   scroll: SceneScrollConfig;
@@ -215,4 +223,5 @@ export interface StudioSavePayload {
   heroCopy?: StudioHeroCopySave;
   flowChrome?: StudioFlowChromeSave;
   typeChrome?: StudioTypeChromeSave;
+  look?: LookConfigSave;
 }

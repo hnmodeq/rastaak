@@ -27,6 +27,7 @@ import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
+import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
 
 const isPointLight = (l: THREE.Light) =>
   (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
@@ -659,6 +660,7 @@ export class SceneStudioGUI {
       })),
       heroCopy: { ...HERO_COPY },
       flowChrome: { ...FLOW_CHROME },
+      look: { ...LOOK_CONFIG },
       typeChrome: {
         siteName: TYPE_CHROME.siteName,
         siteNameColor: TYPE_CHROME.siteNameColor,
@@ -697,6 +699,7 @@ export class SceneStudioGUI {
     SCENE_CONFIG.materials = payload.materials;
 
     LIGHTS_CONFIG.splice(0, LIGHTS_CONFIG.length, ...payload.lights);
+    if (payload.look) Object.assign(LOOK_CONFIG, payload.look);
   }
 
   private isAdminHost() {
@@ -1079,6 +1082,30 @@ export class SceneStudioGUI {
       fogFolder.addColor(fogParams, 'fogColor').name('Fog color').onChange(applyFog);
       fogFolder.add(fogParams, 'fogNear', 0, 100, 1).name('Fog start').onChange(applyFog);
       fogFolder.add(fogParams, 'fogFar', 10, 250, 2).name('Fog end').onChange(applyFog);
+
+      const lookFolder = this.addTab('Look');
+      const lookParams = {
+        envEnabled: LOOK_CONFIG.envEnabled,
+        envIntensity: LOOK_CONFIG.envIntensity,
+        grain: LOOK_CONFIG.grain,
+        grainSize: LOOK_CONFIG.grainSize,
+        vignette: LOOK_CONFIG.vignette,
+      };
+      const applyLook = () => {
+        LOOK_CONFIG.envEnabled = lookParams.envEnabled;
+        LOOK_CONFIG.envIntensity = lookParams.envIntensity;
+        LOOK_CONFIG.grain = lookParams.grain;
+        LOOK_CONFIG.grainSize = lookParams.grainSize;
+        LOOK_CONFIG.vignette = lookParams.vignette;
+        applySceneEnvironment(this.scene, this.renderer);
+        applyLookOverlay();
+        this.broadcastLive();
+      };
+      lookFolder.add(lookParams, 'envEnabled').name('Environment reflections').onChange(applyLook);
+      lookFolder.add(lookParams, 'envIntensity', 0, 3, 0.05).name('Reflection strength').onChange(applyLook);
+      lookFolder.add(lookParams, 'grain', 0, 0.45, 0.01).name('Film grain').onChange(applyLook);
+      lookFolder.add(lookParams, 'grainSize', 0.5, 2.5, 0.05).name('Grain size').onChange(applyLook);
+      lookFolder.add(lookParams, 'vignette', 0, 0.8, 0.01).name('Vignette').onChange(applyLook);
 
       this.setAllFoldersOpen(false);
       this.setStudioCollapsed(true);
@@ -2053,7 +2080,7 @@ export class SceneStudioGUI {
     matFolder.add(this.surface, 'roughness', 0, 1, 0.01).name('Roughness').onChange(applySurface);
     matFolder
       .add(this.surface, 'envMapIntensity', 0, 3, 0.05)
-      .name('Reflection')
+      .name('Material reflection')
       .onChange(applySurface);
 
     persistPalette();

@@ -21,6 +21,14 @@ import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 import { subscribeLive } from '@/components/live/liveChannel';
 import type { LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
+import {
+  LOOK_CONFIG,
+  applyLookOverlay,
+  applySceneEnvironment,
+  disposeSceneEnvironment,
+  ensureLookOverlay,
+  tickLookOverlay,
+} from './scene/lookConfig';
 
 type HeroCanvasMode = 'public' | 'admin';
 
@@ -190,6 +198,9 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       }
     }
     applySceneShadows(lightsMap.values());
+    applySceneEnvironment(scene, renderer);
+    ensureLookOverlay(host);
+    applyLookOverlay();
 
     let world: THREE.Group | null = null;
     let studioGUI: SceneStudioGUI | null = null;
@@ -258,8 +269,13 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         renderer.toneMappingExposure = Number((patch.renderer as { toneMappingExposure: number }).toneMappingExposure);
       }
       if (patch.materials && world) {
-        applyMaterialsConfig(world, patch.materials as import('./scene/sceneTypes').MaterialsConfig);
+        applyMaterialsConfig(world, patch.materials as MaterialsConfig);
         story.rebindIdlePalette();
+      }
+      if (patch.look && typeof patch.look === 'object') {
+        Object.assign(LOOK_CONFIG, patch.look);
+        applySceneEnvironment(scene, renderer);
+        applyLookOverlay();
       }
     });
 
@@ -490,6 +506,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       window.dispatchEvent(new CustomEvent(STORY_FRAME_EVENT, { detail: frame }));
 
       studioGUI?.tick();
+      tickLookOverlay(elapsed);
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
     };

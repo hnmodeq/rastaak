@@ -17,6 +17,7 @@ const ignored = new Set([
   'components/canvas/scene/shadowTint.ts',
   'components/canvas/scene/storyConfig.ts',
   'components/canvas/scene/storyRuntime.ts',
+  'components/canvas/scene/lookConfig.ts',
   'components/home/flowConfig.ts',
   'components/home/heroCopy.ts',
   'components/home/typeChrome.ts',
