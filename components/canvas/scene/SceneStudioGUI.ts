@@ -28,18 +28,6 @@ import { LightGizmoSet } from './LightGizmos';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
 
-function downloadJSON(filename: string, data: unknown) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: 'application/json',
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 const isPointLight = (l: THREE.Light) =>
   (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
 const isSpotLight = (l: THREE.Light) =>
@@ -595,6 +583,7 @@ export class SceneStudioGUI {
         fogColor: fog ? colorToHexNumber(fog.color) : (SCENE_CONFIG.environment.fogColor ?? colorToHexNumber(bg)),
         fogStart: fog?.near ?? SCENE_CONFIG.environment.fogStart,
         fogEnd: fog?.far ?? SCENE_CONFIG.environment.fogEnd,
+        fogEnabled: Boolean(fog) && SCENE_CONFIG.environment.fogEnabled !== false,
         shadowColor: SCENE_CONFIG.environment.shadowColor ?? 0x000000,
         shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       },
@@ -657,6 +646,7 @@ export class SceneStudioGUI {
     SCENE_CONFIG.environment.fogColor = payload.environment.fogColor ?? payload.environment.backgroundColor;
     SCENE_CONFIG.environment.fogStart = payload.environment.fogStart;
     SCENE_CONFIG.environment.fogEnd = payload.environment.fogEnd;
+    SCENE_CONFIG.environment.fogEnabled = payload.environment.fogEnabled !== false;
     SCENE_CONFIG.environment.shadowColor = payload.environment.shadowColor ?? 0x000000;
     SCENE_CONFIG.environment.shadowOpacity = payload.environment.shadowOpacity ?? 1;
     SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
@@ -984,7 +974,7 @@ export class SceneStudioGUI {
         this.applyPanelOpacity(this.panelOpacity);
       }
 
-      const envFolder = this.gui.addFolder('Environment & Fog');
+      const envFolder = this.gui.addFolder('Environment');
       const currentBgHex = '#' + (
         this.scene.background instanceof THREE.Color
           ? this.scene.background.getHexString()
@@ -1027,20 +1017,6 @@ export class SceneStudioGUI {
         });
 
       envFolder
-        .addColor(envParams, 'fogColor')
-        .name('Fog Color')
-        .listen()
-        .onChange((v: string) => {
-          const col = new THREE.Color(v);
-          if (this.scene.fog) {
-            this.scene.fog.color.copy(col);
-          } else {
-            this.scene.fog = new THREE.Fog(col, envParams.fogNear, envParams.fogFar);
-          }
-          SCENE_CONFIG.environment.fogColor = col.getHex();
-        });
-
-      envFolder
         .addColor(envParams, 'shadowColor')
         .name('Building shadow color')
         .onChange((v: string) => {
@@ -1055,40 +1031,36 @@ export class SceneStudioGUI {
           applySceneShadows(this.lightsMap.values());
         });
 
-      if (this.scene.fog) {
-        envFolder
-          .add(envParams, 'fogNear', 0, 100, 1)
-          .name('Fog Clear Distance')
-          .listen()
-          .onChange((v: number) => {
-            (this.scene.fog as THREE.Fog).near = v;
-            SCENE_CONFIG.environment.fogStart = v;
-          });
-
-        envFolder
-          .add(envParams, 'fogFar', 10, 250, 2)
-          .name('Fog Max Distance')
-          .listen()
-          .onChange((v: number) => {
-            (this.scene.fog as THREE.Fog).far = v;
-            SCENE_CONFIG.environment.fogEnd = v;
-          });
-      }
-
-      const exportFolder = this.gui.addFolder('Save & Export Tools');
-      const exportParams = {
-        exportSceneJSON: () => {
-          if (!this.scene) return;
-          const json = this.scene.toJSON();
-          downloadJSON('rastaak-threejs-scene.json', json);
-        },
-        exportConfigJSON: () => {
-          downloadJSON('rastaak-scene-config.json', this.buildSavePayload());
-        },
+      const fogFolder = this.gui.addFolder('Fog');
+      const fogParams = {
+        enabled: Boolean(this.scene.fog) && SCENE_CONFIG.environment.fogEnabled !== false,
+        fogColor: envParams.fogColor,
+        fogNear: envParams.fogNear,
+        fogFar: envParams.fogFar,
       };
-
-      exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
-      exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
+      const applyFog = () => {
+        if (!fogParams.enabled) {
+          this.scene.fog = null;
+          SCENE_CONFIG.environment.fogEnabled = false;
+          return;
+        }
+        const col = new THREE.Color(fogParams.fogColor);
+        if (this.scene.fog) {
+          this.scene.fog.color.copy(col);
+          (this.scene.fog as THREE.Fog).near = fogParams.fogNear;
+          (this.scene.fog as THREE.Fog).far = fogParams.fogFar;
+        } else {
+          this.scene.fog = new THREE.Fog(col, fogParams.fogNear, fogParams.fogFar);
+        }
+        SCENE_CONFIG.environment.fogEnabled = true;
+        SCENE_CONFIG.environment.fogColor = col.getHex();
+        SCENE_CONFIG.environment.fogStart = fogParams.fogNear;
+        SCENE_CONFIG.environment.fogEnd = fogParams.fogFar;
+      };
+      fogFolder.add(fogParams, 'enabled').name('Fog on').onChange(applyFog);
+      fogFolder.addColor(fogParams, 'fogColor').name('Fog color').onChange(applyFog);
+      fogFolder.add(fogParams, 'fogNear', 0, 100, 1).name('Fog start').onChange(applyFog);
+      fogFolder.add(fogParams, 'fogFar', 10, 250, 2).name('Fog end').onChange(applyFog);
 
       if (guiEl.parentElement !== host) host.appendChild(guiEl);
       this.setAllFoldersOpen(false);
@@ -1161,46 +1133,33 @@ export class SceneStudioGUI {
 
     const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
 
-    const panelFolder = this.gui.addFolder('Studio panel');
-    const panelParams = { corner: TYPE_CHROME.studioCorner };
-    panelFolder
-      .add(panelParams, 'corner', ['top-right', 'top-left', 'bottom-left', 'bottom-right'])
-      .name('Corner')
-      .onChange((value: typeof TYPE_CHROME.studioCorner) => {
-        TYPE_CHROME.studioCorner = value;
-        applyStudioChrome();
-        this.timelinePanel?.layout();
-      });
-
-    const brandFolder = this.gui.addFolder('Site name');
+    const heroFolder = this.gui.addFolder('Hero');
     const brandParams = {
       siteName: TYPE_CHROME.siteName,
       siteNameColor: hex(TYPE_CHROME.siteNameColor),
       siteNameLayoutColor: hex(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22),
       paddingTop: TYPE_CHROME.siteNamePaddingTop ?? 0,
     };
-    brandFolder.add(brandParams, 'siteName').name('Name').onChange((value: string) => {
+    heroFolder.add(brandParams, 'siteName').name('Site name').onChange((value: string) => {
       TYPE_CHROME.siteName = value;
       applyTypeChrome();
     });
-    brandFolder.addColor(brandParams, 'siteNameColor').name('Title 3D scene color').onChange((value: string) => {
+    heroFolder.addColor(brandParams, 'siteNameColor').name('Name 3D scene color').onChange((value: string) => {
       TYPE_CHROME.siteNameColor = new THREE.Color(value).getHex();
       applyTypeChrome();
     });
-    brandFolder.addColor(brandParams, 'siteNameLayoutColor').name('Title website layout color').onChange((value: string) => {
+    heroFolder.addColor(brandParams, 'siteNameLayoutColor').name('Name website layout color').onChange((value: string) => {
       TYPE_CHROME.siteNameLayoutColor = new THREE.Color(value).getHex();
       applyTypeChrome();
     });
-    brandFolder
+    heroFolder
       .add(brandParams, 'paddingTop', 0, 120, 1)
-      .name('Top padding')
+      .name('Name top padding')
       .onChange((value: number) => {
         TYPE_CHROME.siteNamePaddingTop = value;
         applyTypeChrome();
       });
-    this.addTypeControls(brandFolder, TYPE_CHROME.siteNameType, hex);
-
-    const heroFolder = this.gui.addFolder('Hero copy');
+    this.addTypeControls(heroFolder.addFolder('Site name type'), TYPE_CHROME.siteNameType, hex);
     const heroParams = {
       titleLine1: HERO_COPY.titleLine1,
       titleLine2: HERO_COPY.titleLine2,
@@ -1246,7 +1205,7 @@ export class SceneStudioGUI {
     this.addTypeControls(heroFolder.addFolder('Description type'), TYPE_CHROME.heroSubtitle, hex);
     this.addTypeControls(heroFolder.addFolder('Scroll hint type'), TYPE_CHROME.scrollHint, hex);
 
-    const storyFolder = this.gui.addFolder('Story Colors & Titles');
+    const storyFolder = this.gui.addFolder('Story colors');
 
     const colorParams = {
       packet: hex(STORY_CONFIG.colors.packet),
@@ -1386,7 +1345,7 @@ export class SceneStudioGUI {
         });
     });
 
-    const timelineFolder = storyFolder.addFolder('Timeline layout');
+    const chapterFolder = this.gui.addFolder('Chapter panel');
     const timelineParams = {
       align: FLOW_CHROME.align,
       dir: FLOW_CHROME.dir,
@@ -1398,14 +1357,14 @@ export class SceneStudioGUI {
       trackColor: hex(FLOW_CHROME.trackColor),
       trackFillColor: hex(FLOW_CHROME.trackFillColor),
     };
-    timelineFolder
+    chapterFolder
       .add(timelineParams, 'align', ['left', 'right'])
       .name('Position')
       .onChange((value: 'left' | 'right') => {
         FLOW_CHROME.align = value;
         applyFlowChrome();
       });
-    timelineFolder
+    chapterFolder
       .add(timelineParams, 'dir', ['ltr', 'rtl'])
       .name('Direction')
       .onChange((value: 'ltr' | 'rtl') => {
@@ -1416,18 +1375,40 @@ export class SceneStudioGUI {
       FLOW_CHROME[key] = new THREE.Color(value).getHex();
       applyFlowChrome();
     };
-    timelineFolder.addColor(timelineParams, 'titleColor').name('Title color').onChange((value: string) => applyTimelineColor('titleColor', value));
-    timelineFolder.addColor(timelineParams, 'numberColor').name('Number color').onChange((value: string) => applyTimelineColor('numberColor', value));
-    timelineFolder.addColor(timelineParams, 'numberActiveColor').name('Active number color').onChange((value: string) => applyTimelineColor('numberActiveColor', value));
-    timelineFolder.addColor(timelineParams, 'numberBg').name('Number background').onChange((value: string) => applyTimelineColor('numberBg', value));
-    timelineFolder.addColor(timelineParams, 'descriptionColor').name('Description color').onChange((value: string) => applyTimelineColor('descriptionColor', value));
-    timelineFolder.addColor(timelineParams, 'trackColor').name('Track color').onChange((value: string) => applyTimelineColor('trackColor', value));
-    timelineFolder.addColor(timelineParams, 'trackFillColor').name('Track fill color').onChange((value: string) => applyTimelineColor('trackFillColor', value));
-    this.addTypeControls(timelineFolder.addFolder('Title type'), TYPE_CHROME.flowTitle, hex);
-    this.addTypeControls(timelineFolder.addFolder('Description type'), TYPE_CHROME.flowDescription, hex);
-    this.addTypeControls(timelineFolder.addFolder('Number type'), TYPE_CHROME.flowNumber, hex);
+    chapterFolder.addColor(timelineParams, 'titleColor').name('Title color').onChange((value: string) => applyTimelineColor('titleColor', value));
+    chapterFolder.addColor(timelineParams, 'numberColor').name('Number color').onChange((value: string) => applyTimelineColor('numberColor', value));
+    chapterFolder.addColor(timelineParams, 'numberActiveColor').name('Active number color').onChange((value: string) => applyTimelineColor('numberActiveColor', value));
+    chapterFolder.addColor(timelineParams, 'numberBg').name('Number background').onChange((value: string) => applyTimelineColor('numberBg', value));
+    chapterFolder.addColor(timelineParams, 'descriptionColor').name('Description color').onChange((value: string) => applyTimelineColor('descriptionColor', value));
+    chapterFolder.addColor(timelineParams, 'trackColor').name('Track color').onChange((value: string) => applyTimelineColor('trackColor', value));
+    chapterFolder.addColor(timelineParams, 'trackFillColor').name('Track fill color').onChange((value: string) => applyTimelineColor('trackFillColor', value));
+    const chapterBg = {
+      titleBg: hex(FLOW_CHROME.titleBg ?? 0x0c0d12),
+      titleBgOpacity: FLOW_CHROME.titleBgOpacity ?? 0,
+      descriptionBg: hex(FLOW_CHROME.descriptionBg ?? 0x0c0d12),
+      descriptionBgOpacity: FLOW_CHROME.descriptionBgOpacity ?? 0,
+    };
+    chapterFolder.addColor(chapterBg, 'titleBg').name('Title background').onChange((value: string) => {
+      FLOW_CHROME.titleBg = new THREE.Color(value).getHex();
+      applyFlowChrome();
+    });
+    chapterFolder.add(chapterBg, 'titleBgOpacity', 0, 1, 0.01).name('Title background opacity').onChange((value: number) => {
+      FLOW_CHROME.titleBgOpacity = value;
+      applyFlowChrome();
+    });
+    chapterFolder.addColor(chapterBg, 'descriptionBg').name('Description background').onChange((value: string) => {
+      FLOW_CHROME.descriptionBg = new THREE.Color(value).getHex();
+      applyFlowChrome();
+    });
+    chapterFolder.add(chapterBg, 'descriptionBgOpacity', 0, 1, 0.01).name('Description background opacity').onChange((value: number) => {
+      FLOW_CHROME.descriptionBgOpacity = value;
+      applyFlowChrome();
+    });
+    this.addTypeControls(chapterFolder.addFolder('Title type'), TYPE_CHROME.flowTitle, hex);
+    this.addTypeControls(chapterFolder.addFolder('Description type'), TYPE_CHROME.flowDescription, hex);
+    this.addTypeControls(chapterFolder.addFolder('Number type'), TYPE_CHROME.flowNumber, hex);
 
-    const titlesFolder = storyFolder.addFolder('Timeline titles');
+    const titlesFolder = chapterFolder.addFolder('Chapter titles');
     FLOW_CONFIG.forEach((step, index) => {
       const folder = titlesFolder.addFolder(`${step.num} ${step.title}`);
       const params = {
@@ -1488,7 +1469,7 @@ export class SceneStudioGUI {
         });
     });
 
-    const timelineFolder = root.addFolder('Timeline steps');
+    const timelineFolder = root.addFolder('Chapter ranges');
     const stepCtrls: Array<{ refresh: () => void }> = [];
     const refreshTimelineSteps = () => {
       stepCtrls.forEach((item) => item.refresh());

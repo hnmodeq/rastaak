@@ -43,7 +43,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
 
     const scene = new THREE.Scene();
     scene.background = backgroundColor;
-    scene.fog = new THREE.Fog(fogColor, env.fogStart, env.fogEnd);
+    scene.fog = env.fogEnabled === false ? null : new THREE.Fog(fogColor, env.fogStart, env.fogEnd);
 
     const host = containerRef.current;
     const viewW = () => Math.max(1, host.clientWidth || window.innerWidth);
@@ -237,9 +237,19 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
           scene.background = col;
           document.body.style.backgroundColor = '#' + col.getHexString();
         }
+        if (envPatch.fogEnabled === false) {
+          scene.fog = null;
+        } else if (envPatch.fogEnabled === true && !scene.fog) {
+          scene.fog = new THREE.Fog(
+            envPatch.fogColor ?? SCENE_CONFIG.environment.fogColor ?? SCENE_CONFIG.environment.backgroundColor,
+            envPatch.fogStart ?? SCENE_CONFIG.environment.fogStart,
+            envPatch.fogEnd ?? SCENE_CONFIG.environment.fogEnd,
+          );
+        }
         if (scene.fog && envPatch.fogColor !== undefined) (scene.fog as THREE.Fog).color.setHex(envPatch.fogColor);
         if (scene.fog && envPatch.fogStart !== undefined) (scene.fog as THREE.Fog).near = envPatch.fogStart;
         if (scene.fog && envPatch.fogEnd !== undefined) (scene.fog as THREE.Fog).far = envPatch.fogEnd;
+        if (envPatch.fogEnabled !== undefined) SCENE_CONFIG.environment.fogEnabled = envPatch.fogEnabled;
         if (envPatch.shadowColor !== undefined) SCENE_CONFIG.environment.shadowColor = envPatch.shadowColor;
         if (envPatch.shadowOpacity !== undefined) SCENE_CONFIG.environment.shadowOpacity = envPatch.shadowOpacity;
         applySceneShadows(lightsMap.values());

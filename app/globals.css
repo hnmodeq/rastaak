@@ -147,7 +147,7 @@ main[data-taxi],
   transition: none !important;
 }
 
-/* Process timeline sits on the dark 3D scene; Studio can recolor it. */
+/* Chapter panel sits on the dark 3D scene; Studio can recolor it. */
 .flow .flow__title {
   color: var(--flow-title, var(--color-text-light)) !important;
   font-size: var(--flow-title-size, var(--text-lg)) !important;
@@ -155,6 +155,9 @@ main[data-taxi],
   line-height: var(--flow-title-leading, 1.3) !important;
   letter-spacing: var(--flow-title-tracking, 0px) !important;
   text-shadow: var(--flow-title-shadow, none);
+  background: var(--flow-title-bg, transparent);
+  padding: var(--flow-title-pad, 0px);
+  border-radius: 8px;
 }
 
 .flow .flow__number {
@@ -179,6 +182,9 @@ main[data-taxi],
   line-height: var(--flow-description-leading, var(--leading-normal)) !important;
   letter-spacing: var(--flow-description-tracking, 0px) !important;
   text-shadow: var(--flow-description-shadow, none);
+  background: var(--flow-description-bg, transparent);
+  padding: var(--flow-description-pad, 0px);
+  border-radius: 10px;
 }
 
 .flow .flow__track-bar {

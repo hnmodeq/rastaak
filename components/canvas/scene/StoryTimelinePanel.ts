@@ -447,7 +447,7 @@ export class StoryTimelinePanel {
     this.bindSeek(camLane);
     this.lanes.appendChild(cam);
 
-    const page = this.makeTrack('Page steps');
+    const page = this.makeTrack('Chapters');
     const pageLane = page.querySelector('.stl-lane') as HTMLDivElement;
     FLOW_CONFIG.forEach((step, index) => {
       pageLane.appendChild(

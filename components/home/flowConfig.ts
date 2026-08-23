@@ -1,6 +1,6 @@
 /**
- * RASTAAK FLOW STEPS CONTROLLER CONFIG
- * Saved automatically from 3D Studio
+ * Chapter panel (the 4 scroll steps on the homepage).
+ * Not the Story Timeline. Saved automatically from 3D Studio.
  */
 
 export interface FlowStepConfig {
@@ -15,10 +15,14 @@ export interface FlowChromeConfig {
   align: 'left' | 'right';
   dir: 'ltr' | 'rtl';
   titleColor: number;
+  titleBg?: number;
+  titleBgOpacity?: number;
   numberColor: number;
   numberActiveColor: number;
   numberBg: number;
   descriptionColor: number;
+  descriptionBg?: number;
+  descriptionBgOpacity?: number;
   trackColor: number;
   trackFillColor: number;
 }
@@ -70,6 +74,15 @@ function hexCss(value: number): string {
   return '#' + (value >>> 0).toString(16).padStart(6, '0');
 }
 
+function hexToRgba(value: number, alpha: number): string {
+  const hex = value >>> 0;
+  const r = (hex >> 16) & 255;
+  const g = (hex >> 8) & 255;
+  const b = hex & 255;
+  const a = Math.max(0, Math.min(1, Number.isFinite(alpha) ? alpha : 1));
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+}
+
 export function applyFlowChrome() {
   if (typeof document === 'undefined') return;
   const flow = document.querySelector<HTMLElement>('.flow');
@@ -84,6 +97,12 @@ export function applyFlowChrome() {
   flow.style.setProperty('--flow-description', hexCss(FLOW_CHROME.descriptionColor));
   flow.style.setProperty('--flow-track', hexCss(FLOW_CHROME.trackColor));
   flow.style.setProperty('--flow-track-fill', hexCss(FLOW_CHROME.trackFillColor));
+  const titleBgA = FLOW_CHROME.titleBgOpacity ?? 0;
+  const descBgA = FLOW_CHROME.descriptionBgOpacity ?? 0;
+  flow.style.setProperty('--flow-title-bg', hexToRgba(FLOW_CHROME.titleBg ?? 0x0c0d12, titleBgA));
+  flow.style.setProperty('--flow-description-bg', hexToRgba(FLOW_CHROME.descriptionBg ?? 0x0c0d12, descBgA));
+  flow.style.setProperty('--flow-title-pad', titleBgA > 0.01 ? '6px 12px' : '0px');
+  flow.style.setProperty('--flow-description-pad', descBgA > 0.01 ? '8px 12px' : '0px');
 }
 
 export function syncFlowDom() {

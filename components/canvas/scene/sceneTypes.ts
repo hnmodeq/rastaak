@@ -75,6 +75,7 @@ export interface SceneEnvironmentConfig {
   fogColor?: number;
   fogStart: number;
   fogEnd: number;
+  fogEnabled?: boolean;
   shadowColor?: number;
   shadowOpacity?: number;
 }
@@ -161,10 +162,14 @@ export interface StudioFlowChromeSave {
   align: 'left' | 'right';
   dir: 'ltr' | 'rtl';
   titleColor: number;
+  titleBg?: number;
+  titleBgOpacity?: number;
   numberColor: number;
   numberActiveColor: number;
   numberBg: number;
   descriptionColor: number;
+  descriptionBg?: number;
+  descriptionBgOpacity?: number;
   trackColor: number;
   trackFillColor: number;
 }
