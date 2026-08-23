@@ -74,11 +74,37 @@ export function HomeInteractions() {
         });
       }
 
+      const features = document.querySelector<HTMLElement>('.features');
+      const featureTitle = features?.querySelector<HTMLElement>('.features__title');
+      const featureItems = Array.from(features?.querySelectorAll<HTMLElement>('.feature-item') ?? []);
+      if (features && featureItems.length) {
+        const rect = features.getBoundingClientRect();
+        const sticky = window.matchMedia('(min-width: 1201px)').matches && features.offsetHeight > window.innerHeight * 1.5;
+        if (sticky) {
+          const travel = Math.max(features.offsetHeight - window.innerHeight, 1);
+          const started = -rect.top;
+          const progress = Math.max(0, Math.min(1, started / travel));
+          featureTitle?.classList.toggle('is-in', progress > 0.02);
+          featureItems.forEach((item, index) => {
+            const gate = (index + 0.15) / featureItems.length;
+            item.classList.toggle('is-in', progress >= gate);
+          });
+        } else {
+          const visible = rect.top < window.innerHeight * 0.82 && rect.bottom > 80;
+          featureTitle?.classList.toggle('is-in', visible);
+          featureItems.forEach((item, index) => {
+            const itemRect = item.getBoundingClientRect();
+            const inView = itemRect.top < window.innerHeight * 0.88;
+            item.classList.toggle('is-in', visible && inView);
+            void index;
+          });
+        }
+      }
+
       const header = document.querySelector('header');
       const darkSections = [document.querySelector('.cta-section'), document.querySelector('.footer')].filter(
         Boolean,
       ) as HTMLElement[];
-      const features = document.querySelector<HTMLElement>('.features');
       if (header) {
         const headerHeight = header.offsetHeight;
         const overDark = darkSections.some((section) => {

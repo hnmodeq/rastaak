@@ -20,6 +20,10 @@ const ignored = new Set([
   'components/home/flowConfig.ts',
   'components/home/heroCopy.ts',
   'components/home/typeChrome.ts',
+  'components/home/siteContent.ts',
+  'components/admin/admin.css',
+  'components/admin/AdminApp.tsx',
+  'app/admin/page.tsx',
   'app/api/save-studio-config/route.ts',
   // Third-party runtime bundles
   'public/_astro/vendor.BgqcyBjU.js',

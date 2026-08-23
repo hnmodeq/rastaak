@@ -25,6 +25,8 @@ import {
 } from './materialKeys';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
+import { publishLive } from '@/components/live/liveChannel';
+import { SITE_CONTENT } from '@/components/home/siteContent';
 
 function downloadJSON(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -395,6 +397,7 @@ export class SceneStudioGUI {
         siteName: TYPE_CHROME.siteName,
         siteNameColor: TYPE_CHROME.siteNameColor,
         siteNameLayoutColor: TYPE_CHROME.siteNameLayoutColor,
+        siteNamePaddingTop: TYPE_CHROME.siteNamePaddingTop,
         studioCorner: TYPE_CHROME.studioCorner,
         heroTitle: { ...TYPE_CHROME.heroTitle },
         heroSubtitle: { ...TYPE_CHROME.heroSubtitle },
@@ -1458,6 +1461,7 @@ export class SceneStudioGUI {
           cfg.shadowBias = sh.bias;
           cfg.shadowMapSize = sh.mapSize?.width;
         }
+        this.broadcastLive();
       };
 
       const pullFromLight = () => {
@@ -1719,6 +1723,7 @@ export class SceneStudioGUI {
     const paint = (category: Exclude<MaterialCategory, 'ignore'>, hex: string, storyIdle = false) => {
       applyCategoryColor(liveGroups()[category], hex);
       persistPalette();
+      this.broadcastLive();
       if (storyIdle) {
         window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
       }
@@ -1738,6 +1743,22 @@ export class SceneStudioGUI {
   }
 
   private refreshCamDisplay = () => {};
+
+  private broadcastLive() {
+    publishLive({
+      lights: this.collectCurrentLights(),
+      materials: SCENE_CONFIG.materials,
+      environment: SCENE_CONFIG.environment,
+      renderer: { toneMappingExposure: this.renderer.toneMappingExposure },
+      typeChrome: TYPE_CHROME,
+      heroCopy: HERO_COPY,
+      flowSteps: FLOW_CONFIG,
+      flowChrome: FLOW_CHROME,
+      siteContent: SITE_CONTENT,
+      cameraStops: SCENE_CONFIG.stops,
+      scroll: SCENE_CONFIG.scroll,
+    });
+  }
 
   private setStudioOpen(open: boolean) {
     this.isOpen = open;

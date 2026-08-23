@@ -132,7 +132,8 @@ function withHexColors<T extends Record<string, unknown>>(value: T, keys: string
 }
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV !== 'development') {
+  const { isAdminRequest } = await import('@/lib/adminAuth');
+  if (process.env.NODE_ENV !== 'development' && !isAdminRequest(req)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -642,6 +643,7 @@ export function syncFlowDom() {
         siteName: sanitizeText(raw.siteName, 'رستاک', 40),
         siteNameColor: hexLit(asHexNumber(raw.siteNameColor, 0x1a1b22)),
         siteNameLayoutColor: hexLit(asHexNumber(raw.siteNameLayoutColor, 0x1a1b22)),
+        siteNamePaddingTop: Math.min(120, Math.max(0, asFinite(raw.siteNamePaddingTop, 0))),
         studioCorner: corners.has(String(raw.studioCorner)) ? raw.studioCorner : 'bottom-right',
         heroTitle: face(raw.heroTitle, 96, 500),
         heroSubtitle: face(raw.heroSubtitle, 24, 400),
@@ -676,6 +678,7 @@ export interface TypeChromeConfig {
   siteName: string;
   siteNameColor: number;
   siteNameLayoutColor: number;
+  siteNamePaddingTop?: number;
   studioCorner: StudioCorner;
   heroTitle: TypeFace;
   heroSubtitle: TypeFace;
@@ -759,6 +762,7 @@ export function applyTypeChrome() {
   applyFace('flow-description', TYPE_CHROME.flowDescription, root);
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
+  root.style.setProperty('--site-name-padding-top', (TYPE_CHROME.siteNamePaddingTop ?? 0) + 'px');
   const sceneColor = hexCss(TYPE_CHROME.siteNameColor);
   const layoutColor = hexCss(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22);
   root.style.setProperty('--site-name-color', sceneColor);

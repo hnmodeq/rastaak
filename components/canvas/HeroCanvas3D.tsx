@@ -19,10 +19,14 @@ import { applyMaterialsConfig } from './scene/materialKeys';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
+import { subscribeLive } from '@/components/live/liveChannel';
+import type { LightConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
+import { applyCategoryColor, collectCategoryGroups } from './scene/materialKeys';
 
-const studioEnabled = process.env.NODE_ENV === 'development';
+type HeroCanvasMode = 'public' | 'admin';
 
-export const HeroCanvas3D: React.FC = () => {
+export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'public' }) => {
+  const studioEnabled = mode === 'admin';
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -60,7 +64,7 @@ export const HeroCanvas3D: React.FC = () => {
 
     containerRef.current.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
-    renderer.domElement.style.zIndex = '-1';
+    if (mode !== 'admin') renderer.domElement.style.zIndex = '-1';
     containerRef.current.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -186,6 +190,69 @@ export const HeroCanvas3D: React.FC = () => {
     window.addEventListener('rastaak-studio-before-save', onStudioBeforeSave);
     window.addEventListener('rastaak-studio-after-save', onStudioAfterSave);
     window.addEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
+
+    const hexToCss = (value: number) => '#' + (value >>> 0).toString(16).padStart(6, '0');
+    const unsubscribeLive = subscribeLive((patch) => {
+      if (mode !== 'public') return;
+      if (Array.isArray(patch.lights)) {
+        for (const raw of patch.lights) {
+          const cfg = raw as LightConfig;
+          const light = lightsMap.get(cfg.id);
+          if (!light) continue;
+          if (cfg.enabled !== undefined) light.visible = cfg.enabled;
+          if (typeof cfg.intensity === 'number') light.intensity = cfg.intensity;
+          if (typeof cfg.color === 'number') light.color.setHex(cfg.color);
+          if (cfg.position) light.position.set(...cfg.position);
+          if (cfg.type === 'rectarea') {
+            const area = light as THREE.RectAreaLight;
+            if (cfg.width) area.width = cfg.width;
+            if (cfg.height) area.height = cfg.height;
+            if (cfg.target) {
+              area.userData.lookTarget = [...cfg.target];
+              area.lookAt(cfg.target[0], cfg.target[1], cfg.target[2]);
+            }
+          }
+          if ('distance' in light && cfg.distance !== undefined) (light as THREE.PointLight).distance = cfg.distance;
+          if ('decay' in light && cfg.decay !== undefined) (light as THREE.PointLight).decay = cfg.decay;
+          if (cfg.castShadow !== undefined) light.castShadow = cfg.castShadow;
+        }
+      }
+      if (patch.environment && typeof patch.environment === 'object') {
+        const envPatch = patch.environment as SceneEnvironmentConfig;
+        if (envPatch.backgroundColor !== undefined) {
+          const col = new THREE.Color(envPatch.backgroundColor);
+          scene.background = col;
+          document.body.style.backgroundColor = '#' + col.getHexString();
+        }
+        if (scene.fog && envPatch.fogColor !== undefined) (scene.fog as THREE.Fog).color.setHex(envPatch.fogColor);
+        if (scene.fog && envPatch.fogStart !== undefined) (scene.fog as THREE.Fog).near = envPatch.fogStart;
+        if (scene.fog && envPatch.fogEnd !== undefined) (scene.fog as THREE.Fog).far = envPatch.fogEnd;
+        if (envPatch.shadowColor !== undefined) SCENE_CONFIG.environment.shadowColor = envPatch.shadowColor;
+        if (envPatch.shadowOpacity !== undefined) SCENE_CONFIG.environment.shadowOpacity = envPatch.shadowOpacity;
+        applySceneShadows(lightsMap.values());
+      }
+      if (patch.renderer && typeof patch.renderer === 'object' && 'toneMappingExposure' in (patch.renderer as object)) {
+        renderer.toneMappingExposure = Number((patch.renderer as { toneMappingExposure: number }).toneMappingExposure);
+      }
+      if (patch.materials && world) {
+        const mats = patch.materials as Record<string, number>;
+        const groups = collectCategoryGroups(world);
+        const paint = (key: keyof typeof groups, color?: number) => {
+          if (color === undefined) return;
+          applyCategoryColor(groups[key], hexToCss(color));
+        };
+        paint('building', mats.buildingColor);
+        paint('window', mats.windowColor);
+        paint('rastaak', mats.rastaakColor);
+        paint('logo', mats.logoColor);
+        paint('ground', mats.groundColor);
+        paint('plate', mats.plateColor);
+        paint('border', mats.borderColor);
+        paint('treeTrunk', mats.treeTrunkColor);
+        paint('treeLeaf', mats.treeLeafColor);
+        story.rebindIdlePalette();
+      }
+    });
 
     if (studioEnabled) {
       studioGUI = new SceneStudioGUI(
@@ -378,6 +445,7 @@ export const HeroCanvas3D: React.FC = () => {
       window.removeEventListener('rastaak-studio-before-save', onStudioBeforeSave);
       window.removeEventListener('rastaak-studio-after-save', onStudioAfterSave);
       window.removeEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
+      unsubscribeLive();
       story.dispose();
       controls.dispose();
       studioGUI?.destroy();

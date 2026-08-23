@@ -21,6 +21,7 @@ export interface TypeChromeConfig {
   siteName: string;
   siteNameColor: number;
   siteNameLayoutColor: number;
+  siteNamePaddingTop?: number;
   studioCorner: StudioCorner;
   heroTitle: TypeFace;
   heroSubtitle: TypeFace;
@@ -48,6 +49,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteName: "هونامیک ارتباط رستاک",
   siteNameColor: 0xffffff,
   siteNameLayoutColor: 0x1a1b22,
+  siteNamePaddingTop: 0,
   studioCorner: "top-left",
   heroTitle: {
     size: 119,
@@ -197,6 +199,7 @@ export function applyTypeChrome() {
   applyFace('flow-description', TYPE_CHROME.flowDescription, root);
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
+  root.style.setProperty('--site-name-padding-top', (TYPE_CHROME.siteNamePaddingTop ?? 0) + 'px');
   const sceneColor = hexCss(TYPE_CHROME.siteNameColor);
   const layoutColor = hexCss(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22);
   root.style.setProperty('--site-name-color', sceneColor);

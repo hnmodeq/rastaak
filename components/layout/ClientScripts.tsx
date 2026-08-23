@@ -9,17 +9,18 @@ export const ClientScripts: React.FC = () => {
   const pathname = usePathname();
   const isTokenStudio = pathname?.startsWith('/token-studio') ?? false;
   const isHome = pathname === '/';
+  const isAdmin = pathname?.startsWith('/admin') ?? false;
 
   useEffect(() => {
     document.documentElement.classList.remove('preload');
 
-    if (isTokenStudio || isHome) {
-      document.body.style.overflow = '';
+    if (isTokenStudio || isHome || isAdmin) {
+      document.body.style.overflow = isAdmin ? 'hidden' : '';
       document.getElementById('loader')?.setAttribute('hidden', '');
     }
-  }, [isTokenStudio, isHome]);
+  }, [isTokenStudio, isHome, isAdmin]);
 
-  if (isTokenStudio || isHome) return null;
+  if (isTokenStudio || isHome || isAdmin) return null;
 
   return (
     <Script

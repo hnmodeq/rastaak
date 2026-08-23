@@ -1,0 +1,252 @@
+.admin-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  font-family: 'Kalameh', sans-serif;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 14px;
+  border-right: 1px solid var(--color-edge-dark-subtle);
+  overflow: auto;
+}
+
+.admin-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 18px;
+}
+
+.admin-brand strong {
+  font-size: 20px;
+}
+
+.admin-nav button {
+  text-align: left;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--color-content-light);
+}
+
+.admin-nav button b {
+  display: block;
+  font-size: 14px;
+}
+
+.admin-nav button small {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-content-subtle);
+  font-size: 12px;
+}
+
+.admin-nav button.is-on {
+  background: var(--color-surface-dark-elevated);
+}
+
+.admin-nav-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+}
+
+.admin-save {
+  background: var(--color-content-light) !important;
+  color: var(--color-content-dark) !important;
+  font-weight: 700;
+}
+
+.admin-nav-actions a,
+.admin-nav-actions button {
+  color: var(--color-content-light);
+  font-size: 13px;
+}
+
+.admin-main {
+  overflow: auto;
+  padding: 24px;
+}
+
+.admin-note {
+  margin-bottom: 16px;
+  color: var(--color-content-subtle);
+  font-size: 14px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 20px;
+  min-height: calc(100vh - 80px);
+}
+
+.admin-card,
+.admin-preview {
+  background: var(--color-surface-dark-elevated);
+  border: 1px solid var(--color-edge-dark-subtle);
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.admin-preview {
+  position: relative;
+  min-height: 640px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.admin-card h2,
+.admin-sub h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.admin-sub {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-edge-dark-subtle);
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--color-content-subtle);
+}
+
+.admin-field input,
+.admin-field textarea {
+  width: 100%;
+  border: 1px solid var(--color-edge-dark-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface-dark);
+  color: var(--color-content-light);
+  font: inherit;
+}
+
+.admin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.admin-help {
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-content-subtle);
+}
+
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-dark);
+  color: var(--color-content-light);
+}
+
+.admin-login form {
+  width: min(420px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 18px;
+  background: var(--color-surface-dark-elevated);
+}
+
+.admin-login h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.admin-login button {
+  margin-top: 8px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--color-content-light);
+  color: var(--color-content-dark);
+  font-weight: 700;
+}
+
+html[data-admin='true'] header,
+html[data-admin='true'] .footer,
+html[data-admin='true'] #loader,
+html[data-admin='true'] .story-overlay,
+html[data-admin='true'] #rastaak-studio-btn {
+  display: none !important;
+}
+
+html[data-admin='true'] .lil-gui {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  left: auto !important;
+  bottom: auto !important;
+  max-height: calc(100% - 32px);
+}
+
+html[data-admin='true'] #rastaak-story-timeline {
+  left: 16px !important;
+  right: 16px !important;
+  bottom: 16px !important;
+}
+
+html[data-admin='true'] #rastaak-admin-canvas,
+html[data-admin='true'] #rastaak-admin-canvas canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+html[data-sec-scene='off'] #rastaak-hero-canvas,
+html[data-sec-scene='off'] .hero,
+html[data-sec-scene='off'] .hero-spacer,
+html[data-sec-scene='off'] .flow,
+html[data-sec-scene='off'] .story-overlay {
+  display: none !important;
+}
+
+html[data-sec-features='off'] .features,
+html[data-sec-standards='off'] .standards,
+html[data-sec-faq='off'] .faq,
+html[data-sec-cta='off'] .cta-section,
+html[data-sec-links='off'] [data-site-section='links'],
+html[data-sec-footer='off'] .footer {
+  display: none !important;
+}
+
+.features__title,
+.feature-item {
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.features__title.is-in,
+.feature-item.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.site-name,
+header .header__logo .site-name {
+  padding-top: var(--site-name-padding-top, 0px);
+}

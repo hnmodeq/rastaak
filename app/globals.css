@@ -396,6 +396,7 @@ header.header--white .site-name,
   letter-spacing: var(--site-name-tracking, -0.02em) !important;
   color: var(--site-name-layout-color, var(--site-name-color, var(--color-text))) !important;
   text-shadow: var(--site-name-shadow, none);
+  padding-top: var(--site-name-padding-top, 0px);
   transition: color 0.7s ease;
 }
 
@@ -429,4 +430,32 @@ body.studio-grab-lamps #rastaak-hero-canvas canvas {
   right: var(--studio-gui-right, 24px) !important;
   bottom: var(--studio-gui-bottom, auto) !important;
   left: var(--studio-gui-left, auto) !important;
+}
+html[data-sec-scene='off'] .hero,
+html[data-sec-scene='off'] .hero-spacer,
+html[data-sec-scene='off'] .flow,
+html[data-sec-scene='off'] .story-overlay {
+  display: none !important;
+}
+
+html[data-sec-features='off'] .features,
+html[data-sec-standards='off'] .standards,
+html[data-sec-faq='off'] .faq,
+html[data-sec-cta='off'] .cta-section,
+html[data-sec-links='off'] [data-site-section='links'],
+html[data-sec-footer='off'] .footer {
+  display: none !important;
+}
+
+.features__title,
+.feature-item {
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.features__title.is-in,
+.feature-item.is-in {
+  opacity: 1;
+  transform: none;
 }
