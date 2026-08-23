@@ -457,15 +457,17 @@ export class SceneStudioGUI {
 
       const isAdmin = this.isAdminHost();
       const preview = document.querySelector<HTMLElement>('.admin-preview');
-      if (isAdmin && preview) {
-        preview.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
+      const dock = document.getElementById('admin-studio-dock');
+      const host = dock || preview;
+      if (isAdmin && host) {
+        host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
       }
 
       this.gui = new GUI({
         title: 'Rastaak 3D Studio',
-        autoPlace: !(isAdmin && preview),
-        width: 288,
-        container: isAdmin && preview ? preview : undefined,
+        autoPlace: !(isAdmin && host),
+        width: dock ? 280 : 288,
+        container: isAdmin && host ? host : undefined,
       });
 
       const guiEl = this.gui.domElement;
@@ -862,10 +864,21 @@ export class SceneStudioGUI {
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
       const urlParams = new URLSearchParams(window.location.search);
-      if (isAdmin && preview && guiEl.parentElement !== preview) {
-        preview.appendChild(guiEl);
+      if (isAdmin && host && guiEl.parentElement !== host) {
+        host.appendChild(guiEl);
       }
-      if (isAdmin && preview) {
+      if (isAdmin && dock) {
+        guiEl.style.position = 'relative';
+        guiEl.style.top = 'auto';
+        guiEl.style.right = 'auto';
+        guiEl.style.left = 'auto';
+        guiEl.style.bottom = 'auto';
+        guiEl.style.width = '100%';
+        guiEl.style.maxHeight = 'none';
+        guiEl.style.height = 'auto';
+        guiEl.style.zIndex = '1';
+        guiEl.style.overflowY = 'auto';
+      } else if (isAdmin && preview) {
         guiEl.style.position = 'absolute';
         guiEl.style.top = '12px';
         guiEl.style.right = '12px';

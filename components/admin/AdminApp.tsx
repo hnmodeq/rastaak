@@ -237,7 +237,7 @@ export function AdminApp() {
                 Use Show 3D Studio panel for lights, camera, materials, and gizmos. Wheel zooms the city. Drag orbits. Changes go to the homepage window instantly. Use Save to write them into the project.
               </p>
             </div>
-            <div className="admin-stage">
+            <div className={`admin-stage ${studioOpen ? 'has-studio' : ''}`}>
               <div className="admin-preview">
                 <button
                   type="button"
@@ -248,6 +248,9 @@ export function AdminApp() {
                 </button>
                 <HeroCanvas3D mode="admin" />
               </div>
+              <aside className="admin-studio-dock" id="admin-studio-dock">
+                <div className="admin-studio-dock__label">3D Studio</div>
+              </aside>
               <div className="admin-timeline-dock" id="admin-timeline-dock" />
             </div>
         </section>

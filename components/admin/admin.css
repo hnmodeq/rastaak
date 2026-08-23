@@ -118,13 +118,52 @@
 
 .admin-stage {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) 248px;
   gap: 12px;
   min-width: 0;
   min-height: 0;
 }
 
+.admin-stage.has-studio {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.admin-preview {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-studio-dock {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid var(--color-edge-dark-subtle);
+  background: var(--color-surface-dark-elevated);
+}
+
+.admin-stage:not(.has-studio) .admin-studio-dock {
+  display: none !important;
+}
+
+.admin-studio-dock__label {
+  flex-shrink: 0;
+  padding: 12px 14px 8px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-content-subtle);
+}
+
 .admin-timeline-dock {
+  grid-column: 1 / -1;
+  grid-row: 2;
   position: relative;
   min-height: 0;
   overflow: hidden;
@@ -275,19 +314,27 @@ html[data-admin='true'] #rastaak-studio-btn {
   display: none !important;
 }
 
-html[data-admin='true'] .admin-preview > .lil-gui.root,
-html[data-admin='true'] .admin-preview > .rastaak-studio-gui {
-  position: absolute !important;
-  top: 12px !important;
-  right: 12px !important;
+html[data-admin='true'] #admin-studio-dock .lil-gui.root,
+html[data-admin='true'] #admin-studio-dock .rastaak-studio-gui {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
   left: auto !important;
   bottom: auto !important;
-  z-index: 50 !important;
-  width: 288px !important;
-  max-height: calc(100% - 24px) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 1 1 auto !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
+  z-index: 1 !important;
   pointer-events: auto !important;
+}
+
+html[data-admin='true'] .admin-preview > .lil-gui {
+  display: none !important;
 }
 
 html[data-admin='true'] .lil-gui:not(.root) {
