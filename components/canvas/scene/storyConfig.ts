@@ -16,6 +16,7 @@ export interface StoryClientConfig {
   resolve?: number;
   needEnd?: number;
   land?: [number, number, number];
+  needOffset?: [number, number, number];
 }
 
 export interface StoryCaptionConfig {
@@ -67,6 +68,7 @@ export interface StoryConfig {
   chipBackground: number;
   chipBackgroundOpacity: number;
   chipText: number;
+  chipMaxWidth?: number;
 }
 
 export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
@@ -265,4 +267,6 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
     '--story-chip-bg',
     hexToRgba(STORY_CONFIG.chipBackground ?? 0x14151a, STORY_CONFIG.chipBackgroundOpacity ?? 0.72),
   );
+  const chipWidth = Math.min(960, Math.max(240, STORY_CONFIG.chipMaxWidth ?? 680));
+  root.style.setProperty('--story-chip-max-width', chipWidth + 'px');
 }

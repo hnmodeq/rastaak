@@ -791,6 +791,7 @@ export class SceneStudioGUI {
         chipBackground: STORY_CONFIG.chipBackground,
         chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity,
         chipText: STORY_CONFIG.chipText,
+        chipMaxWidth: STORY_CONFIG.chipMaxWidth,
       },
       flowSteps: FLOW_CONFIG.map((step) => ({
         ...step,
@@ -1591,6 +1592,7 @@ export class SceneStudioGUI {
       chipBackground: hex(STORY_CONFIG.chipBackground ?? 0x14151a),
       chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity ?? 0.72,
       chipText: hex(STORY_CONFIG.chipText ?? 0xf5f5f2),
+      chipMaxWidth: STORY_CONFIG.chipMaxWidth ?? 680,
     };
     needsFolder
       .addColor(needsBoxParams, 'chipBorder')
@@ -1625,6 +1627,13 @@ export class SceneStudioGUI {
       .name('Text color')
       .onChange((value: string) => {
         STORY_CONFIG.chipText = new THREE.Color(value).getHex();
+        applyStoryTheme();
+      });
+    needsFolder
+      .add(needsBoxParams, 'chipMaxWidth', 240, 960, 10)
+      .name('Background width')
+      .onChange((value: number) => {
+        STORY_CONFIG.chipMaxWidth = value;
         applyStoryTheme();
       });
     this.addTypeControls(needsFolder.addFolder('Type'), TYPE_CHROME.chipText, hex);
@@ -1678,6 +1687,18 @@ export class SceneStudioGUI {
           this.seekStory(client.needEnd);
           this.notifyTimingChanged();
         });
+      const pos = {
+        x: client.needOffset?.[0] ?? 0,
+        y: client.needOffset?.[1] ?? 0,
+        z: client.needOffset?.[2] ?? 0,
+      };
+      const writeNeedPos = () => {
+        client.needOffset = [pos.x, pos.y, pos.z];
+        this.seekStory(Math.min(0.99, client.appear + 0.02));
+      };
+      folder.add(pos, 'x', -8, 8, 0.05).name('Position X').onChange(writeNeedPos);
+      folder.add(pos, 'y', -6, 8, 0.05).name('Position Y').onChange(writeNeedPos);
+      folder.add(pos, 'z', -8, 8, 0.05).name('Position Z').onChange(writeNeedPos);
       needTimeRows.push({ client, params, startCtrl, endCtrl });
     });
     this.refreshNeedTimes = () => {

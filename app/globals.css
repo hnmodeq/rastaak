@@ -254,8 +254,9 @@ main[data-taxi],
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: min(240px, 70vw);
-  padding: 6px 10px 6px 8px;
+  width: max-content;
+  max-width: min(var(--story-chip-max-width, 680px), 92vw);
+  padding: 7px 16px 7px 10px;
   border-radius: 999px;
   background: var(--story-chip-bg, var(--color-dark));
   border: 1px solid var(--story-chip-border, var(--color-state-warning));
@@ -265,6 +266,7 @@ main[data-taxi],
   opacity: 0;
   visibility: hidden;
   white-space: nowrap;
+  box-sizing: border-box;
   will-change: transform, opacity;
 }
 
@@ -476,6 +478,11 @@ html[data-sec-footer='off'] .footer {
 }
 
 .features__title.is-in,
+.feature-item.is-in {
+  opacity: 1;
+  transform: none;
+}
+features__title.is-in,
 .feature-item.is-in {
   opacity: 1;
   transform: none;

@@ -48,6 +48,19 @@ function unlit(color: number) {
   return new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
 }
 
+function hushPmremPrecisionWarning() {
+  const current = console.warn as typeof console.warn & { __rastaakX4122?: boolean };
+  if (current.__rastaakX4122) return;
+  const original = console.warn;
+  const next = ((...args: unknown[]) => {
+    const first = args[0];
+    if (typeof first === 'string' && first.includes('X4122')) return;
+    original.apply(console, args as Parameters<typeof console.warn>);
+  }) as typeof console.warn & { __rastaakX4122?: boolean };
+  next.__rastaakX4122 = true;
+  console.warn = next;
+}
+
 function buildStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
   pmrem?.dispose();
   pmrem = new THREE.PMREMGenerator(renderer);
@@ -83,6 +96,7 @@ function buildStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
   floor.position.y = -6.2;
   envScene.add(floor);
 
+  hushPmremPrecisionWarning();
   const texture = pmrem.fromScene(envScene, 0.03).texture;
   envScene.traverse((child) => {
     const mesh = child as THREE.Mesh;

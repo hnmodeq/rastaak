@@ -328,6 +328,7 @@ export const SCENE_CONFIG: SceneConfig = {
               ? undefined
               : asFinite(client.needEnd, asFinite(client?.arrive, 0.24)),
           land: asVec3(client?.land, [0, 0, 0]),
+          needOffset: asVec3(client?.needOffset, [0, 0, 0]),
         })),
         captions: rawCaptions.map((caption, index) => ({
           id: sanitizeId(caption?.id, `caption_${index + 1}`),
@@ -357,6 +358,7 @@ export const SCENE_CONFIG: SceneConfig = {
         chipBackground: hexLit(asHexNumber(rawStory.chipBackground, 0x14151a)),
         chipBackgroundOpacity: asFinite(rawStory.chipBackgroundOpacity, 0.72),
         chipText: hexLit(asHexNumber(rawStory.chipText, 0xf5f5f2)),
+        chipMaxWidth: Math.min(960, Math.max(240, asFinite(rawStory.chipMaxWidth, 680))),
       };
 
       const storyPath = path.join(rootDir, 'components', 'canvas', 'scene', 'storyConfig.ts');
@@ -378,6 +380,7 @@ export interface StoryClientConfig {
   resolve?: number;
   needEnd?: number;
   land?: [number, number, number];
+  needOffset?: [number, number, number];
 }
 
 export interface StoryCaptionConfig {
@@ -429,6 +432,7 @@ export interface StoryConfig {
   chipBackground: number;
   chipBackgroundOpacity: number;
   chipText: number;
+  chipMaxWidth?: number;
 }
 
 export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
@@ -515,6 +519,8 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
     '--story-chip-bg',
     hexToRgba(STORY_CONFIG.chipBackground ?? 0x14151a, STORY_CONFIG.chipBackgroundOpacity ?? 0.72),
   );
+  const chipWidth = Math.min(960, Math.max(240, STORY_CONFIG.chipMaxWidth ?? 680));
+  root.style.setProperty('--story-chip-max-width', chipWidth + 'px');
 }
 `;
       fs.writeFileSync(storyPath, storyCode, 'utf8');

@@ -679,6 +679,12 @@ export class StoryRuntime {
             : 1;
 
       applyLanding(client, _landing);
+      const needPos = client.config.needOffset;
+      if (needPos && needPos.length >= 3) {
+        _landing.x += needPos[0];
+        _landing.y += needPos[1];
+        _landing.z += needPos[2];
+      }
       _projected.copy(_landing).project(input.camera);
       const onScreen =
         _projected.z > -1 &&

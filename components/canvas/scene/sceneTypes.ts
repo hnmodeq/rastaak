@@ -142,6 +142,7 @@ export interface StudioStorySave {
     resolve?: number;
     needEnd?: number;
     land?: [number, number, number];
+    needOffset?: [number, number, number];
   }>;
   captions: Array<{ id: string; text: string; range: [number, number] }>;
   chipHoldAfterArrive: number;
@@ -164,6 +165,7 @@ export interface StudioStorySave {
   chipBackground: number;
   chipBackgroundOpacity: number;
   chipText: number;
+  chipMaxWidth?: number;
 }
 
 export interface StudioFlowStepSave {
