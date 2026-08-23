@@ -128,6 +128,7 @@ export interface StudioStorySave {
     id: string;
     building: string;
     need: string;
+    needAfter?: string;
     appear: number;
     dispatch: number;
     arrive: number;

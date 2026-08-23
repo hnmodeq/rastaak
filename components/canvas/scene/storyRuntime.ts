@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   STORY_CONFIG,
+  needTitleAt,
   resolveAt,
   type StoryBuildingState,
   type StoryChipFrame,
@@ -678,7 +679,7 @@ export class StoryRuntime {
 
       chips.push({
         id: client.config.id,
-        text: client.config.need,
+        text: needTitleAt(client.config, t, burst.delay),
         x: (_projected.x * 0.5 + 0.5) * input.width,
         y: (-_projected.y * 0.5 + 0.5) * input.height,
         state: state === 'idle' ? 'need' : state,

@@ -315,6 +315,7 @@ export const SCENE_CONFIG: SceneConfig = {
           id: sanitizeId(client?.id, `client_${index + 1}`),
           building: sanitizeText(client?.building, `Building ${index + 1}`, 80),
           need: sanitizeText(client?.need, '', 160),
+          needAfter: sanitizeText(client?.needAfter, '', 160) || undefined,
           appear: asFinite(client?.appear, 0.1),
           dispatch: asFinite(client?.dispatch, 0.16),
           arrive: asFinite(client?.arrive, 0.24),
@@ -366,6 +367,7 @@ export interface StoryClientConfig {
   id: string;
   building: string;
   need: string;
+  needAfter?: string;
   appear: number;
   dispatch: number;
   arrive: number;
@@ -435,6 +437,19 @@ export function resolveAt(client: { appear: number; arrive: number; resolve?: nu
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
 
 export const STORY_CONFIG: StoryConfig = ${emit(story, 0)};
+
+export function needTitleAt(
+  client: { need: string; needAfter?: string; arrive: number },
+  t: number,
+  burstDelay?: number,
+): string {
+  const delay = Math.max(0, burstDelay ?? STORY_CONFIG.burstDelay ?? 0.045);
+  const after = client.needAfter;
+  if (typeof after === 'string' && after.trim() && t >= client.arrive + delay) {
+    return after;
+  }
+  return client.need;
+}
 
 export interface StoryChipFrame {
   id: string;

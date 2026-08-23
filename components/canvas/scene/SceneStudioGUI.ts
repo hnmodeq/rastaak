@@ -1513,60 +1513,63 @@ export class SceneStudioGUI {
     storyFolder.addColor(colorParams, 'chipNeed').name('Tick before solve').onChange((v: string) => applyColor('chipNeed', v));
     storyFolder.addColor(colorParams, 'chipResolved').name('Tick after solve').onChange((v: string) => applyColor('chipResolved', v));
 
-    const chipBoxFolder = storyFolder.addFolder('Need chip box');
-    const chipBoxParams = {
+    const needsFolder = this.addTab('Needs');
+    const needsBoxParams = {
       chipBorder: hex(STORY_CONFIG.chipBorder ?? 0xe0a01a),
       chipBorderOpacity: STORY_CONFIG.chipBorderOpacity ?? 0.55,
       chipBackground: hex(STORY_CONFIG.chipBackground ?? 0x14151a),
       chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity ?? 0.72,
       chipText: hex(STORY_CONFIG.chipText ?? 0xf5f5f2),
     };
-    chipBoxFolder
-      .addColor(chipBoxParams, 'chipBorder')
+    needsFolder
+      .addColor(needsBoxParams, 'chipBorder')
       .name('Border color')
       .onChange((value: string) => {
         STORY_CONFIG.chipBorder = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
-    chipBoxFolder
-      .add(chipBoxParams, 'chipBorderOpacity', 0, 1, 0.01)
+    needsFolder
+      .add(needsBoxParams, 'chipBorderOpacity', 0, 1, 0.01)
       .name('Border opacity')
       .onChange((value: number) => {
         STORY_CONFIG.chipBorderOpacity = value;
         applyStoryTheme();
       });
-    chipBoxFolder
-      .addColor(chipBoxParams, 'chipBackground')
+    needsFolder
+      .addColor(needsBoxParams, 'chipBackground')
       .name('Background color')
       .onChange((value: string) => {
         STORY_CONFIG.chipBackground = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
-    chipBoxFolder
-      .add(chipBoxParams, 'chipBackgroundOpacity', 0, 1, 0.01)
+    needsFolder
+      .add(needsBoxParams, 'chipBackgroundOpacity', 0, 1, 0.01)
       .name('Background opacity')
       .onChange((value: number) => {
         STORY_CONFIG.chipBackgroundOpacity = value;
         applyStoryTheme();
       });
-    chipBoxFolder
-      .addColor(chipBoxParams, 'chipText')
+    needsFolder
+      .addColor(needsBoxParams, 'chipText')
       .name('Text color')
       .onChange((value: string) => {
         STORY_CONFIG.chipText = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
-    this.addTypeControls(chipBoxFolder, TYPE_CHROME.chipText, hex);
+    this.addTypeControls(needsFolder.addFolder('Type'), TYPE_CHROME.chipText, hex);
 
-    const chipsFolder = storyFolder.addFolder('Need chip titles');
     STORY_CONFIG.clients.forEach((client) => {
-      const params = { need: client.need };
-      chipsFolder
-        .add(params, 'need')
-        .name(client.building)
-        .onChange((value: string) => {
-          client.need = value;
-        });
+      const folder = needsFolder.addFolder(client.building);
+      const params = {
+        need: client.need,
+        needAfter: client.needAfter ?? '',
+      };
+      folder.add(params, 'need').name('Before explosion').onChange((value: string) => {
+        client.need = value;
+      });
+      folder.add(params, 'needAfter').name('After explosion').onChange((value: string) => {
+        client.needAfter = value;
+      });
     });
 
     const chapterFolder = this.addTab('Chapter panel');
@@ -1903,7 +1906,7 @@ export class SceneStudioGUI {
     };
     root
       .add(hold, 'chipHoldAfterArrive', 0, 0.4, 0.01)
-      .name('Chip hold after arrive')
+      .name('Needs hold after arrive')
       .onChange((value: number) => {
         STORY_CONFIG.chipHoldAfterArrive = clamp01(value);
         this.notifyTimingChanged();
