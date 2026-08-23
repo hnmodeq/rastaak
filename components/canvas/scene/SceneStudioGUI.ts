@@ -28,6 +28,8 @@ import {
 } from './materialKeys';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
+import { CameraGizmoSet } from './CameraGizmos';
+import { BlenderViewport } from './BlenderViewport';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
 import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
@@ -63,6 +65,8 @@ export class SceneStudioGUI {
   private disposed = false;
   private studioEdge: HTMLButtonElement | null = null;
   private foldAllBtn: HTMLButtonElement | null = null;
+  private applyBtn: HTMLButtonElement | null = null;
+  private applyBusy = false;
   private panelOpacity = 1;
   private isOpen = false;
   private studioCollapsed = true;
@@ -73,10 +77,14 @@ export class SceneStudioGUI {
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
   private timelinePanel: StoryTimelinePanel | null = null;
   private lightGizmos: LightGizmoSet | null = null;
-  private showGizmos = true;
+  private cameraGizmos: CameraGizmoSet | null = null;
+  private showLightGizmos = true;
+  private showCameraGizmos = true;
   private grabMode = false;
+  private grabCamera = false;
   private preGrabOrbit = false;
   private orbitLockedByGizmo = false;
+  private currentStopIndex = 0;
   private lightUi = new Map<
     string,
     {
@@ -138,6 +146,7 @@ export class SceneStudioGUI {
     private worldGroupSupplier: () => THREE.Group | null,
     private onProgressChange?: (t: number) => void,
     private onOrbitModeToggle?: (enabled: boolean) => void,
+    private viewportNav?: BlenderViewport | null,
   ) {
     if (typeof window === 'undefined') return;
     this.hydrateGlobalsFromConfig();
@@ -154,12 +163,27 @@ export class SceneStudioGUI {
         },
         (locked) => {
           this.orbitLockedByGizmo = locked;
-          if (this.grabMode) this.onOrbitModeToggle?.(!locked);
+          if (this.anyGrab()) this.onOrbitModeToggle?.(!locked);
         },
       );
     } catch (error) {
       console.warn('[studio] lamp gizmos failed to start', error);
       this.lightGizmos = null;
+    }
+    try {
+      this.cameraGizmos = new CameraGizmoSet(
+        scene,
+        camera,
+        renderer,
+        () => this.pullCamSlidersFromStop(),
+        (locked) => {
+          this.orbitLockedByGizmo = locked;
+          if (this.anyGrab()) this.onOrbitModeToggle?.(!locked);
+        },
+      );
+    } catch (error) {
+      console.warn('[studio] camera gizmos failed to start', error);
+      this.cameraGizmos = null;
     }
     const mats = SCENE_CONFIG.materials;
     if (mats.roughness !== undefined) this.objectSurface.roughness = mats.roughness;
@@ -300,7 +324,8 @@ export class SceneStudioGUI {
         border-bottom: 1px solid rgba(255,255,255,0.08);
         flex: 0 0 auto;
       }
-      #rastaak-studio-foldall {
+      #rastaak-studio-foldall,
+      #rastaak-studio-apply {
         border: 1px solid rgba(255,255,255,0.16);
         background: rgba(255,255,255,0.08);
         color: #f3f3f0;
@@ -310,6 +335,14 @@ export class SceneStudioGUI {
         letter-spacing: 0.04em;
         text-transform: uppercase;
         cursor: pointer;
+      }
+      #rastaak-studio-apply {
+        background: rgba(56, 132, 255, 0.28);
+        border-color: rgba(120, 170, 255, 0.45);
+      }
+      #rastaak-studio-apply:disabled {
+        opacity: 0.35;
+        cursor: default;
       }
       #rastaak-studio-panel .lil-gui,
       #rastaak-studio-panel .lil-gui.root,
@@ -375,16 +408,38 @@ export class SceneStudioGUI {
       fold.id = 'rastaak-studio-foldall';
       fold.textContent = 'Expand all';
       fold.addEventListener('click', () => this.setAllFoldersOpen(!this.foldersExpanded));
+      const apply = document.createElement('button');
+      apply.type = 'button';
+      apply.id = 'rastaak-studio-apply';
+      apply.textContent = 'Apply & Save';
+      apply.addEventListener('click', () => {
+        void this.handleApplyClick();
+      });
       toolbar.appendChild(fold);
+      toolbar.appendChild(apply);
       host.appendChild(toolbar);
       dock.appendChild(edge);
       dock.appendChild(host);
       document.body.appendChild(dock);
       this.studioEdge = edge;
       this.foldAllBtn = fold;
+      this.applyBtn = apply;
     } else {
       this.studioEdge = dock.querySelector('.rastaak-studio-edge');
       this.foldAllBtn = dock.querySelector('#rastaak-studio-foldall');
+      this.applyBtn = dock.querySelector('#rastaak-studio-apply');
+      if (!this.applyBtn) {
+        const toolbar = dock.querySelector('#rastaak-studio-toolbar');
+        const apply = document.createElement('button');
+        apply.type = 'button';
+        apply.id = 'rastaak-studio-apply';
+        apply.textContent = 'Apply & Save';
+        apply.addEventListener('click', () => {
+          void this.handleApplyClick();
+        });
+        toolbar?.appendChild(apply);
+        this.applyBtn = apply;
+      }
     }
     return document.getElementById('rastaak-studio-panel') as HTMLDivElement;
   }
@@ -460,7 +515,7 @@ export class SceneStudioGUI {
     const mouse = new THREE.Vector2();
 
     this.pointerHandler = (e: MouseEvent) => {
-      if (!this.isOpen && !this.isManualMode && !this.isOrbitMode && !this.grabMode) return;
+      if (!this.isOpen && !this.isManualMode && !this.isOrbitMode && !this.anyGrab()) return;
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
         (e.target as HTMLElement)?.closest('#rastaak-studio-dock') ||
@@ -476,6 +531,14 @@ export class SceneStudioGUI {
       mouse.y = -((e.clientY - rect.top) / height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, this.camera);
+
+      if (this.grabCamera && this.cameraGizmos) {
+        const camHit = this.cameraGizmos.pick(raycaster);
+        if (camHit) {
+          this.cameraGizmos.select(camHit.handle);
+          return;
+        }
+      }
 
       if (this.grabMode && this.lightGizmos) {
         const hit = this.lightGizmos.pick(raycaster);
@@ -606,6 +669,30 @@ export class SceneStudioGUI {
   private notifyTimingChanged() {
     this.timelinePanel?.refresh();
     window.dispatchEvent(new CustomEvent('rastaak-studio-timing-changed'));
+  }
+
+  private async handleApplyClick() {
+    if (!this.applyBtn || this.applyBusy) return;
+    const previous = this.applyBtn.textContent;
+    this.applyBusy = true;
+    this.applyBtn.disabled = true;
+    this.applyBtn.textContent = 'Saving…';
+    try {
+      await this.applyAndSave();
+      this.applyBtn.textContent = 'Saved';
+      window.setTimeout(() => {
+        if (this.applyBtn && this.applyBtn.textContent === 'Saved') {
+          this.applyBtn.textContent = previous || 'Apply & Save';
+        }
+      }, 1400);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error saving config: ${message}`);
+      this.applyBtn.textContent = previous || 'Apply & Save';
+    } finally {
+      this.applyBusy = false;
+      if (this.applyBtn) this.applyBtn.disabled = false;
+    }
   }
 
   private async applyAndSave() {
@@ -782,11 +869,12 @@ export class SceneStudioGUI {
 
       const camFolder = this.addTab('Camera & Stop Points');
 
-      let currentStopIndex = 0;
+      this.currentStopIndex = 0;
       const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
+      const viewportLabel = 'Viewport (Blender)';
 
       const camParams = {
-        mode: isAdmin ? 'Free Orbit Camera' : 'Scroll Journey',
+        mode: isAdmin ? viewportLabel : 'Scroll Journey',
         selectedStop: getStopNames()[0],
         scrollT: SCENE_CONFIG.stops[0]?.progress ?? 0.0,
         camX: SCENE_CONFIG.stops[0]?.camera[0] ?? this.camera.position.x,
@@ -796,8 +884,11 @@ export class SceneStudioGUI {
         targetY: SCENE_CONFIG.stops[0]?.target[1] ?? 2.0,
         targetZ: SCENE_CONFIG.stops[0]?.target[2] ?? 0.0,
         fov: SCENE_CONFIG.stops[0]?.fov ?? 45,
+        showCameraGizmos: this.showCameraGizmos,
+        grabCamera: this.grabCamera,
 
         addNewStop: () => {
+          const look = this.isOrbitMode && this.viewportNav ? this.viewportNav.target : this.manualLookAt;
           const newId = `stop_${SCENE_CONFIG.stops.length + 1}_custom`;
           const newStop: CameraStop = {
             id: newId,
@@ -808,9 +899,9 @@ export class SceneStudioGUI {
               parseFloat(this.camera.position.z.toFixed(2)),
             ],
             target: [
-              parseFloat(this.manualLookAt.x.toFixed(2)),
-              parseFloat(this.manualLookAt.y.toFixed(2)),
-              parseFloat(this.manualLookAt.z.toFixed(2)),
+              parseFloat(look.x.toFixed(2)),
+              parseFloat(look.y.toFixed(2)),
+              parseFloat(look.z.toFixed(2)),
             ],
             fov: this.camera.fov,
           };
@@ -837,23 +928,26 @@ export class SceneStudioGUI {
       }
 
       camFolder
-        .add(camParams, 'mode', ['Scroll Journey', 'Manual Live Sliders', 'Free Orbit Camera'])
+        .add(camParams, 'mode', ['Scroll Journey', viewportLabel])
         .name('Mode')
         .onChange((v: string) => {
-          this.isManualMode = v === 'Manual Live Sliders';
-          this.isOrbitMode = v === 'Free Orbit Camera';
+          this.isManualMode = false;
+          this.isOrbitMode = v === viewportLabel;
+          this.onOrbitModeToggle?.(this.isOrbitMode);
+        });
 
-          if (this.onOrbitModeToggle) {
-            this.onOrbitModeToggle(this.isOrbitMode);
-          }
-
-          if (this.isManualMode) {
-            this.manualCamPos.copy(this.camera.position);
-            camParams.camX = this.manualCamPos.x;
-            camParams.camY = this.manualCamPos.y;
-            camParams.camZ = this.manualCamPos.z;
-            this.refreshCamDisplay();
-          }
+      camFolder
+        .add(camParams, 'showCameraGizmos')
+        .name('Show camera gizmos')
+        .onChange((value: boolean) => {
+          this.showCameraGizmos = value;
+          this.syncGizmoVisibility();
+        });
+      camFolder
+        .add(camParams, 'grabCamera')
+        .name('Move camera in scene')
+        .onChange((value: boolean) => {
+          this.setCameraGrabMode(value);
         });
 
       const stopDropdownController = camFolder
@@ -863,7 +957,7 @@ export class SceneStudioGUI {
           const names = getStopNames();
           const idx = names.indexOf(name);
           if (idx >= 0 && idx < SCENE_CONFIG.stops.length) {
-            currentStopIndex = idx;
+            this.currentStopIndex = idx;
             const stop = SCENE_CONFIG.stops[idx];
 
             camParams.scrollT = stop.progress;
@@ -877,10 +971,13 @@ export class SceneStudioGUI {
 
             this.manualCamPos.set(...stop.camera);
             this.manualLookAt.set(...stop.target);
-            this.camera.position.copy(this.manualCamPos);
-            this.camera.lookAt(this.manualLookAt);
-            this.camera.fov = camParams.fov;
-            this.camera.updateProjectionMatrix();
+            if (!this.isOrbitMode) {
+              this.camera.position.copy(this.manualCamPos);
+              this.camera.lookAt(this.manualLookAt);
+              this.camera.fov = camParams.fov;
+              this.camera.updateProjectionMatrix();
+            }
+            this.cameraGizmos?.bindStop(stop);
 
             this.refreshCamDisplay();
 
@@ -888,13 +985,43 @@ export class SceneStudioGUI {
           }
         });
 
+      this.pullCamSlidersFromStop = () => {
+        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        if (!stop) return;
+        camParams.scrollT = stop.progress;
+        camParams.camX = stop.camera[0];
+        camParams.camY = stop.camera[1];
+        camParams.camZ = stop.camera[2];
+        camParams.targetX = stop.target[0];
+        camParams.targetY = stop.target[1];
+        camParams.targetZ = stop.target[2];
+        camParams.fov = stop.fov ?? 45;
+        this.manualCamPos.set(...stop.camera);
+        this.manualLookAt.set(...stop.target);
+        this.refreshCamDisplay();
+      };
+
+      const writeStopCamera = (axis: 0 | 1 | 2, value: number) => {
+        this.manualCamPos.setComponent(axis, value);
+        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        if (stop) stop.camera[axis] = value;
+        if (!this.isOrbitMode) this.camera.position.setComponent(axis, value);
+      };
+
+      const writeStopTarget = (axis: 0 | 1 | 2, value: number) => {
+        this.manualLookAt.setComponent(axis, value);
+        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        if (stop) stop.target[axis] = value;
+        if (!this.isOrbitMode) this.camera.lookAt(this.manualLookAt);
+      };
+
       const scrollCtrl = camFolder
         .add(camParams, 'scrollT', 0.0, 1.0, 0.01)
         .name('Scroll t')
         .listen()
         .onChange((val: number) => {
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].progress = val;
+          if (SCENE_CONFIG.stops[this.currentStopIndex]) {
+            SCENE_CONFIG.stops[this.currentStopIndex].progress = val;
           }
           if (this.onProgressChange) this.onProgressChange(val);
           this.notifyTimingChanged();
@@ -904,83 +1031,49 @@ export class SceneStudioGUI {
         .add(camParams, 'camX', -100, 100, 0.5)
         .name('Cam X')
         .listen()
-        .onChange((v: number) => {
-          this.manualCamPos.x = v;
-          this.camera.position.x = v;
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].camera[0] = v;
-          }
-        });
+        .onChange((v: number) => writeStopCamera(0, v));
 
       const camYCtrl = camFolder
         .add(camParams, 'camY', 0, 100, 0.5)
         .name('Cam Y')
         .listen()
-        .onChange((v: number) => {
-          this.manualCamPos.y = v;
-          this.camera.position.y = v;
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].camera[1] = v;
-          }
-        });
+        .onChange((v: number) => writeStopCamera(1, v));
 
       const camZCtrl = camFolder
         .add(camParams, 'camZ', -100, 100, 0.5)
         .name('Cam Z')
         .listen()
-        .onChange((v: number) => {
-          this.manualCamPos.z = v;
-          this.camera.position.z = v;
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].camera[2] = v;
-          }
-        });
+        .onChange((v: number) => writeStopCamera(2, v));
 
       const targetXCtrl = camFolder
         .add(camParams, 'targetX', -100, 100, 0.5)
         .name('Target X')
         .listen()
-        .onChange((v: number) => {
-          this.manualLookAt.x = v;
-          this.camera.lookAt(this.manualLookAt);
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].target[0] = v;
-          }
-        });
+        .onChange((v: number) => writeStopTarget(0, v));
 
       const targetYCtrl = camFolder
         .add(camParams, 'targetY', -50, 100, 0.5)
         .name('Target Y')
         .listen()
-        .onChange((v: number) => {
-          this.manualLookAt.y = v;
-          this.camera.lookAt(this.manualLookAt);
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].target[1] = v;
-          }
-        });
+        .onChange((v: number) => writeStopTarget(1, v));
 
       const targetZCtrl = camFolder
         .add(camParams, 'targetZ', -100, 100, 0.5)
         .name('Target Z')
         .listen()
-        .onChange((v: number) => {
-          this.manualLookAt.z = v;
-          this.camera.lookAt(this.manualLookAt);
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].target[2] = v;
-          }
-        });
+        .onChange((v: number) => writeStopTarget(2, v));
 
       const fovCtrl = camFolder
         .add(camParams, 'fov', 15, 90, 1)
         .name('FOV Zoom')
         .listen()
         .onChange((v: number) => {
-          this.camera.fov = v;
-          this.camera.updateProjectionMatrix();
-          if (SCENE_CONFIG.stops[currentStopIndex]) {
-            SCENE_CONFIG.stops[currentStopIndex].fov = v;
+          if (!this.isOrbitMode) {
+            this.camera.fov = v;
+            this.camera.updateProjectionMatrix();
+          }
+          if (SCENE_CONFIG.stops[this.currentStopIndex]) {
+            SCENE_CONFIG.stops[this.currentStopIndex].fov = v;
           }
         });
 
@@ -1830,14 +1923,14 @@ export class SceneStudioGUI {
     const lightFolder = this.addTab('Lighting Controller');
 
     const view = {
-      showGizmos: this.showGizmos,
+      showGizmos: this.showLightGizmos,
       grabLamps: this.grabMode,
     };
     lightFolder
       .add(view, 'showGizmos')
       .name('Show lamp gizmos')
       .onChange((value: boolean) => {
-        this.showGizmos = value;
+        this.showLightGizmos = value;
         this.syncGizmoVisibility();
       });
     lightFolder
@@ -2252,6 +2345,7 @@ export class SceneStudioGUI {
   }
 
   private refreshCamDisplay = () => {};
+  private pullCamSlidersFromStop = () => {};
 
   private broadcastLive() {
     publishLive({
@@ -2291,25 +2385,31 @@ export class SceneStudioGUI {
     this.timelinePanel?.layout();
     this.syncStudioDockBottom();
     this.syncGizmoVisibility();
-    if (collapsed) this.setGrabMode(false);
+    if (collapsed) {
+      this.setGrabMode(false);
+      this.setCameraGrabMode(false);
+    }
     window.dispatchEvent(new CustomEvent('rastaak-studio-open', { detail: { open: !collapsed } }));
   }
 
-  private syncGizmoVisibility() {
-    this.lightGizmos?.setVisible(this.isOpen && this.showGizmos);
+  private anyGrab() {
+    return this.grabMode || this.grabCamera;
   }
 
-  private setGrabMode(on: boolean) {
-    if (this.grabMode === on) return;
-    this.grabMode = on;
-    document.body.classList.toggle('studio-grab-lamps', on);
-    this.lightGizmos?.setGrabEnabled(on);
-    if (on) {
+  private syncGizmoVisibility() {
+    this.lightGizmos?.setVisible(this.isOpen && this.showLightGizmos);
+    this.cameraGizmos?.setVisible(this.isOpen && this.showCameraGizmos);
+  }
+
+  private applyGrabChrome(wasGrabbing: boolean) {
+    const grabbing = this.anyGrab();
+    document.body.classList.toggle('studio-grab-lamps', grabbing);
+    if (grabbing && !wasGrabbing) {
       this.preGrabOrbit = this.isOrbitMode;
       this.isOrbitMode = true;
       this.onOrbitModeToggle?.(!this.orbitLockedByGizmo);
       this.renderer.domElement.style.pointerEvents = 'auto';
-    } else {
+    } else if (!grabbing && wasGrabbing) {
       this.isOrbitMode = this.preGrabOrbit;
       this.onOrbitModeToggle?.(this.isOrbitMode);
       this.renderer.domElement.style.pointerEvents = '';
@@ -2317,8 +2417,26 @@ export class SceneStudioGUI {
     }
   }
 
+  private setGrabMode(on: boolean) {
+    if (this.grabMode === on) return;
+    const wasGrabbing = this.anyGrab();
+    this.grabMode = on;
+    this.lightGizmos?.setGrabEnabled(on);
+    this.applyGrabChrome(wasGrabbing);
+  }
+
+  private setCameraGrabMode(on: boolean) {
+    if (this.grabCamera === on) return;
+    const wasGrabbing = this.anyGrab();
+    this.grabCamera = on;
+    this.cameraGizmos?.setGrabEnabled(on);
+    this.applyGrabChrome(wasGrabbing);
+  }
+
   public tick() {
     this.lightGizmos?.syncAll();
+    const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+    if (stop) this.cameraGizmos?.sync(stop, this.camera.aspect);
   }
 
   public destroy() {
@@ -2329,6 +2447,7 @@ export class SceneStudioGUI {
     this.chromeObserver?.disconnect();
     this.chromeObserver = null;
     this.setGrabMode(false);
+    this.setCameraGrabMode(false);
     document.body.classList.remove('studio-grab-lamps');
     if (this.pointerHandler) {
       window.removeEventListener('pointerdown', this.pointerHandler, true);
@@ -2345,8 +2464,11 @@ export class SceneStudioGUI {
     document.getElementById('rastaak-studio-panel')?.remove();
     this.studioEdge = null;
     this.foldAllBtn = null;
+    this.applyBtn = null;
     this.lightGizmos?.dispose();
     this.lightGizmos = null;
+    this.cameraGizmos?.dispose();
+    this.cameraGizmos = null;
     this.lightUi.clear();
     this.timelinePanel?.destroy();
     this.timelinePanel = null;

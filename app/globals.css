@@ -433,6 +433,11 @@ body.studio-grab-lamps #rastaak-hero-canvas canvas {
   pointer-events: auto !important;
 }
 
+html[data-viewport='true'],
+html[data-viewport='true'] body {
+  overflow: hidden !important;
+}
+
 .lil-gui.root {
   top: auto !important;
   right: auto !important;

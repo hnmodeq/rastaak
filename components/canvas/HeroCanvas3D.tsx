@@ -15,6 +15,7 @@ import { SCENE_CONFIG } from './scene/sceneConfig';
 import { sampleSceneJourney } from './scene/journeyMath';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
+import { BlenderViewport } from './scene/BlenderViewport';
 import { applyMaterialsConfig } from './scene/materialKeys';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
@@ -91,6 +92,18 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     controls.maxDistance = 140;
     controls.zoomSpeed = 0.9;
     controls.rotateSpeed = 0.7;
+
+    const isUiEvent = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      if (!el || typeof el.closest !== 'function') return false;
+      return Boolean(
+        el.closest('#rastaak-studio-dock') ||
+          el.closest('#rastaak-story-timeline') ||
+          el.closest('.lil-gui') ||
+          el.closest('input, textarea, select, button, a, label, [contenteditable="true"]'),
+      );
+    };
+    const viewport = new BlenderViewport(camera, isUiEvent);
 
     let orbitSeekT: number | null = null;
 
@@ -294,16 +307,26 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
           if (controls.enabled) orbitSeekT = forcedT;
         },
         (orbitEnabled: boolean) => {
-          if (orbitEnabled) {
-            controls.target.copy(lookAt);
-            controls.enabled = true;
-          } else {
-            controls.enabled = false;
+          if (mode === 'admin') {
+            if (orbitEnabled) {
+              controls.target.copy(lookAt);
+              controls.enabled = true;
+            } else {
+              controls.enabled = false;
+            }
+            if (containerRef.current) {
+              containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
+            }
+            return;
           }
-          if (containerRef.current) {
-            containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
+          if (orbitEnabled) {
+            if (!viewport.enabled) viewport.target.copy(lookAt);
+            viewport.setEnabled(true);
+          } else {
+            viewport.setEnabled(false);
           }
         },
+        viewport,
       );
       if (world) studioGUI.populateMaterials();
     };
@@ -460,7 +483,9 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       if (studioGUI?.isManualMode) {
         camera.position.copy(studioGUI.manualCamPos);
         camera.lookAt(studioGUI.manualLookAt);
-      } else if (studioGUI?.isOrbitMode || (mode === 'admin' && controls.enabled)) {
+      } else if (viewport.enabled || studioGUI?.isOrbitMode) {
+        camera.lookAt(viewport.target);
+      } else if (mode === 'admin' && controls.enabled) {
         if (orbitSeekT !== null) {
           applyJourneyToCamera(orbitSeekT);
           orbitSeekT = null;
@@ -527,8 +552,10 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       unsubscribeLive();
       story.dispose();
       controls.dispose();
+      viewport.dispose();
       studioGUI?.destroy();
       delete document.documentElement.dataset.studio;
+      delete document.documentElement.dataset.viewport;
 
       if (world) {
         world.traverse((child) => {

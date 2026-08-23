@@ -13,6 +13,8 @@ const ignored = new Set([
   'components/canvas/scene/lightingConfig.ts',
   'components/canvas/scene/SceneStudioGUI.ts',
   'components/canvas/scene/LightGizmos.ts',
+  'components/canvas/scene/CameraGizmos.ts',
+  'components/canvas/scene/BlenderViewport.ts',
   'components/canvas/scene/StoryTimelinePanel.ts',
   'components/canvas/scene/shadowTint.ts',
   'components/canvas/scene/storyConfig.ts',
