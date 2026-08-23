@@ -106,11 +106,13 @@ export const STORY_CONFIG: StoryConfig = {
       building: "Hyper Market Building",
       need: "به 200 ترابایت فضای ذخیره‌سازی امن نیاز داریم!",
       needAfter: "انجام شد.",
-      appear: 0.080206,
-      dispatch: 0.2,
-      arrive: 0.3,
-      resolve: 0.3,
-      land: [0, 0, 0]
+      appear: 0.1,
+      dispatch: 0.177767,
+      arrive: 0.401501,
+      resolve: 0.402908,
+      needEnd: 0.601313,
+      land: [0, 0, 0],
+      needOffset: [0.35, -0.5, 0.2]
     },
     {
       id: "b7",
@@ -121,7 +123,8 @@ export const STORY_CONFIG: StoryConfig = {
       dispatch: 0.46,
       arrive: 0.56,
       resolve: 0.56,
-      land: [0, 0, 0]
+      land: [0, 0, 0],
+      needOffset: [0, 0, 0]
     },
     {
       id: "b30",
@@ -132,7 +135,8 @@ export const STORY_CONFIG: StoryConfig = {
       dispatch: 0.64,
       arrive: 0.72,
       resolve: 0.72,
-      land: [0, 0, 0]
+      land: [0, 0, 0],
+      needOffset: [0, 0, 0]
     },
     {
       id: "b34",
@@ -143,7 +147,8 @@ export const STORY_CONFIG: StoryConfig = {
       dispatch: 0.78,
       arrive: 0.86,
       resolve: 0.86,
-      land: [0, 0, 0]
+      land: [0, 0, 0],
+      needOffset: [0, 0, 0]
     }
   ],
   captions: [
@@ -192,7 +197,8 @@ export const STORY_CONFIG: StoryConfig = {
   chipBorderOpacity: 0,
   chipBackground: 0x14151a,
   chipBackgroundOpacity: 0,
-  chipText: 0xf5f5f2
+  chipText: 0xf5f5f2,
+  chipMaxWidth: 680
 };
 
 export function needEndAt(client: { appear: number; arrive: number; needEnd?: number }): number {

@@ -118,7 +118,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0.5
   },
   chipText: {
-    size: 8,
+    size: 31,
     weight: 600,
     lineHeight: 1.15,
     letterSpacing: 0,
