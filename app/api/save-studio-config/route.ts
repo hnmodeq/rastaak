@@ -318,6 +318,10 @@ export const SCENE_CONFIG: SceneConfig = {
           appear: asFinite(client?.appear, 0.1),
           dispatch: asFinite(client?.dispatch, 0.16),
           arrive: asFinite(client?.arrive, 0.24),
+          resolve: asFinite(
+            client?.resolve,
+            asFinite(client?.arrive, 0.24),
+          ),
         })),
         captions: rawCaptions.map((caption, index) => ({
           id: sanitizeId(caption?.id, `caption_${index + 1}`),

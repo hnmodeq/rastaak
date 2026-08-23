@@ -1697,7 +1697,7 @@ export class SceneStudioGUI {
 
       const resolveCtrl = folder
         .add(row, 'resolve', 0, 1, 0.01)
-        .name('Turns blue')
+        .name('Building turns blue')
         .onChange((value: number) => {
           client.resolve = clampOrdered(value, client.appear, 1);
           syncRow();

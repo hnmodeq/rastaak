@@ -31,7 +31,7 @@ type DragState = {
 type TimingSnapshot = {
   stops: number[];
   steps: Array<[number, number]>;
-  clients: Array<{ appear: number; dispatch: number; arrive: number }>;
+  clients: Array<{ appear: number; dispatch: number; arrive: number; resolve: number }>;
   captions: Array<[number, number]>;
   chipHoldAfterArrive: number;
 };
@@ -795,6 +795,21 @@ export class StoryTimelinePanel {
         font-size: 9px;
         font-weight: 700;
         cursor: grab;
+      }
+      #rastaak-story-timeline .stl-resolve {
+        position: absolute;
+        top: 2px;
+        width: 16px;
+        height: 16px;
+        margin-left: -8px;
+        border: 0;
+        border-radius: 3px;
+        background: #229afd;
+        color: #041018;
+        font-size: 9px;
+        font-weight: 700;
+        cursor: grab;
+        z-index: 3;
       }
       #rastaak-story-timeline .stl-tick {
         position: absolute;
