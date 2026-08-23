@@ -425,11 +425,18 @@ body.studio-grab-lamps #rastaak-hero-canvas canvas {
   pointer-events: auto !important;
 }
 
-.lil-gui {
+.lil-gui.root {
   top: var(--studio-gui-top, 90px) !important;
   right: var(--studio-gui-right, 24px) !important;
   bottom: var(--studio-gui-bottom, auto) !important;
   left: var(--studio-gui-left, auto) !important;
+}
+
+.lil-gui:not(.root) {
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
 }
 html[data-sec-scene='off'] .hero,
 html[data-sec-scene='off'] .hero-spacer,

@@ -78,6 +78,15 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     controls.enabled = false;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+    controls.enablePan = true;
+    controls.minDistance = 2;
+    controls.maxDistance = 140;
+    controls.zoomSpeed = 0.9;
+    controls.rotateSpeed = 0.7;
+
+    let orbitSeekT: number | null = null;
 
     RectAreaLightUniformsLib.init();
 
@@ -270,14 +279,27 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         () => world,
         (forcedT: number) => {
           targetScrollProgress = forcedT;
+          currentScrollProgress = forcedT;
+          if (controls.enabled) orbitSeekT = forcedT;
         },
         (orbitEnabled: boolean) => {
-          controls.enabled = orbitEnabled;
+          if (orbitEnabled) {
+            controls.target.copy(lookAt);
+            controls.enabled = true;
+          } else {
+            controls.enabled = false;
+          }
+          if (mode === 'admin') {
+            host.style.pointerEvents = 'auto';
+            renderer.domElement.style.pointerEvents = 'auto';
+            return;
+          }
           if (containerRef.current) {
             containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
           }
         },
       );
+      if (mode === 'admin') studioGUI.isOrbitMode = true;
     }
 
     const dracoLoader = new DRACOLoader();
@@ -387,6 +409,33 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     const camPos = new THREE.Vector3();
     const lookAt = new THREE.Vector3();
 
+    const applyJourneyToCamera = (t: number) => {
+      sampleSceneJourney(t, sample);
+      camPos.set(sample.camera[0], sample.camera[1], sample.camera[2]);
+      lookAt.set(sample.target[0], sample.target[1], sample.target[2]);
+      camera.position.copy(camPos);
+      camera.lookAt(lookAt);
+      if (camera.fov !== sample.fov) {
+        camera.fov = sample.fov;
+        camera.updateProjectionMatrix();
+      }
+      controls.target.copy(lookAt);
+    };
+
+    const stopPageWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    if (mode === 'admin') {
+      applyJourneyToCamera(0);
+      controls.enabled = true;
+      host.style.pointerEvents = 'auto';
+      renderer.domElement.style.pointerEvents = 'auto';
+      renderer.domElement.style.touchAction = 'none';
+      host.addEventListener('wheel', stopPageWheel, { passive: false });
+    }
+
     const animate = () => {
       if (isDisposed) return;
       const now = performance.now();
@@ -394,11 +443,15 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       const elapsed = (now - startTime) / 1000;
       lastTime = now;
 
-      if (studioGUI?.isOrbitMode) {
-        controls.update();
-      } else if (studioGUI?.isManualMode) {
+      if (studioGUI?.isManualMode) {
         camera.position.copy(studioGUI.manualCamPos);
         camera.lookAt(studioGUI.manualLookAt);
+      } else if (studioGUI?.isOrbitMode || (mode === 'admin' && controls.enabled)) {
+        if (orbitSeekT !== null) {
+          applyJourneyToCamera(orbitSeekT);
+          orbitSeekT = null;
+        }
+        controls.update();
       } else {
         const damping = 1 - Math.exp(-delta * SCENE_CONFIG.scroll.cameraDamping);
         currentScrollProgress += (targetScrollProgress - currentScrollProgress) * damping;
@@ -449,6 +502,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     return () => {
       isDisposed = true;
       cancelAnimationFrame(animationFrameId);
+      host.removeEventListener('wheel', stopPageWheel);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
       resizeObserver?.disconnect();

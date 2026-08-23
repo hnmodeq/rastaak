@@ -170,7 +170,7 @@ export function AdminApp() {
       <main className="admin-main">
         <p className="admin-note">{note}</p>
 
-        <section className="admin-grid" hidden={tab !== 'scene'}>
+        <section className="admin-grid admin-grid--scene" hidden={tab !== 'scene'}>
             <div className="admin-card">
               <h2>Section on/off</h2>
               <label className="admin-toggle">
@@ -219,8 +219,11 @@ export function AdminApp() {
                 Lights, camera, materials, story timing, and gizmos are in the 3D preview. Changes go to the homepage window instantly. Use Save to write them into the project.
               </p>
             </div>
-            <div className="admin-preview">
-              <HeroCanvas3D mode="admin" />
+            <div className="admin-stage">
+              <div className="admin-preview">
+                <HeroCanvas3D mode="admin" />
+              </div>
+              <div className="admin-timeline-dock" id="admin-timeline-dock" />
             </div>
         </section>
 

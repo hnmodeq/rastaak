@@ -88,10 +88,12 @@ export class StoryTimelinePanel {
 
   constructor(private onSeek: (t: number) => void) {}
 
-  mount() {
+  mount(host?: HTMLElement | null) {
     if (typeof document === 'undefined' || this.root) return;
+    document.querySelectorAll('[id="rastaak-story-timeline"]').forEach((el) => el.remove());
     const root = document.createElement('div');
     root.id = 'rastaak-story-timeline';
+    if (host) root.dataset.docked = 'true';
     root.innerHTML = `
       <div class="stl-head">
         <strong>Story Timeline</strong>
@@ -110,7 +112,7 @@ export class StoryTimelinePanel {
       <div class="stl-lanes"></div>
     `;
     this.injectCss();
-    document.body.appendChild(root);
+    (host ?? document.body).appendChild(root);
     this.root = root;
     this.lanes = root.querySelector('.stl-lanes');
     this.readout = root.querySelector('[data-readout]');
@@ -635,6 +637,18 @@ export class StoryTimelinePanel {
         background: #ff4d4d;
         pointer-events: none;
         z-index: 4;
+      }
+      #rastaak-story-timeline[data-docked='true'] {
+        position: relative;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        top: auto;
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        z-index: 1;
+        border-radius: 18px;
       }
     `;
     document.head.appendChild(style);

@@ -66,6 +66,7 @@ function clampOrdered(value: number, min: number, max: number): number {
 
 export class SceneStudioGUI {
   private gui: any = null;
+  private disposed = false;
   private toggleButton: HTMLButtonElement | null = null;
   private isOpen = false;
   private materialsFolderPopulated = false;
@@ -219,8 +220,11 @@ export class SceneStudioGUI {
         return;
       }
 
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      mouse.x = ((e.clientX - rect.left) / width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, this.camera);
 
@@ -432,7 +436,15 @@ export class SceneStudioGUI {
     LIGHTS_CONFIG.splice(0, LIGHTS_CONFIG.length, ...payload.lights);
   }
 
+  private isAdminHost() {
+    return (
+      document.documentElement.dataset.admin === 'true' ||
+      window.location.pathname.startsWith('/admin')
+    );
+  }
+
   private async initGUI(forceOpen = false) {
+    if (this.disposed) return;
     if (this.gui) {
       if (forceOpen) this.setStudioOpen(true);
       return;
@@ -440,9 +452,23 @@ export class SceneStudioGUI {
 
     try {
       const { GUI } = await import('lil-gui');
-      this.gui = new GUI({ title: 'Rastaak 3D Studio' });
+      if (this.disposed) return;
+
+      const isAdmin = this.isAdminHost();
+      const preview = document.querySelector<HTMLElement>('.admin-preview');
+      if (isAdmin && preview) {
+        preview.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
+      }
+
+      this.gui = new GUI({
+        title: 'Rastaak 3D Studio',
+        autoPlace: !(isAdmin && preview),
+        width: 288,
+        container: isAdmin && preview ? preview : undefined,
+      });
 
       const guiEl = this.gui.domElement;
+      guiEl.classList.add('rastaak-studio-gui');
       guiEl.style.zIndex = '999999';
       guiEl.style.position = 'fixed';
       guiEl.style.top = '90px';
@@ -481,7 +507,7 @@ export class SceneStudioGUI {
       const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
 
       const camParams = {
-        mode: 'Scroll Journey',
+        mode: isAdmin ? 'Free Orbit Camera' : 'Scroll Journey',
         selectedStop: getStopNames()[0],
         scrollT: SCENE_CONFIG.stops[0]?.progress ?? 0.0,
         camX: SCENE_CONFIG.stops[0]?.camera[0] ?? this.camera.position.x,
@@ -524,6 +550,11 @@ export class SceneStudioGUI {
           }
         },
       };
+
+      if (isAdmin) {
+        this.isOrbitMode = true;
+        this.onOrbitModeToggle?.(true);
+      }
 
       camFolder
         .add(camParams, 'mode', ['Scroll Journey', 'Manual Live Sliders', 'Free Orbit Camera'])
@@ -692,10 +723,8 @@ export class SceneStudioGUI {
       this.populateStoryTiming();
       if (!this.timelinePanel) {
         this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t));
-        this.timelinePanel.mount();
-        const preview = document.querySelector<HTMLElement>('.admin-preview');
-        const timeline = document.getElementById('rastaak-story-timeline');
-        if (preview && timeline) preview.appendChild(timeline);
+        const dock = document.getElementById('admin-timeline-dock');
+        this.timelinePanel.mount(dock);
       }
 
       const envFolder = this.gui.addFolder('Environment & Fog');
@@ -832,12 +861,10 @@ export class SceneStudioGUI {
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
       const urlParams = new URLSearchParams(window.location.search);
-      const isAdmin =
-        document.documentElement.dataset.admin === 'true' ||
-        window.location.pathname.startsWith('/admin');
-      const preview = document.querySelector<HTMLElement>('.admin-preview');
-      if (isAdmin && preview) {
+      if (isAdmin && preview && guiEl.parentElement !== preview) {
         preview.appendChild(guiEl);
+      }
+      if (isAdmin && preview) {
         guiEl.style.position = 'absolute';
         guiEl.style.top = '12px';
         guiEl.style.right = '12px';
@@ -845,6 +872,8 @@ export class SceneStudioGUI {
         guiEl.style.bottom = 'auto';
         guiEl.style.zIndex = '30';
         guiEl.style.maxHeight = 'calc(100% - 24px)';
+        guiEl.style.width = '288px';
+        guiEl.style.overflowY = 'auto';
       }
       const startOpen =
         forceOpen ||
@@ -1790,7 +1819,7 @@ export class SceneStudioGUI {
         this.gui.hide();
       }
     }
-    this.timelinePanel?.setVisible(open);
+    this.timelinePanel?.setVisible(open || this.isAdminHost());
     this.syncGizmoVisibility();
     if (!open) this.setGrabMode(false);
   }
@@ -1822,6 +1851,7 @@ export class SceneStudioGUI {
   }
 
   public destroy() {
+    this.disposed = true;
     this.setGrabMode(false);
     document.body.classList.remove('studio-grab-lamps');
     if (this.pointerHandler) {
