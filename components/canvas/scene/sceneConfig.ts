@@ -20,23 +20,23 @@ export const SCENE_CONFIG: SceneConfig = {
     },
     {
       id: "stop_2_hyper",
-      progress: 0.16,
-      camera: [15.005536, 0.720672, -5.544793],
+      progress: 0.1,
+      camera: [15, 0.720672, -1.5],
       target: [15, 1, 1.5],
       fov: 45
     },
     {
       id: "stop_3_hyper_reply",
-      progress: 0.3,
+      progress: 0.25,
       camera: [15.054576, 0.5, -1.830526],
       target: [13, 3, 2.5],
       fov: 42
     },
     {
       id: "stop_4_building7",
-      progress: 0.44,
+      progress: 0.3,
       camera: [14.190916, 1, -1.66638],
-      target: [14.2, 1, 2.9],
+      target: [14.2, 0, 2.9],
       fov: 40
     },
     {
