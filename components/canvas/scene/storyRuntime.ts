@@ -53,7 +53,6 @@ interface HubActor {
 const TRAIL_POINTS = 18;
 const BURST_SPARKS = 18;
 const FADE_IN_T = 0.028;
-const BURST_SPAN = 0.055;
 const CHIP_ROOF_PAD = 0.38;
 const HUB_LAUNCH_OUT = 0.48;
 const CITY_CENTER_X = 13.36;
@@ -149,6 +148,18 @@ function burstSpriteMaterial(opacity: number): THREE.SpriteMaterial {
 function smooth01(value: number): number {
   const x = Math.max(0, Math.min(1, value));
   return x * x * (3 - 2 * x);
+}
+
+function burstSettings() {
+  return {
+    delay: Math.max(0, STORY_CONFIG.burstDelay ?? 0.045),
+    span: Math.max(0.012, STORY_CONFIG.burstSpan ?? 0.06),
+    light: Math.max(0, STORY_CONFIG.burstLight ?? 3.2),
+    radius: Math.max(0.5, STORY_CONFIG.burstLightRadius ?? 10),
+    size: Math.max(0.1, STORY_CONFIG.burstSize ?? 1),
+    exposure: Math.max(0, STORY_CONFIG.burstExposure ?? 1),
+    sparks: Math.max(0, STORY_CONFIG.burstSparks ?? 1),
+  };
 }
 
 const _box = new THREE.Box3();
@@ -620,9 +631,12 @@ export class StoryRuntime {
       const holdEnd = client.config.arrive + STORY_CONFIG.chipHoldAfterArrive;
       const chipOn = t >= client.config.appear && t < holdEnd;
       const traveling = t >= client.config.dispatch && t < client.config.arrive;
-      const bursting = t >= client.config.arrive && t < client.config.arrive + BURST_SPAN;
+      const burst = burstSettings();
+      const burstEnd = client.config.arrive + burst.delay + burst.span;
+      const impacting = t >= client.config.arrive && t < client.config.arrive + burst.delay;
+      const bursting = t >= client.config.arrive + burst.delay && t < burstEnd;
       const showPacket =
-        this.enabled && !input.reducedMotion && !input.compact && (traveling || bursting);
+        this.enabled && !input.reducedMotion && !input.compact && (traveling || impacting || bursting);
 
       this.updatePacket(client, t, showPacket);
 
@@ -689,13 +703,16 @@ export class StoryRuntime {
 
     const span = Math.max(0.0001, client.config.arrive - client.config.dispatch);
     const u = Math.max(0, Math.min(1, (t - client.config.dispatch) / span));
-    const bursting = t >= client.config.arrive;
-    const burstK = bursting ? Math.max(0, Math.min(1, (t - client.config.arrive) / BURST_SPAN)) : 0;
-    if (bursting) packet.group.position.copy(client.roof);
+    const burst = burstSettings();
+    const blastStart = client.config.arrive + burst.delay;
+    const onTarget = t >= client.config.arrive;
+    const bursting = t >= blastStart;
+    const burstK = bursting ? Math.max(0, Math.min(1, (t - blastStart) / burst.span)) : 0;
+    if (onTarget) packet.group.position.copy(client.roof);
     else packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;
 
-    const fadeIn = bursting ? 1 : smooth01((t - client.config.dispatch) / FADE_IN_T);
+    const fadeIn = onTarget ? 1 : smooth01((t - client.config.dispatch) / FADE_IN_T);
     const logoOut = bursting ? Math.max(0, 1 - burstK / 0.28) : 1;
     const logoFade = fadeIn * logoOut;
     const pulse = 0.65 + Math.sin(u * Math.PI) * 0.35;
@@ -710,10 +727,10 @@ export class StoryRuntime {
     const burstPop = bursting ? smooth01(burstK / 0.2) : 0;
     const burstDecay = bursting ? (burstK < 0.18 ? 1 : Math.pow(1 - (burstK - 0.18) / 0.82, 1.55)) : 0;
     packet.light.intensity = bursting
-      ? bounce * (0.55 + burstDecay * 3.4)
+      ? bounce * burst.light * burstDecay * burst.exposure
       : (bounce + Math.sin(u * Math.PI) * bounce * 0.7) * fadeIn;
     packet.light.distance = bursting
-      ? Math.max(8, STORY_CONFIG.packetDistance ?? 9)
+      ? burst.radius
       : Math.max(0.5, STORY_CONFIG.packetDistance ?? 9);
     packet.light.decay = 2;
 
@@ -779,23 +796,23 @@ export class StoryRuntime {
         burstCoreMat.needsUpdate = true;
         burstRingMat.needsUpdate = true;
       }
-      const blast = (0.35 + burstPop * 2.8) * (glowSize + coreSize * 5.2);
+      const blast = (0.35 + burstPop * 2.8) * (glowSize + coreSize * 5.2) * burst.size;
       packet.burstCore.scale.setScalar(blast);
       packet.burstRing.scale.setScalar(blast * (1.35 + burstPop * 1.9));
       burstCoreMat.color.copy(_packetInner);
       burstRingMat.color.copy(_packetOuter);
-      burstCoreMat.opacity = 0.95 * burstDecay;
-      burstRingMat.opacity = 0.42 * burstDecay;
+      burstCoreMat.opacity = Math.min(1, 0.95 * burstDecay * burst.exposure);
+      burstRingMat.opacity = Math.min(1, 0.42 * burstDecay * burst.exposure);
       packet.burstCore.visible = true;
       packet.burstRing.visible = true;
 
       const burstSparkMat = packet.burstSparks.material as THREE.PointsMaterial;
       burstSparkMat.color.copy(_packetSpark);
-      burstSparkMat.opacity = Math.min(1, 0.95 * burstDecay);
+      burstSparkMat.opacity = Math.min(1, 0.95 * burstDecay * burst.sparks);
       burstSparkMat.size = 0.06 + burstPop * 0.12;
-      packet.burstSparks.visible = true;
+      packet.burstSparks.visible = burst.sparks > 0.02;
       const burstPos = packet.burstSparks.geometry.getAttribute('position') as THREE.BufferAttribute;
-      const reach = (0.2 + burstPop * 1.85) * (0.35 + glowSize * 4);
+      const reach = (0.2 + burstPop * 1.85) * (0.35 + glowSize * 4) * burst.size;
       for (let i = 0; i < burstPos.count; i++) {
         const a = i * 2.399;
         const lift = ((i % 5) - 2) * 0.12;

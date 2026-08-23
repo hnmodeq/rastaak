@@ -141,6 +141,13 @@ export interface StudioStorySave {
   packetGlowSize: number;
   packetCoreSize: number;
   packetTrail: number;
+  burstDelay?: number;
+  burstSpan?: number;
+  burstLight?: number;
+  burstLightRadius?: number;
+  burstSize?: number;
+  burstExposure?: number;
+  burstSparks?: number;
   chipBorder: number;
   chipBorderOpacity: number;
   chipBackground: number;

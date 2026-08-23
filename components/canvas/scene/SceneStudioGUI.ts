@@ -674,6 +674,13 @@ export class SceneStudioGUI {
         packetGlowSize: STORY_CONFIG.packetGlowSize,
         packetCoreSize: STORY_CONFIG.packetCoreSize,
         packetTrail: STORY_CONFIG.packetTrail,
+        burstDelay: STORY_CONFIG.burstDelay,
+        burstSpan: STORY_CONFIG.burstSpan,
+        burstLight: STORY_CONFIG.burstLight,
+        burstLightRadius: STORY_CONFIG.burstLightRadius,
+        burstSize: STORY_CONFIG.burstSize,
+        burstExposure: STORY_CONFIG.burstExposure,
+        burstSparks: STORY_CONFIG.burstSparks,
         chipBorder: STORY_CONFIG.chipBorder,
         chipBorderOpacity: STORY_CONFIG.chipBorderOpacity,
         chipBackground: STORY_CONFIG.chipBackground,
@@ -1350,6 +1357,60 @@ export class SceneStudioGUI {
       .onChange((value: number) => {
         STORY_CONFIG.packetTrail = value;
       });
+
+    const burstFolder = storyFolder.addFolder('Arrival explosion');
+    const burstParams = {
+      burstDelay: STORY_CONFIG.burstDelay ?? 0.045,
+      burstSpan: STORY_CONFIG.burstSpan ?? 0.06,
+      burstLight: STORY_CONFIG.burstLight ?? 3.2,
+      burstLightRadius: STORY_CONFIG.burstLightRadius ?? 10,
+      burstSize: STORY_CONFIG.burstSize ?? 1,
+      burstExposure: STORY_CONFIG.burstExposure ?? 1,
+      burstSparks: STORY_CONFIG.burstSparks ?? 1,
+    };
+    burstFolder
+      .add(burstParams, 'burstDelay', 0, 0.16, 0.005)
+      .name('Delay after hit')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstDelay = value;
+      });
+    burstFolder
+      .add(burstParams, 'burstSpan', 0.015, 0.16, 0.005)
+      .name('Explosion duration')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstSpan = value;
+      });
+    burstFolder
+      .add(burstParams, 'burstLight', 0, 8, 0.05)
+      .name('Explosion light amount')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstLight = value;
+      });
+    burstFolder
+      .add(burstParams, 'burstLightRadius', 0.5, 30, 0.1)
+      .name('Explosion reflection reach')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstLightRadius = value;
+      });
+    burstFolder
+      .add(burstParams, 'burstSize', 0.2, 3, 0.05)
+      .name('Explosion flare size')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstSize = value;
+      });
+    burstFolder
+      .add(burstParams, 'burstExposure', 0, 3, 0.05)
+      .name('Explosion exposure')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstExposure = value;
+      });
+    burstFolder
+      .add(burstParams, 'burstSparks', 0, 2, 0.05)
+      .name('Explosion sparks')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstSparks = value;
+      });
+
     storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak building').onChange((v: string) => applyColor('hubPulse', v));
     storyFolder.addColor(colorParams, 'hubPulseWindow').name('Rastaak window').onChange((v: string) => applyColor('hubPulseWindow', v));
     storyFolder.addColor(colorParams, 'need').name('Client before — building').onChange((v: string) => applyColor('need', v));
@@ -1601,6 +1662,7 @@ export class SceneStudioGUI {
         previewRed: () => this.seekStory(client.appear),
         previewLaunch: () => this.seekStory(client.dispatch),
         previewArrive: () => this.seekStory(client.arrive),
+        previewBurst: () => this.seekStory(client.arrive + (STORY_CONFIG.burstDelay ?? 0.045)),
       };
 
       const syncRow = () => {
@@ -1662,6 +1724,7 @@ export class SceneStudioGUI {
       folder.add(row, 'previewRed').name('Preview — turns red');
       folder.add(row, 'previewLaunch').name('Preview — logo launches');
       folder.add(row, 'previewArrive').name('Preview — logo arrives');
+      folder.add(row, 'previewBurst').name('Preview — explosion');
     });
 
     const captionFolder = root.addFolder('Captions');

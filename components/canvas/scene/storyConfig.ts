@@ -51,6 +51,13 @@ export interface StoryConfig {
   packetGlowSize: number;
   packetCoreSize: number;
   packetTrail: number;
+  burstDelay?: number;
+  burstSpan?: number;
+  burstLight?: number;
+  burstLightRadius?: number;
+  burstSize?: number;
+  burstExposure?: number;
+  burstSparks?: number;
   chipBorder: number;
   chipBorderOpacity: number;
   chipBackground: number;
@@ -148,6 +155,13 @@ export const STORY_CONFIG: StoryConfig = {
   packetGlowSize: 0.04,
   packetCoreSize: 0.095,
   packetTrail: 1,
+  burstDelay: 0.045,
+  burstSpan: 0.06,
+  burstLight: 3.2,
+  burstLightRadius: 10,
+  burstSize: 1,
+  burstExposure: 1,
+  burstSparks: 1,
   chipBorder: 0x0424ff,
   chipBorderOpacity: 0,
   chipBackground: 0x14151a,
