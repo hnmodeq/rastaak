@@ -85,11 +85,11 @@ export const SCENE_CONFIG: SceneConfig = {
   lights: LIGHTS_CONFIG,
 
   environment: {
-    backgroundColor: 0xc5c5c5,
-    fogColor: 0xc4c4c4,
-    fogStart: 100,
-    fogEnd: 250,
-    shadowColor: 0xffffff,
+    backgroundColor: 0x0b0b0b,
+    fogColor: 0x0b0b0b,
+    fogStart: 14,
+    fogEnd: 34,
+    shadowColor: 0x202020,
     shadowOpacity: 0
   },
 
@@ -99,16 +99,16 @@ export const SCENE_CONFIG: SceneConfig = {
 
   materials: {
     buildingColor: 0x000000,
-    windowColor: 0x949494,
+    windowColor: 0xc1c1c1,
     rastaakColor: 0x000000,
     logoColor: 0xffffff,
-    groundColor: 0x3e3e3e,
+    groundColor: 0x000000,
     plateColor: 0x7f7f7f,
     borderColor: 0x191919,
     treeTrunkColor: 0x6b4f2a,
     treeLeafColor: 0x3d6b3a,
     globalFacadeColor: 0x000000,
-    globalWindowColor: 0x949494,
+    globalWindowColor: 0xc1c1c1,
     overrides: {}
   } as MaterialsConfig,
 };

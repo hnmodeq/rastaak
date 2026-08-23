@@ -21,7 +21,7 @@ export const HERO_COPY: HeroCopyConfig = {
   subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
   subtitleLine2: "",
   subtitleColor: 0xffffff,
-  scrollHint: "اسکرول کنید",
+  scrollHint: "پیمایش کنید",
   scrollHintColor: 0xf5f5f2
 };
 
