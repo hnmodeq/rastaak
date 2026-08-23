@@ -323,6 +323,10 @@ export const SCENE_CONFIG: SceneConfig = {
             client?.resolve,
             asFinite(client?.arrive, 0.24),
           ),
+          needEnd:
+            client?.needEnd === undefined || client?.needEnd === null
+              ? undefined
+              : asFinite(client.needEnd, asFinite(client?.arrive, 0.24)),
           land: asVec3(client?.land, [0, 0, 0]),
         })),
         captions: rawCaptions.map((caption, index) => ({
@@ -372,6 +376,7 @@ export interface StoryClientConfig {
   dispatch: number;
   arrive: number;
   resolve?: number;
+  needEnd?: number;
   land?: [number, number, number];
 }
 
@@ -437,6 +442,13 @@ export function resolveAt(client: { appear: number; arrive: number; resolve?: nu
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
 
 export const STORY_CONFIG: StoryConfig = ${emit(story, 0)};
+
+export function needEndAt(client: { appear: number; arrive: number; needEnd?: number }): number {
+  if (typeof client.needEnd === 'number' && Number.isFinite(client.needEnd)) {
+    return Math.min(1, Math.max(client.appear, client.needEnd));
+  }
+  return Math.min(1, Math.max(client.appear, client.arrive + Math.max(0, STORY_CONFIG.chipHoldAfterArrive || 0)));
+}
 
 export function needTitleAt(
   client: { need: string; needAfter?: string; arrive: number },

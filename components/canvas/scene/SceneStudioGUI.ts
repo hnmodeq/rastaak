@@ -3,7 +3,7 @@ import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import { applySceneShadows } from './shadowTint';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
-import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, resolveAt, type StoryFrame } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, resolveAt, type StoryFrame } from './storyConfig';
 import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
@@ -91,6 +91,7 @@ export class SceneStudioGUI {
   private orbitLockedByGizmo = false;
   private currentStopIndex = 0;
   private playheadT = 0;
+  private refreshNeedTimes = () => {};
   private readonly journeySample = {
     camera: [0, 0, 0] as [number, number, number],
     target: [0, 0, 0] as [number, number, number],
@@ -214,6 +215,7 @@ export class SceneStudioGUI {
     window.addEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.addEventListener('resize', this.onChromeLayout);
     window.addEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
+    window.addEventListener('rastaak-studio-timing-changed', this.onStudioTiming);
     this.initGUI();
     this.initRaycaster();
   }
@@ -857,7 +859,7 @@ export class SceneStudioGUI {
       const host = this.ensurePanelHost();
       host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
       applyStudioChrome();
-      host.addEventListener(
+      host.addEventLi host.addEventListener(
         'wheel',
         (e: WheelEvent) => {
           e.stopPropagation();
@@ -1623,11 +1625,19 @@ export class SceneStudioGUI {
       });
     this.addTypeControls(needsFolder.addFolder('Type'), TYPE_CHROME.chipText, hex);
 
+    const needTimeRows: Array<{
+      client: (typeof STORY_CONFIG.clients)[number];
+      params: { start: number; end: number };
+      startCtrl: { updateDisplay: () => void };
+      endCtrl: { updateDisplay: () => void };
+    }> = [];
     STORY_CONFIG.clients.forEach((client) => {
       const folder = needsFolder.addFolder(client.building);
       const params = {
         need: client.need,
         needAfter: client.needAfter ?? '',
+        start: client.appear,
+        end: needEndAt(client),
       };
       folder.add(params, 'need').name('Before explosion').onChange((value: string) => {
         client.need = value;
@@ -1635,7 +1645,45 @@ export class SceneStudioGUI {
       folder.add(params, 'needAfter').name('After explosion').onChange((value: string) => {
         client.needAfter = value;
       });
+      const startCtrl = folder
+        .add(params, 'start', 0, 1, 0.01)
+        .name('Start')
+        .onChange((value: number) => {
+          const maxStart = Math.min(client.arrive - MIN_FLIGHT, needEndAt(client) - MIN_FLIGHT);
+          client.appear = clampOrdered(value, 0, maxStart);
+          if (client.dispatch < client.appear) client.dispatch = client.appear;
+          if (client.arrive < client.dispatch + MIN_FLIGHT) {
+            client.arrive = Math.min(1, client.dispatch + MIN_FLIGHT);
+          }
+          if (resolveAt(client) < client.appear) client.resolve = client.appear;
+          if (needEndAt(client) < client.appear + 0.01) client.needEnd = Math.min(1, client.appear + 0.01);
+          params.start = client.appear;
+          params.end = needEndAt(client);
+          startCtrl.updateDisplay();
+          endCtrl.updateDisplay();
+          this.seekStory(client.appear);
+          this.notifyTimingChanged();
+        });
+      const endCtrl = folder
+        .add(params, 'end', 0, 1, 0.01)
+        .name('End')
+        .onChange((value: number) => {
+          client.needEnd = clampOrdered(value, client.appear + 0.01, 1);
+          params.end = needEndAt(client);
+          endCtrl.updateDisplay();
+          this.seekStory(client.needEnd);
+          this.notifyTimingChanged();
+        });
+      needTimeRows.push({ client, params, startCtrl, endCtrl });
     });
+    this.refreshNeedTimes = () => {
+      needTimeRows.forEach((row) => {
+        row.params.start = row.client.appear;
+        row.params.end = needEndAt(row.client);
+        row.startCtrl.updateDisplay();
+        row.endCtrl.updateDisplay();
+      });
+    };
 
     const chapterFolder = this.addTab('Chapter panel');
     const timelineParams = {
@@ -2545,6 +2593,7 @@ export class SceneStudioGUI {
     window.removeEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.removeEventListener('resize', this.onChromeLayout);
     window.removeEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
+    window.removeEventListener('rastaak-studio-timing-changed', this.onStudioTiming);
     this.chromeObserver?.disconnect();
     this.chromeObserver = null;
     this.setGrabMode(false);

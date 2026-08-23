@@ -1,5 +1,5 @@
 import { SCENE_CONFIG } from './sceneConfig';
-import { STORY_CONFIG, STORY_FRAME_EVENT, resolveAt, type StoryFrame } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, needEndAt, resolveAt, type StoryFrame } from './storyConfig';
 import { FLOW_CONFIG } from '@/components/home/flowConfig';
 
 const MIN_FLIGHT = 0.02;
@@ -20,18 +20,46 @@ function pct(t: number): string {
   return `${(clamp01(t) * 100).toFixed(3)}%`;
 }
 
-type DragKind = 'playhead' | 'cam' | 'step-start' | 'step-end' | 'need' | 'launch' | 'arrive' | 'resolve' | 'cap-start' | 'cap-end';
+type DragKind =
+  | 'playhead'
+  | 'cam'
+  | 'step-start'
+  | 'step-end'
+  | 'step-move'
+  | 'need'
+  | 'launch'
+  | 'arrive'
+  | 'resolve'
+  | 'need-move'
+  | 'logo-move'
+  | 'hold-start'
+  | 'hold-end'
+  | 'hold-move'
+  | 'cap-start'
+  | 'cap-end'
+  | 'cap-move';
 
 type DragState = {
   kind: DragKind;
   index: number;
   lane: HTMLElement;
+  laneId: string;
+  laneRect: DOMRect;
+  originT: number;
+  originLeft: number;
+  originRight: number;
 };
 
 type TimingSnapshot = {
   stops: number[];
   steps: Array<[number, number]>;
-  clients: Array<{ appear: number; dispatch: number; arrive: number; resolve: number }>;
+  clients: Array<{
+    appear: number;
+    dispatch: number;
+    arrive: number;
+    resolve: number;
+    needEnd?: number;
+  }>;
   captions: Array<[number, number]>;
   chipHoldAfterArrive: number;
 };
@@ -70,17 +98,24 @@ export class StoryTimelinePanel {
   };
   private onPointerMove = (event: PointerEvent) => this.handleMove(event);
   private onPointerUp = () => {
-    if (this.dragging && this.dragging.kind !== 'playhead' && this.dragSnapshot) {
-      if (JSON.stringify(this.dragSnapshot) !== JSON.stringify(this.capture())) {
-        this.undoStack.push(this.dragSnapshot);
-        if (this.undoStack.length > 80) this.undoStack.shift();
-        this.redoStack = [];
-      }
+    if (!this.dragging) return;
+    const changed =
+      this.dragging.kind !== 'playhead' &&
+      this.dragSnapshot &&
+      JSON.stringify(this.dragSnapshot) !== JSON.stringify(this.capture());
+    if (changed && this.dragSnapshot) {
+      this.undoStack.push(this.dragSnapshot);
+      if (this.undoStack.length > 80) this.undoStack.shift();
+      this.redoStack = [];
     }
+    const shouldBroadcast = this.dragging.kind !== 'playhead';
     this.dragSnapshot = null;
     this.dragging = null;
     this.paint();
     this.syncUndoButtons();
+    if (shouldBroadcast) {
+      window.dispatchEvent(new CustomEvent(TIMING_EVENT));
+    }
   };
   private onKeyDown = (event: KeyboardEvent) => {
     if (!this.root || this.collapsed) return;
@@ -138,6 +173,7 @@ export class StoryTimelinePanel {
           <i class="stl-swatch" style="background:#1c6bff"></i>logo
           <i class="stl-swatch" style="background:#7a5cff"></i>page
           <i class="stl-swatch" style="background:#c9a227"></i>camera
+          <span class="stl-hint">drag bar to move · drag edges to trim</span>
         </div>
         <div class="stl-lanes"></div>
       </div>
@@ -227,6 +263,7 @@ export class StoryTimelinePanel {
   }
 
   refresh() {
+    if (this.dragging) return;
     this.paint();
   }
 
@@ -277,9 +314,11 @@ export class StoryTimelinePanel {
     if (this.readout) this.readout.textContent = `t ${this.playhead.toFixed(2)}`;
   }
 
-  private tFromEvent(event: PointerEvent, lane: HTMLElement): number {
-    const rect = lane.getBoundingClientRect();
-    return clamp01((event.clientX - rect.left) / Math.max(1, rect.width));
+  private tFromEvent(event: PointerEvent, lane: HTMLElement, rect?: DOMRect): number {
+    const box = rect ?? lane.getBoundingClientRect();
+    const width = box.width;
+    if (width < 2) return this.dragging?.originT ?? this.playhead;
+    return clamp01((event.clientX - box.left) / width);
   }
 
   private capture(): TimingSnapshot {
@@ -291,6 +330,7 @@ export class StoryTimelinePanel {
         dispatch: client.dispatch,
         arrive: client.arrive,
         resolve: resolveAt(client),
+        needEnd: client.needEnd,
       })),
       captions: STORY_CONFIG.captions.map((caption) => [caption.range[0], caption.range[1]]),
       chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
@@ -310,6 +350,9 @@ export class StoryTimelinePanel {
       client.appear = times.appear;
       client.dispatch = times.dispatch;
       client.arrive = times.arrive;
+      client.resolve = times.resolve;
+      if (times.needEnd === undefined) delete client.needEnd;
+      else client.needEnd = times.needEnd;
     });
     snapshot.captions.forEach((range, index) => {
       if (STORY_CONFIG.captions[index]) STORY_CONFIG.captions[index].range = [range[0], range[1]];
@@ -340,17 +383,68 @@ export class StoryTimelinePanel {
     if (this.redoBtn) this.redoBtn.disabled = this.redoStack.length === 0;
   }
 
+  private clipOrigin(kind: DragKind, index: number): [number, number] {
+    if (kind === 'step-start' || kind === 'step-end' || kind === 'step-move') {
+      const step = FLOW_CONFIG[index];
+      return step ? [step.progressRange[0], step.progressRange[1]] : [0, 0];
+    }
+    const client = STORY_CONFIG.clients[index];
+    if (client && (kind === 'need' || kind === 'need-move')) return [client.appear, client.dispatch];
+    if (client && (kind === 'launch' || kind === 'logo-move')) return [client.dispatch, client.arrive];
+    if (client && (kind === 'arrive' || kind === 'hold-start' || kind === 'hold-end' || kind === 'hold-move')) {
+      return [client.arrive, needEndAt(client)];
+    }
+    if (kind === 'cap-start' || kind === 'cap-end' || kind === 'cap-move') {
+      const caption = STORY_CONFIG.captions[index];
+      return caption ? [caption.range[0], caption.range[1]] : [0, 0];
+    }
+    if (kind === 'cam') {
+      const stop = SCENE_CONFIG.stops[index];
+      const t = stop?.progress ?? 0;
+      return [t, t];
+    }
+    if (kind === 'resolve') {
+      const item = STORY_CONFIG.clients[index];
+      const t = item ? resolveAt(item) : 0;
+      return [t, t];
+    }
+    return [0, 0];
+  }
+
   private startDrag(kind: DragKind, index: number, lane: HTMLElement, event: PointerEvent) {
     event.preventDefault();
     event.stopPropagation();
+    const laneId = lane.dataset.lane || '';
+    const laneRect = lane.getBoundingClientRect();
+    const originT = this.tFromEvent(event, lane, laneRect);
+    const [originLeft, originRight] = this.clipOrigin(kind, index);
     if (kind !== 'playhead') this.dragSnapshot = this.capture();
-    this.dragging = { kind, index, lane };
+    this.dragging = { kind, index, lane, laneId, laneRect, originT, originLeft, originRight };
+    try {
+      (event.target as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
+    } catch {
+      /* ignore */
+    }
     this.handleMove(event);
+  }
+
+  private rebindDragLane() {
+    if (!this.dragging || !this.lanes) return;
+    const live = this.lanes.querySelector(`[data-lane="${this.dragging.laneId}"]`);
+    if (live instanceof HTMLElement) this.dragging.lane = live;
+  }
+
+  private shiftedRange(t: number, minLeft: number, maxRight: number, minSpan = MIN_SPAN): [number, number] {
+    const drag = this.dragging;
+    if (!drag) return [minLeft, maxRight];
+    const duration = Math.max(minSpan, drag.originRight - drag.originLeft);
+    const nextLeft = clampOrdered(drag.originLeft + (t - drag.originT), minLeft, Math.max(minLeft, maxRight - duration));
+    return [nextLeft, nextLeft + duration];
   }
 
   private handleMove(event: PointerEvent) {
     if (!this.dragging) return;
-    const t = this.tFromEvent(event, this.dragging.lane);
+    const t = this.tFromEvent(event, this.dragging.lane, this.dragging.laneRect);
     const { kind, index } = this.dragging;
 
     if (kind === 'playhead') {
@@ -366,13 +460,22 @@ export class StoryTimelinePanel {
       this.setPlayhead(SCENE_CONFIG.stops[index].progress);
       this.onSeek(SCENE_CONFIG.stops[index].progress);
       this.paint();
+      this.rebindDragLane();
       return;
     }
 
-    if (kind === 'step-start' || kind === 'step-end') {
+    if (kind === 'step-start' || kind === 'step-end' || kind === 'step-move') {
       const step = FLOW_CONFIG[index];
       if (!step) return;
-      if (kind === 'step-start') {
+      if (kind === 'step-move') {
+        const minLeft = index > 0 ? FLOW_CONFIG[index - 1].progressRange[0] + MIN_SPAN : 0;
+        const maxRight = index < FLOW_CONFIG.length - 1 ? FLOW_CONFIG[index + 1].progressRange[1] - MIN_SPAN : 1;
+        const [nextStart, nextEnd] = this.shiftedRange(t, minLeft, maxRight);
+        step.progressRange[0] = nextStart;
+        step.progressRange[1] = nextEnd;
+        if (index > 0) FLOW_CONFIG[index - 1].progressRange[1] = nextStart;
+        if (index < FLOW_CONFIG.length - 1) FLOW_CONFIG[index + 1].progressRange[0] = nextEnd;
+      } else if (kind === 'step-start') {
         const prevStart = index > 0 ? FLOW_CONFIG[index - 1].progressRange[0] + MIN_SPAN : 0;
         const next = clampOrdered(t, prevStart, step.progressRange[1] - MIN_SPAN);
         step.progressRange[0] = next;
@@ -386,32 +489,74 @@ export class StoryTimelinePanel {
       this.setPlayhead(t);
       this.onSeek(t);
       this.paint();
+      this.rebindDragLane();
       return;
     }
 
-    if (kind === 'need' || kind === 'launch' || kind === 'arrive' || kind === 'resolve') {
+    if (
+      kind === 'need' ||
+      kind === 'launch' ||
+      kind === 'arrive' ||
+      kind === 'resolve' ||
+      kind === 'need-move' ||
+      kind === 'logo-move' ||
+      kind === 'hold-start' ||
+      kind === 'hold-end' ||
+      kind === 'hold-move'
+    ) {
       const client = STORY_CONFIG.clients[index];
       if (!client) return;
       if (kind === 'need') {
         client.appear = clampOrdered(t, 0, client.arrive - MIN_FLIGHT);
         if (client.dispatch < client.appear) client.dispatch = client.appear;
         if (resolveAt(client) < client.appear) client.resolve = client.appear;
+        if (needEndAt(client) < client.appear + MIN_SPAN) client.needEnd = Math.min(1, client.appear + MIN_SPAN);
       } else if (kind === 'launch') {
         client.dispatch = clampOrdered(t, client.appear, client.arrive - MIN_FLIGHT);
       } else if (kind === 'arrive') {
         client.arrive = clampOrdered(t, client.dispatch + MIN_FLIGHT, 1);
-      } else {
+        if (client.needEnd !== undefined && client.arrive > client.needEnd - MIN_SPAN) {
+          client.needEnd = Math.min(1, client.arrive + MIN_SPAN);
+        }
+      } else if (kind === 'hold-start') {
+        const pinnedEnd = this.dragging.originRight;
+        client.needEnd = pinnedEnd;
+        client.arrive = clampOrdered(t, client.dispatch + MIN_FLIGHT, pinnedEnd - MIN_SPAN);
+      } else if (kind === 'resolve') {
         client.resolve = clampOrdered(t, client.appear, 1);
+      } else if (kind === 'need-move') {
+        const [nextAppear, nextDispatch] = this.shiftedRange(t, 0, client.arrive - MIN_FLIGHT, MIN_SPAN);
+        client.appear = nextAppear;
+        client.dispatch = Math.min(nextDispatch, client.arrive - MIN_FLIGHT);
+        if (resolveAt(client) < client.appear) client.resolve = client.appear;
+      } else if (kind === 'logo-move') {
+        const [nextDispatch, nextArrive] = this.shiftedRange(t, client.appear, 1, MIN_FLIGHT);
+        client.dispatch = Math.max(client.appear, nextDispatch);
+        client.arrive = Math.max(client.dispatch + MIN_FLIGHT, nextArrive);
+        if (client.needEnd !== undefined && client.arrive > client.needEnd) {
+          client.needEnd = Math.min(1, client.arrive + MIN_SPAN);
+        }
+      } else if (kind === 'hold-end') {
+        client.needEnd = clampOrdered(t, client.arrive + MIN_SPAN, 1);
+      } else if (kind === 'hold-move') {
+        const [nextArrive, nextEnd] = this.shiftedRange(t, client.dispatch + MIN_FLIGHT, 1, MIN_SPAN);
+        client.arrive = nextArrive;
+        client.needEnd = nextEnd;
       }
       this.setPlayhead(t);
       this.onSeek(t);
       this.paint();
+      this.rebindDragLane();
       return;
     }
 
     const caption = STORY_CONFIG.captions[index];
     if (!caption) return;
-    if (kind === 'cap-start') {
+    if (kind === 'cap-move') {
+      const [nextStart, nextEnd] = this.shiftedRange(t, 0, 1.01, MIN_SPAN);
+      caption.range[0] = nextStart;
+      caption.range[1] = nextEnd;
+    } else if (kind === 'cap-start') {
       caption.range[0] = clampOrdered(t, 0, caption.range[1] - MIN_SPAN);
     } else {
       caption.range[1] = clampOrdered(t, caption.range[0] + MIN_SPAN, 1.01);
@@ -419,13 +564,14 @@ export class StoryTimelinePanel {
     this.setPlayhead(t);
     this.onSeek(t);
     this.paint();
+    this.rebindDragLane();
   }
 
   private paint() {
     if (!this.lanes) return;
     this.lanes.innerHTML = '';
 
-    const ruler = this.makeTrack('Time');
+    const ruler = this.makeTrack('Time', 'time');
     const rulerLane = ruler.querySelector('.stl-lane') as HTMLDivElement;
     ;[0, 0.25, 0.5, 0.75, 1].forEach((mark) => {
       const tick = document.createElement('span');
@@ -437,7 +583,7 @@ export class StoryTimelinePanel {
     this.bindSeek(rulerLane);
     this.lanes.appendChild(ruler);
 
-    const cam = this.makeTrack('Camera');
+    const cam = this.makeTrack('Camera', 'camera');
     const camLane = cam.querySelector('.stl-lane') as HTMLDivElement;
     SCENE_CONFIG.stops.forEach((stop, index) => {
       const mark = document.createElement('button');
@@ -452,7 +598,7 @@ export class StoryTimelinePanel {
     this.bindSeek(camLane);
     this.lanes.appendChild(cam);
 
-    const page = this.makeTrack('Chapters');
+    const page = this.makeTrack('Chapters', 'chapters');
     const pageLane = page.querySelector('.stl-lane') as HTMLDivElement;
     FLOW_CONFIG.forEach((step, index) => {
       pageLane.appendChild(
@@ -465,6 +611,7 @@ export class StoryTimelinePanel {
           lane: pageLane,
           onStart: (event) => this.startDrag('step-start', index, pageLane, event),
           onEnd: (event) => this.startDrag('step-end', index, pageLane, event),
+          onMove: (event) => this.startDrag('step-move', index, pageLane, event),
         }),
       );
     });
@@ -472,9 +619,9 @@ export class StoryTimelinePanel {
     this.lanes.appendChild(page);
 
     STORY_CONFIG.clients.forEach((client, index) => {
-      const row = this.makeTrack(client.building.replace(' Building', ''));
+      const row = this.makeTrack(client.building.replace(' Building', ''), `client-${client.id || index}`);
       const lane = row.querySelector('.stl-lane') as HTMLDivElement;
-      const holdEnd = Math.min(1, client.arrive + (STORY_CONFIG.chipHoldAfterArrive || 0));
+      const holdEnd = needEndAt(client);
       lane.appendChild(
         this.makeClip({
           left: client.appear,
@@ -485,6 +632,7 @@ export class StoryTimelinePanel {
           lane,
           onStart: (event) => this.startDrag('need', index, lane, event),
           onEnd: (event) => this.startDrag('launch', index, lane, event),
+          onMove: (event) => this.startDrag('need-move', index, lane, event),
         }),
       );
       lane.appendChild(
@@ -497,17 +645,21 @@ export class StoryTimelinePanel {
           lane,
           onStart: (event) => this.startDrag('launch', index, lane, event),
           onEnd: (event) => this.startDrag('arrive', index, lane, event),
+          onMove: (event) => this.startDrag('logo-move', index, lane, event),
         }),
       );
-      if (holdEnd > client.arrive + 0.005) {
+      if (holdEnd > client.arrive + 0.002) {
         lane.appendChild(
           this.makeClip({
             left: client.arrive,
             right: holdEnd,
-            label: 'hold',
+            label: 'need',
             color: '#2f9e6b',
-            title: `${client.building} chip hold`,
+            title: `${client.building} needs window`,
             lane,
+            onStart: (event) => this.startDrag('hold-start', index, lane, event),
+            onEnd: (event) => this.startDrag('hold-end', index, lane, event),
+            onMove: (event) => this.startDrag('hold-move', index, lane, event),
           }),
         );
       }
@@ -523,7 +675,7 @@ export class StoryTimelinePanel {
       this.lanes!.appendChild(row);
     });
 
-    const caps = this.makeTrack('Captions');
+    const caps = this.makeTrack('Captions', 'captions');
     const capLane = caps.querySelector('.stl-lane') as HTMLDivElement;
     STORY_CONFIG.captions.forEach((caption, index) => {
       capLane.appendChild(
@@ -536,6 +688,7 @@ export class StoryTimelinePanel {
           lane: capLane,
           onStart: (event) => this.startDrag('cap-start', index, capLane, event),
           onEnd: (event) => this.startDrag('cap-end', index, capLane, event),
+          onMove: (event) => this.startDrag('cap-move', index, capLane, event),
         }),
       );
     });
@@ -557,10 +710,11 @@ export class StoryTimelinePanel {
     });
   }
 
-  private makeTrack(label: string): HTMLDivElement {
+  private makeTrack(label: string, id: string): HTMLDivElement {
     const row = document.createElement('div');
     row.className = 'stl-track';
-    row.innerHTML = `<div class="stl-label">${label}</div><div class="stl-lane"></div>`;
+    row.dataset.track = id;
+    row.innerHTML = `<div class="stl-label">${label}</div><div class="stl-lane" data-lane="${id}"></div>`;
     return row;
   }
 
@@ -573,29 +727,36 @@ export class StoryTimelinePanel {
     lane: HTMLElement;
     onStart?: (event: PointerEvent) => void;
     onEnd?: (event: PointerEvent) => void;
+    onMove?: (event: PointerEvent) => void;
   }): HTMLDivElement {
     const clip = document.createElement('div');
     clip.className = 'stl-clip';
-    clip.title = input.title;
+    clip.title = `${input.title} — drag to move, edges to trim`;
     clip.style.left = pct(input.left);
-    clip.style.width = pct(Math.max(0, input.right - input.left));
+    clip.style.width = pct(Math.max(MIN_SPAN * 0.5, input.right - input.left));
     clip.style.background = input.color;
-    clip.textContent = input.label;
+    const text = document.createElement('span');
+    text.className = 'stl-clip-label';
+    text.textContent = input.label;
+    clip.appendChild(text);
     if (input.onStart) {
       const handle = document.createElement('span');
       handle.className = 'stl-handle stl-handle-start';
+      handle.title = 'Drag start';
       handle.addEventListener('pointerdown', (event) => input.onStart?.(event));
       clip.appendChild(handle);
     }
     if (input.onEnd) {
       const handle = document.createElement('span');
       handle.className = 'stl-handle stl-handle-end';
+      handle.title = 'Drag end';
       handle.addEventListener('pointerdown', (event) => input.onEnd?.(event));
       clip.appendChild(handle);
     }
     clip.addEventListener('pointerdown', (event) => {
       if ((event.target as HTMLElement).classList.contains('stl-handle')) return;
-      this.startDrag('playhead', -1, input.lane, event);
+      if (input.onMove) input.onMove(event);
+      else this.startDrag('playhead', -1, input.lane, event);
     });
     return clip;
   }
@@ -642,6 +803,7 @@ export class StoryTimelinePanel {
         box-shadow: 0 16px 40px rgba(0,0,0,0.28);
         backdrop-filter: blur(14px);
         pointer-events: auto;
+        touch-action: none;
       }
       #rastaak-story-timeline .stl-edge {
         position: absolute;
@@ -722,6 +884,13 @@ export class StoryTimelinePanel {
         gap: 8px 10px;
         font-size: 10px;
         opacity: 0.8;
+        align-items: center;
+      }
+      #rastaak-story-timeline .stl-hint {
+        margin-left: auto;
+        opacity: 0.65;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
       }
       #rastaak-story-timeline .stl-swatch {
         display: inline-block;
@@ -757,7 +926,7 @@ export class StoryTimelinePanel {
         height: 22px;
         border-radius: 6px;
         background: rgba(255,255,255,0.06);
-        overflow: hidden;
+        overflow: visible;
       }
       #rastaak-story-timeline .stl-clip {
         position: absolute;
@@ -767,21 +936,42 @@ export class StoryTimelinePanel {
         color: #fff;
         font-size: 9px;
         line-height: 16px;
-        padding: 0 8px;
-        overflow: hidden;
+        padding: 0 10px;
+        overflow: visible;
         white-space: nowrap;
-        text-overflow: ellipsis;
         user-select: none;
+        cursor: grab;
+        z-index: 1;
+        box-sizing: border-box;
+      }
+      #rastaak-story-timeline .stl-clip-label {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
       }
       #rastaak-story-timeline .stl-handle {
         position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 8px;
+        top: -2px;
+        bottom: -2px;
+        width: 10px;
         cursor: ew-resize;
+        z-index: 2;
+        touch-action: none;
       }
-      #rastaak-story-timeline .stl-handle-start { left: 0; }
-      #rastaak-story-timeline .stl-handle-end { right: 0; }
+      #rastaak-story-timeline .stl-handle::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        width: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 1px;
+        background: rgba(255,255,255,0.55);
+      }
+      #rastaak-story-timeline .stl-handle-start { left: -2px; }
+      #rastaak-story-timeline .stl-handle-end { right: -2px; }
       #rastaak-story-timeline .stl-cam {
         position: absolute;
         top: 2px;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   STORY_CONFIG,
+  needEndAt,
   needTitleAt,
   resolveAt,
   type StoryBuildingState,
@@ -651,7 +652,7 @@ export class StoryRuntime {
 
       if (this.enabled) applyBuildingLook(client.slots, client.blend);
 
-      const holdEnd = client.config.arrive + STORY_CONFIG.chipHoldAfterArrive;
+      const holdEnd = needEndAt(client.config);
       const chipOn = t >= client.config.appear && t < holdEnd;
       const traveling = t >= client.config.dispatch && t < client.config.arrive;
       const burst = burstSettings();

@@ -14,6 +14,7 @@ export interface StoryClientConfig {
   dispatch: number;
   arrive: number;
   resolve?: number;
+  needEnd?: number;
   land?: [number, number, number];
 }
 
@@ -191,6 +192,13 @@ export const STORY_CONFIG: StoryConfig = {
   chipBackgroundOpacity: 0,
   chipText: 0xf5f5f2
 };
+
+export function needEndAt(client: { appear: number; arrive: number; needEnd?: number }): number {
+  if (typeof client.needEnd === 'number' && Number.isFinite(client.needEnd)) {
+    return Math.min(1, Math.max(client.appear, client.needEnd));
+  }
+  return Math.min(1, Math.max(client.appear, client.arrive + Math.max(0, STORY_CONFIG.chipHoldAfterArrive || 0)));
+}
 
 export function needTitleAt(
   client: { need: string; needAfter?: string; arrive: number },
