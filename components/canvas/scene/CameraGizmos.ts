@@ -15,6 +15,16 @@ export type CameraPose = {
   fov?: number;
 };
 
+export type CameraPathMode = 'full' | 'segment';
+
+export type CameraDisplayFlags = {
+  camGizmo: boolean;
+  targetGizmo: boolean;
+  camPath: boolean;
+  targetPath: boolean;
+  pathMode: CameraPathMode;
+};
+
 type TransformControlsLike = {
   attach: (object: THREE.Object3D) => void;
   detach: () => void;
@@ -72,6 +82,24 @@ function setLinePoints(line: THREE.Line, points: THREE.Vector3[]) {
   line.computeLineDistances();
 }
 
+function segmentIndex(stops: CameraStop[], t: number): number {
+  if (stops.length < 2) return 0;
+  let idx = 0;
+  while (idx < stops.length - 1 && stops[idx + 1].progress <= t) idx += 1;
+  return Math.min(idx, stops.length - 2);
+}
+
+function segmentRange(stops: CameraStop[], idx: number) {
+  const from = Math.max(0, Math.min(idx, stops.length - 1));
+  const to = Math.min(stops.length - 1, from + 1);
+  return {
+    from,
+    to,
+    start: stops[from]?.progress ?? 0,
+    end: stops[to]?.progress ?? 1,
+  };
+}
+
 function markPick(object: THREE.Object3D, handle: CameraHandle) {
   object.userData.studioCameraHandle = handle;
   object.userData.studioCameraPick = true;
@@ -125,6 +153,14 @@ export class CameraGizmoSet {
   private selected: CameraHandle = 'source';
   private boundStop: CameraStop | null = null;
   private pathKey = '';
+  private showCamGizmo = true;
+  private showTargetGizmo = true;
+  private showCamPath = true;
+  private showTargetPath = true;
+  private pathMode: CameraPathMode = 'full';
+  private pathT = 0;
+  private hasCamPath = false;
+  private hasTargetPath = false;
   private readonly orientation = new THREE.Quaternion();
   private readonly lookMatrix = new THREE.Matrix4();
   private readonly up = new THREE.Vector3(0, 1, 0);
@@ -259,17 +295,28 @@ export class CameraGizmoSet {
     if (!visible) this.detach();
   }
 
+  setDisplay(flags: Partial<CameraDisplayFlags>) {
+    if (flags.camGizmo !== undefined) this.showCamGizmo = flags.camGizmo;
+    if (flags.targetGizmo !== undefined) this.showTargetGizmo = flags.targetGizmo;
+    if (flags.camPath !== undefined) this.showCamPath = flags.camPath;
+    if (flags.targetPath !== undefined) this.showTargetPath = flags.targetPath;
+    if (flags.pathMode !== undefined && flags.pathMode !== this.pathMode) {
+      this.pathMode = flags.pathMode;
+      this.pathKey = '';
+    }
+    this.applyPartVisibility();
+  }
+
   setGrabEnabled(enabled: boolean) {
     this.grab = enabled;
-    this.aimLocator.visible = enabled;
     if (!enabled) {
       this.detach();
+      this.applyPartVisibility();
       return;
     }
     void this.ensureControls().then(() => {
       if (!this.grab) return;
-      this.sourceControls?.attach(this.sourceDummy);
-      this.aimControls?.attach(this.aimDummy);
+      this.applyPartVisibility();
     });
   }
 
@@ -289,29 +336,60 @@ export class CameraGizmoSet {
     else this.sourceControls?.attach(this.sourceDummy);
   }
 
-  syncPath(stops: CameraStop[]) {
-    const key = stops
-      .map((stop) => `${stop.progress}:${stop.camera.join(',')}:${stop.target.join(',')}:${stop.fov ?? 0}`)
-      .join('|');
-    if (key === this.pathKey) return;
+  syncPath(stops: CameraStop[], t = 0) {
+    this.pathT = Math.max(0, Math.min(1, t));
+    const segment = segmentIndex(stops, this.pathT);
+    const key = [
+      this.pathMode,
+      this.pathMode === 'segment' ? segment : 'all',
+      stops
+        .map((stop) => `${stop.progress}:${stop.camera.join(',')}:${stop.target.join(',')}:${stop.fov ?? 0}`)
+        .join('|'),
+    ].join('#');
+    if (key === this.pathKey) {
+      this.applyPartVisibility();
+      return;
+    }
     this.pathKey = key;
+
+    const range =
+      this.pathMode === 'segment' && stops.length > 1
+        ? segmentRange(stops, segment)
+        : { start: 0, end: 1, from: 0, to: Math.max(0, stops.length - 1) };
 
     const camPts: THREE.Vector3[] = [];
     const aimPts: THREE.Vector3[] = [];
-    const steps = Math.max(24, stops.length * 16);
-    for (let i = 0; i <= steps; i += 1) {
-      sampleSceneJourney(i / steps, this.journeySample);
-      camPts.push(
-        new THREE.Vector3(this.journeySample.camera[0], this.journeySample.camera[1], this.journeySample.camera[2]),
+    const span = Math.max(0, range.end - range.start);
+    const steps = this.pathMode === 'segment' ? 24 : Math.max(24, stops.length * 16);
+    if (span <= 1e-6) {
+      sampleSceneJourney(range.start, this.journeySample);
+      const cam = new THREE.Vector3(
+        this.journeySample.camera[0],
+        this.journeySample.camera[1],
+        this.journeySample.camera[2],
       );
-      aimPts.push(
-        new THREE.Vector3(this.journeySample.target[0], this.journeySample.target[1], this.journeySample.target[2]),
+      const aim = new THREE.Vector3(
+        this.journeySample.target[0],
+        this.journeySample.target[1],
+        this.journeySample.target[2],
       );
+      camPts.push(cam, cam.clone());
+      aimPts.push(aim, aim.clone());
+    } else {
+      for (let i = 0; i <= steps; i += 1) {
+        sampleSceneJourney(range.start + (span * i) / steps, this.journeySample);
+        camPts.push(
+          new THREE.Vector3(this.journeySample.camera[0], this.journeySample.camera[1], this.journeySample.camera[2]),
+        );
+        aimPts.push(
+          new THREE.Vector3(this.journeySample.target[0], this.journeySample.target[1], this.journeySample.target[2]),
+        );
+      }
     }
     setLinePoints(this.camPath, camPts.length ? camPts : [new THREE.Vector3()]);
     setLinePoints(this.targetPath, aimPts.length ? aimPts : [new THREE.Vector3()]);
-    this.camPath.visible = camPts.length > 1;
-    this.targetPath.visible = aimPts.length > 1;
+    this.hasCamPath = camPts.length > 1;
+    this.hasTargetPath = aimPts.length > 1;
 
     while (this.stopMarks.children.length) {
       const child = this.stopMarks.children[0];
@@ -322,13 +400,20 @@ export class CameraGizmoSet {
       if (Array.isArray(material)) material.forEach((item) => item.dispose());
       else material?.dispose?.();
     }
-    for (const stop of stops) {
+    const markStops =
+      this.pathMode === 'segment' && stops.length
+        ? [stops[range.from], stops[range.to]].filter((item, index, all) => item && all.indexOf(item) === index)
+        : stops;
+    for (const stop of markStops) {
       const camMark = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), overlayMesh(LAMP, 0.9));
       camMark.position.set(stop.camera[0], stop.camera[1], stop.camera[2]);
+      camMark.userData.kind = 'cam';
       const aimMark = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), overlayMesh(AIM, 0.9));
       aimMark.position.set(stop.target[0], stop.target[1], stop.target[2]);
+      aimMark.userData.kind = 'aim';
       this.stopMarks.add(camMark, aimMark);
     }
+    this.applyPartVisibility();
   }
 
   syncPose(pose: CameraPose, aspect: number) {
@@ -429,11 +514,39 @@ export class CameraGizmoSet {
     setLinePoints(this.aimLine, [this.origin.clone(), this.aim.clone()]);
     setLinePoints(this.sourceDrop, [this.origin.clone(), new THREE.Vector3(this.origin.x, 0, this.origin.z)]);
     setLinePoints(this.aimDrop, [this.aim.clone(), new THREE.Vector3(this.aim.x, 0, this.aim.z)]);
-    this.sourceDrop.visible = Math.abs(this.origin.y) > 0.2;
-    this.aimDrop.visible = Math.abs(this.aim.y) > 0.2;
     const grabBoost = this.grab ? 1.2 : 1;
     this.sourceHandle.scale.setScalar((this.selected === 'source' ? 1.35 : 1) * grabBoost);
     this.aimHandle.scale.setScalar((this.selected === 'aim' ? 1.55 : 1.2) * grabBoost);
+    this.applyPartVisibility();
+  }
+
+  private applyPartVisibility() {
+    const cam = this.showCamGizmo;
+    const tgt = this.showTargetGizmo;
+    this.body.visible = cam;
+    this.lens.visible = cam;
+    this.sourceHandle.visible = cam;
+    this.sourceGround.visible = cam;
+    this.nearRect.visible = cam;
+    this.farRect.visible = cam;
+    this.sides.visible = cam;
+    this.arrow.visible = cam;
+    this.sourceDrop.visible = cam && Math.abs(this.origin.y) > 0.2;
+    this.aimHandle.visible = tgt;
+    this.aimGround.visible = tgt;
+    this.aimLocator.visible = tgt && this.grab;
+    this.aimDrop.visible = tgt && Math.abs(this.aim.y) > 0.2;
+    this.aimLine.visible = cam || tgt;
+    this.camPath.visible = this.showCamPath && this.hasCamPath;
+    this.targetPath.visible = this.showTargetPath && this.hasTargetPath;
+    for (const child of this.stopMarks.children) {
+      child.visible = child.userData.kind === 'aim' ? this.showTargetPath : this.showCamPath;
+    }
+    if (!this.grab) return;
+    if (cam) this.sourceControls?.attach(this.sourceDummy);
+    else this.sourceControls?.detach();
+    if (tgt) this.aimControls?.attach(this.aimDummy);
+    else this.aimControls?.detach();
   }
 
   dispose() {
