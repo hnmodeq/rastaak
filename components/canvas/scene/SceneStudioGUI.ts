@@ -43,6 +43,8 @@ const isSpotLight = (l: THREE.Light) =>
   (l as THREE.SpotLight).isSpotLight || l.type === 'SpotLight';
 const isHemisphereLight = (l: THREE.Light) =>
   (l as THREE.HemisphereLight).isHemisphereLight || l.type === 'HemisphereLight';
+const isAreaLight = (l: THREE.Light) =>
+  (l as THREE.RectAreaLight).isRectAreaLight || l.type === 'RectAreaLight';
 
 function colorToHexNumber(color: THREE.Color): number {
   return color.getHex();
@@ -243,6 +245,15 @@ export class SceneStudioGUI {
         const spot = light as THREE.SpotLight;
         item.angle = THREE.MathUtils.radToDeg(spot.angle);
         item.penumbra = spot.penumbra;
+      }
+
+      if (isAreaLight(light)) {
+        const area = light as THREE.RectAreaLight;
+        item.type = 'rectarea';
+        item.width = area.width;
+        item.height = area.height;
+        const aim = (area.userData.lookTarget as [number, number, number] | undefined) || [area.position.x, 0, area.position.z];
+        item.target = [aim[0], aim[1], aim[2]];
       }
 
       const shadowObj = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
@@ -783,6 +794,7 @@ export class SceneStudioGUI {
       } else {
         this.gui.hide();
       }
+      this.timelinePanel?.setVisible(startOpen);
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
@@ -1341,6 +1353,11 @@ export class SceneStudioGUI {
       const sub = lightFolder.addFolder(id);
       const isPt = isPointLight(light);
       const isSpot = isSpotLight(light);
+      const isArea = isAreaLight(light);
+      const area = light as THREE.RectAreaLight;
+      const look = (isArea
+        ? ((area.userData.lookTarget as [number, number, number] | undefined) || [area.position.x, 0, area.position.z])
+        : [0, 0, 0]) as [number, number, number];
 
       const lightParams = {
         type: light.type,
@@ -1351,6 +1368,11 @@ export class SceneStudioGUI {
         posZ: light.position ? light.position.z : 0,
         distance: (light as THREE.PointLight).distance ?? 40,
         decay: (light as THREE.PointLight).decay ?? 1.8,
+        width: isArea ? area.width : 6,
+        height: isArea ? area.height : 6,
+        aimX: look[0],
+        aimY: look[1],
+        aimZ: look[2],
       };
 
       const persistLight = () => {
@@ -1364,6 +1386,13 @@ export class SceneStudioGUI {
         if (isPt || isSpot) {
           cfg.distance = (light as THREE.PointLight).distance;
           cfg.decay = (light as THREE.PointLight).decay;
+        }
+        if (isArea) {
+          cfg.type = 'rectarea';
+          cfg.width = area.width;
+          cfg.height = area.height;
+          const aim = (area.userData.lookTarget as [number, number, number]) || [area.position.x, 0, area.position.z];
+          cfg.target = [aim[0], aim[1], aim[2]];
         }
         cfg.castShadow = light.castShadow;
         const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
@@ -1402,6 +1431,10 @@ export class SceneStudioGUI {
           if (targeted.target) {
             targeted.target.updateMatrixWorld(true);
           }
+          if (isArea) {
+            const aim = (area.userData.lookTarget as [number, number, number]) || [area.position.x, 0, area.position.z];
+            area.lookAt(aim[0], aim[1], aim[2]);
+          }
 
           const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
           if (sh) {
@@ -1423,6 +1456,32 @@ export class SceneStudioGUI {
         sub.add(lightParams, 'posZ', -100, 100, 0.5).name('Position Z').listen().onChange(updateLightPos);
       }
 
+      if (isArea) {
+        const aimArea = () => {
+          const aim: [number, number, number] = [lightParams.aimX, lightParams.aimY, lightParams.aimZ];
+          area.userData.lookTarget = aim;
+          area.lookAt(aim[0], aim[1], aim[2]);
+          persistLight();
+        };
+        sub
+          .add(lightParams, 'width', 0.2, 80, 0.1)
+          .name('Lamp width')
+          .onChange((v: number) => {
+            area.width = v;
+            persistLight();
+          });
+        sub
+          .add(lightParams, 'height', 0.2, 80, 0.1)
+          .name('Lamp height')
+          .onChange((v: number) => {
+            area.height = v;
+            persistLight();
+          });
+        sub.add(lightParams, 'aimX', -80, 80, 0.5).name('Aim X').onChange(aimArea);
+        sub.add(lightParams, 'aimY', -10, 40, 0.5).name('Aim Y').onChange(aimArea);
+        sub.add(lightParams, 'aimZ', -80, 80, 0.5).name('Aim Z').onChange(aimArea);
+      }
+
       if (isPt || isSpot) {
         sub
           .add(lightParams, 'distance', 0, 300, 1)
@@ -1442,6 +1501,8 @@ export class SceneStudioGUI {
             persistLight();
           });
       }
+
+      if (isArea) continue;
 
       const shadowSub = sub.addFolder('Shadows Settings');
       const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;

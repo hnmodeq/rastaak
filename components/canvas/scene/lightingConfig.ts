@@ -20,5 +20,15 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     castShadow: true,
     shadowMapSize: 512,
     shadowBias: -0.0002
+  },
+  {
+    id: "area_soft_key",
+    type: "rectarea",
+    color: 0xffffff,
+    intensity: 8,
+    position: [13.5, 18, -4.5],
+    target: [13.5, 0, -4.5],
+    width: 8,
+    height: 8
   }
 ];

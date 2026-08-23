@@ -5,7 +5,7 @@ import type { LightConfig, StudioSavePayload } from '@/components/canvas/scene/s
 
 export const runtime = 'nodejs';
 
-const LIGHT_TYPES = new Set(['directional', 'point', 'spot', 'ambient', 'hemisphere']);
+const LIGHT_TYPES = new Set(['directional', 'point', 'spot', 'ambient', 'hemisphere', 'rectarea']);
 
 function asFinite(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
@@ -109,6 +109,8 @@ function sanitizeLight(raw: unknown, index: number): LightConfig | null {
   if (item.distance !== undefined) light.distance = asFinite(item.distance, 0);
   if (item.decay !== undefined) light.decay = asFinite(item.decay, 2);
   if (item.radius !== undefined) light.radius = asFinite(item.radius, 1);
+  if (item.width !== undefined) light.width = asFinite(item.width, 6);
+  if (item.height !== undefined) light.height = asFinite(item.height, 6);
   if (item.angle !== undefined) light.angle = asFinite(item.angle, 45);
   if (item.penumbra !== undefined) light.penumbra = asFinite(item.penumbra, 0.5);
   if (item.castShadow !== undefined) light.castShadow = Boolean(item.castShadow);

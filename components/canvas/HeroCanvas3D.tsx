@@ -8,6 +8,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+// @ts-ignore
+import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG } from './scene/sceneConfig';
 import { sampleSceneJourney } from './scene/journeyMath';
@@ -147,6 +149,18 @@ export const HeroCanvas3D: React.FC = () => {
           }
         }
         light = spotLight;
+      } else if (cfg.type === 'rectarea') {
+        const area = new THREE.RectAreaLight(
+          cfg.color,
+          cfg.intensity,
+          Math.max(0.1, cfg.width ?? 6),
+          Math.max(0.1, cfg.height ?? 6),
+        );
+        if (cfg.position) area.position.set(...cfg.position);
+        const aim = cfg.target ?? [cfg.position?.[0] ?? 0, 0, cfg.position?.[2] ?? 0];
+        area.lookAt(aim[0], aim[1], aim[2]);
+        area.userData.lookTarget = [...aim];
+        light = area;
       }
 
       if (light) {

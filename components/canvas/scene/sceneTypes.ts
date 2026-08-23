@@ -1,4 +1,4 @@
-export type LightType = 'directional' | 'point' | 'spot' | 'ambient' | 'hemisphere';
+export type LightType = 'directional' | 'point' | 'spot' | 'ambient' | 'hemisphere' | 'rectarea';
 
 export interface LightConfig {
   id: string;
@@ -11,6 +11,8 @@ export interface LightConfig {
   distance?: number;
   decay?: number;
   radius?: number;
+  width?: number;
+  height?: number;
   angle?: number;
   penumbra?: number;
   castShadow?: boolean;
