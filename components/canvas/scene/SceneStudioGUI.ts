@@ -3,7 +3,8 @@ import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import { applySceneShadows } from './shadowTint';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
-import { STORY_CONFIG, applyStoryTheme, resolveAt } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, resolveAt, type StoryFrame } from './storyConfig';
+import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
 import {
@@ -85,6 +86,12 @@ export class SceneStudioGUI {
   private preGrabOrbit = false;
   private orbitLockedByGizmo = false;
   private currentStopIndex = 0;
+  private playheadT = 0;
+  private readonly journeySample = {
+    camera: [0, 0, 0] as [number, number, number],
+    target: [0, 0, 0] as [number, number, number],
+    fov: 45,
+  };
   private lightUi = new Map<
     string,
     {
@@ -202,6 +209,7 @@ export class SceneStudioGUI {
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     window.addEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.addEventListener('resize', this.onChromeLayout);
+    window.addEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
     this.initGUI();
     this.initRaycaster();
   }
@@ -1660,8 +1668,15 @@ export class SceneStudioGUI {
   }
 
   private seekStory(t: number) {
-    this.onProgressChange?.(clamp01(t));
+    this.playheadT = clamp01(t);
+    this.onProgressChange?.(this.playheadT);
   }
+
+  private onStoryFrame = (event: Event) => {
+    const detail = (event as CustomEvent<StoryFrame>).detail;
+    if (!detail || typeof detail.t !== 'number') return;
+    this.playheadT = detail.t;
+  };
 
   private populateStoryTiming() {
     if (!this.gui) return;
@@ -2438,8 +2453,21 @@ export class SceneStudioGUI {
 
   public tick() {
     this.lightGizmos?.syncAll();
+    if (!this.cameraGizmos) return;
+    this.cameraGizmos.syncPath(SCENE_CONFIG.stops);
+    const aspect = this.camera.aspect;
+    if (this.grabCamera) {
+      const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+      if (stop) this.cameraGizmos.sync(stop, aspect);
+      return;
+    }
+    if (this.isOrbitMode && this.showCameraGizmos) {
+      sampleSceneJourney(this.playheadT, this.journeySample);
+      this.cameraGizmos.syncPose(this.journeySample, aspect);
+      return;
+    }
     const stop = SCENE_CONFIG.stops[this.currentStopIndex];
-    if (stop) this.cameraGizmos?.sync(stop, this.camera.aspect);
+    if (stop) this.cameraGizmos.sync(stop, aspect);
   }
 
   public destroy() {
@@ -2447,6 +2475,7 @@ export class SceneStudioGUI {
     window.removeEventListener('rastaak-studio-toggle', this.onExternalToggle);
     window.removeEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.removeEventListener('resize', this.onChromeLayout);
+    window.removeEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
     this.chromeObserver?.disconnect();
     this.chromeObserver = null;
     this.setGrabMode(false);
