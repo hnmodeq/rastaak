@@ -1,7 +1,6 @@
 import { SCENE_CONFIG } from './sceneConfig';
 import { STORY_CONFIG, STORY_FRAME_EVENT, type StoryFrame } from './storyConfig';
 import { FLOW_CONFIG } from '@/components/home/flowConfig';
-import { TYPE_CHROME } from '@/components/home/typeChrome';
 
 const MIN_FLIGHT = 0.02;
 const MIN_SPAN = 0.01;
@@ -148,9 +147,8 @@ export class StoryTimelinePanel {
 
   layout() {
     if (!this.root) return;
-    const studioLeft = TYPE_CHROME.studioCorner.endsWith('left');
     this.root.style.left = '16px';
-    this.root.style.right = studioLeft ? '16px' : '168px';
+    this.root.style.right = '328px';
   }
 
   destroy() {
@@ -494,7 +492,7 @@ export class StoryTimelinePanel {
       #rastaak-story-timeline {
         position: fixed;
         left: 16px;
-        right: 16px;
+        right: 328px;
         bottom: 16px;
         top: auto;
         height: min(268px, 34vh);
