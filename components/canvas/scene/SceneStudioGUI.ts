@@ -54,6 +54,8 @@ function clampOrdered(value: number, min: number, max: number): number {
 
 export class SceneStudioGUI {
   private gui: any = null;
+  private guis: any[] = [];
+  private GUICtor: any = null;
   private disposed = false;
   private studioEdge: HTMLButtonElement | null = null;
   private foldAllBtn: HTMLButtonElement | null = null;
@@ -200,10 +202,11 @@ export class SceneStudioGUI {
     style.textContent = `
       #rastaak-studio-dock {
         position: fixed !important;
-        top: 0 !important;
+        top: calc((100dvh - var(--studio-bottom, 28px)) / 2) !important;
         right: 0 !important;
         left: auto !important;
         bottom: auto !important;
+        transform: translateY(-50%);
         z-index: 1000000 !important;
         width: 300px !important;
         height: auto !important;
@@ -312,8 +315,13 @@ export class SceneStudioGUI {
         left: auto !important;
         bottom: auto !important;
       }
-      #rastaak-studio-panel .lil-gui.root > .title {
-        display: none !important;
+      #rastaak-studio-panel .lil-gui.root {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+      #rastaak-studio-panel .lil-gui.root + .lil-gui.root {
+        border-top: 1px solid rgba(255,255,255,0.08);
       }
       html[data-studio='true'] #rastaak-studio-btn,
       html[data-studio='true'] #rastaak-studio-logout,
@@ -362,6 +370,29 @@ export class SceneStudioGUI {
     return document.getElementById('rastaak-studio-panel') as HTMLDivElement;
   }
 
+  private addTab(title: string): any {
+    const host = this.ensurePanelHost();
+    const gui = new this.GUICtor({
+      title,
+      autoPlace: false,
+      width: 288,
+      container: host,
+    });
+    const guiEl = gui.domElement as HTMLElement;
+    guiEl.classList.add('rastaak-studio-gui');
+    guiEl.style.position = 'relative';
+    guiEl.style.top = 'auto';
+    guiEl.style.right = 'auto';
+    guiEl.style.left = 'auto';
+    guiEl.style.bottom = 'auto';
+    guiEl.style.width = '100%';
+    guiEl.style.maxHeight = 'none';
+    guiEl.style.pointerEvents = 'auto';
+    this.guis.push(gui);
+    this.gui = gui;
+    return gui;
+  }
+
   private setAllFoldersOpen(open: boolean) {
     const walk = (folder: { folders?: unknown; open?: () => void; close?: () => void }) => {
       const kids = folder?.folders;
@@ -373,7 +404,11 @@ export class SceneStudioGUI {
         walk(next);
       }
     };
-    if (this.gui) walk(this.gui);
+    for (const gui of this.guis) {
+      if (open) gui.open?.();
+      else gui.close?.();
+      walk(gui);
+    }
     this.foldersExpanded = open;
     if (this.foldAllBtn) this.foldAllBtn.textContent = open ? 'Collapse all' : 'Expand all';
     this.syncStudioDockBottom();
@@ -673,7 +708,7 @@ export class SceneStudioGUI {
 
   private async initGUI(forceOpen = false) {
     if (this.disposed) return;
-    if (this.gui) {
+    if (this.guis.length) {
       if (forceOpen) this.setStudioCollapsed(false);
       return;
     }
@@ -681,39 +716,20 @@ export class SceneStudioGUI {
     try {
       const { GUI } = await import('lil-gui');
       if (this.disposed) return;
+      this.GUICtor = GUI;
 
       const isAdmin = this.isAdminHost();
       const host = this.ensurePanelHost();
       host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
-
-      this.gui = new GUI({
-        title: '',
-        autoPlace: false,
-        width: 288,
-        container: host,
-      });
-
-      const guiEl = this.gui.domElement;
-      guiEl.classList.add('rastaak-studio-gui');
-      guiEl.style.position = 'relative';
-      guiEl.style.top = 'auto';
-      guiEl.style.right = 'auto';
-      guiEl.style.left = 'auto';
-      guiEl.style.bottom = 'auto';
-      guiEl.style.width = '100%';
-      guiEl.style.maxHeight = 'none';
-      guiEl.style.pointerEvents = 'auto';
       applyStudioChrome();
-
-      guiEl.addEventListener(
+      host.addEventListener(
         'wheel',
         (e: WheelEvent) => {
           e.stopPropagation();
         },
         { capture: true, passive: false },
       );
-
-      guiEl.addEventListener(
+      host.addEventListener(
         'touchmove',
         (e: TouchEvent) => {
           e.stopPropagation();
@@ -728,7 +744,7 @@ export class SceneStudioGUI {
         SCENE_CONFIG.stops[0]?.target[2] ?? 0,
       );
 
-      const camFolder = this.gui.addFolder('Camera & Stop Points');
+      const camFolder = this.addTab('Camera & Stop Points');
 
       let currentStopIndex = 0;
       const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
@@ -976,7 +992,7 @@ export class SceneStudioGUI {
         this.applyPanelOpacity(this.panelOpacity);
       }
 
-      const envFolder = this.gui.addFolder('Environment');
+      const envFolder = this.addTab('Environment');
       const currentBgHex = '#' + (
         this.scene.background instanceof THREE.Color
           ? this.scene.background.getHexString()
@@ -1033,7 +1049,7 @@ export class SceneStudioGUI {
           applySceneShadows(this.lightsMap.values());
         });
 
-      const fogFolder = this.gui.addFolder('Fog');
+      const fogFolder = this.addTab('Fog');
       const fogParams = {
         enabled: Boolean(this.scene.fog) && SCENE_CONFIG.environment.fogEnabled !== false,
         fogColor: envParams.fogColor,
@@ -1064,7 +1080,6 @@ export class SceneStudioGUI {
       fogFolder.add(fogParams, 'fogNear', 0, 100, 1).name('Fog start').onChange(applyFog);
       fogFolder.add(fogParams, 'fogFar', 10, 250, 2).name('Fog end').onChange(applyFog);
 
-      if (guiEl.parentElement !== host) host.appendChild(guiEl);
       this.setAllFoldersOpen(false);
       this.setStudioCollapsed(true);
       this.syncStudioDockBottom();
@@ -1135,7 +1150,7 @@ export class SceneStudioGUI {
 
     const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
 
-    const heroFolder = this.gui.addFolder('Hero');
+    const heroFolder = this.addTab('Hero');
     const brandParams = {
       siteName: TYPE_CHROME.siteName,
       siteNameColor: hex(TYPE_CHROME.siteNameColor),
@@ -1207,7 +1222,7 @@ export class SceneStudioGUI {
     this.addTypeControls(heroFolder.addFolder('Description type'), TYPE_CHROME.heroSubtitle, hex);
     this.addTypeControls(heroFolder.addFolder('Scroll hint type'), TYPE_CHROME.scrollHint, hex);
 
-    const storyFolder = this.gui.addFolder('Story colors');
+    const storyFolder = this.addTab('Story colors');
 
     const colorParams = {
       packet: hex(STORY_CONFIG.colors.packet),
@@ -1347,7 +1362,7 @@ export class SceneStudioGUI {
         });
     });
 
-    const chapterFolder = this.gui.addFolder('Chapter panel');
+    const chapterFolder = this.addTab('Chapter panel');
     const timelineParams = {
       align: FLOW_CHROME.align,
       dir: FLOW_CHROME.dir,
@@ -1441,7 +1456,7 @@ export class SceneStudioGUI {
   private populateStoryTiming() {
     if (!this.gui) return;
 
-    const root = this.gui.addFolder('Story Timing');
+    const root = this.addTab('Story Timing');
 
     const playhead = { t: SCENE_CONFIG.stops[0]?.progress ?? 0 };
     root
@@ -1654,7 +1669,7 @@ export class SceneStudioGUI {
     if (!this.gui || this.lightsFolderPopulated) return;
     this.lightsFolderPopulated = true;
 
-    const lightFolder = this.gui.addFolder('Lighting Controller');
+    const lightFolder = this.addTab('Lighting Controller');
 
     const view = {
       showGizmos: this.showGizmos,
@@ -1967,7 +1982,7 @@ export class SceneStudioGUI {
     seed('treeTrunk', 'treeTrunk');
     seed('treeLeaf', 'treeLeaf');
 
-    const matFolder = this.gui.addFolder('Scene colors');
+    const matFolder = this.addTab('Scene colors');
     this.materialsFolderPopulated = true;
 
     const sampleMat =
@@ -2064,7 +2079,7 @@ export class SceneStudioGUI {
 
   private onExternalToggle = () => {
     if (this.disposed) return;
-    if (!this.gui) {
+    if (!this.guis.length) {
       void this.initGUI(true);
       return;
     }
@@ -2130,10 +2145,10 @@ export class SceneStudioGUI {
     document.getElementById('rastaak-studio-btn')?.remove();
     document.getElementById('rastaak-studio-logout')?.remove();
     document.getElementById('rastaak-studio-opacity')?.remove();
-    if (this.gui) {
-      this.gui.destroy();
-      this.gui = null;
-    }
+    for (const gui of this.guis) gui.destroy?.();
+    this.guis = [];
+    this.gui = null;
+    this.GUICtor = null;
     document.getElementById('rastaak-studio-dock')?.remove();
     document.getElementById('rastaak-studio-panel')?.remove();
     this.studioEdge = null;
