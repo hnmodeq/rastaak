@@ -75,9 +75,15 @@ export function AdminApp() {
   useEffect(() => {
     document.documentElement.dataset.admin = 'true';
     document.body.style.overflow = 'hidden';
+    const onStudioOpen = (event: Event) => {
+      const open = (event as CustomEvent<{ open?: boolean }>).detail?.open;
+      if (typeof open === 'boolean') setStudioOpen(open);
+    };
+    window.addEventListener('rastaak-studio-open', onStudioOpen);
     return () => {
       delete document.documentElement.dataset.admin;
       document.body.style.overflow = '';
+      window.removeEventListener('rastaak-studio-open', onStudioOpen);
     };
   }, []);
 
@@ -215,12 +221,26 @@ export function AdminApp() {
                   refresh();
                 }}
               />
+              <button
+                type="button"
+                className={`admin-studio-launch ${studioOpen ? 'is-on' : ''}`}
+                onClick={toggleStudio}
+              >
+                {studioOpen ? 'Hide 3D Studio panel' : 'Show 3D Studio panel'}
+              </button>
               <p className="admin-help">
-                Lights, camera, materials, story timing, and gizmos are in the 3D preview. Changes go to the homepage window instantly. Use Save to write them into the project.
+                Use Show 3D Studio panel for lights, camera, materials, and gizmos. Wheel zooms the city. Drag orbits. Changes go to the homepage window instantly. Use Save to write them into the project.
               </p>
             </div>
             <div className="admin-stage">
               <div className="admin-preview">
+                <button
+                  type="button"
+                  className={`admin-preview-studio ${studioOpen ? 'is-on' : ''}`}
+                  onClick={toggleStudio}
+                >
+                  {studioOpen ? 'Hide studio' : 'Show studio'}
+                </button>
                 <HeroCanvas3D mode="admin" />
               </div>
               <div className="admin-timeline-dock" id="admin-timeline-dock" />

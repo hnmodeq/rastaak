@@ -151,6 +151,7 @@ export class SceneStudioGUI {
       this.lightGizmos = null;
     }
     this.createToggleButton();
+    window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     this.initGUI();
     this.initRaycaster();
   }
@@ -1809,6 +1810,15 @@ export class SceneStudioGUI {
     });
   }
 
+  private onExternalToggle = () => {
+    if (this.disposed) return;
+    if (!this.gui) {
+      void this.initGUI(true);
+      return;
+    }
+    this.setStudioOpen(!this.isOpen);
+  };
+
   private setStudioOpen(open: boolean) {
     this.isOpen = open;
     if (this.gui) {
@@ -1822,6 +1832,7 @@ export class SceneStudioGUI {
     this.timelinePanel?.setVisible(open || this.isAdminHost());
     this.syncGizmoVisibility();
     if (!open) this.setGrabMode(false);
+    window.dispatchEvent(new CustomEvent('rastaak-studio-open', { detail: { open } }));
   }
 
   private syncGizmoVisibility() {
@@ -1852,6 +1863,7 @@ export class SceneStudioGUI {
 
   public destroy() {
     this.disposed = true;
+    window.removeEventListener('rastaak-studio-toggle', this.onExternalToggle);
     this.setGrabMode(false);
     document.body.classList.remove('studio-grab-lamps');
     if (this.pointerHandler) {
