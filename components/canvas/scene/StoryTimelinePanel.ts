@@ -28,13 +28,26 @@ type DragState = {
   lane: HTMLElement;
 };
 
+type TimingSnapshot = {
+  stops: number[];
+  steps: Array<[number, number]>;
+  clients: Array<{ appear: number; dispatch: number; arrive: number }>;
+  captions: Array<[number, number]>;
+  chipHoldAfterArrive: number;
+};
+
 export class StoryTimelinePanel {
   private root: HTMLDivElement | null = null;
   private lanes: HTMLDivElement | null = null;
   private needle: HTMLDivElement | null = null;
   private readout: HTMLSpanElement | null = null;
+  private undoBtn: HTMLButtonElement | null = null;
+  private redoBtn: HTMLButtonElement | null = null;
   private playhead = 0;
   private dragging: DragState | null = null;
+  private undoStack: TimingSnapshot[] = [];
+  private redoStack: TimingSnapshot[] = [];
+  private dragSnapshot: TimingSnapshot | null = null;
   private onFrame = (event: Event) => {
     const detail = (event as CustomEvent<StoryFrame>).detail;
     if (!detail || this.dragging) return;
@@ -42,8 +55,35 @@ export class StoryTimelinePanel {
   };
   private onPointerMove = (event: PointerEvent) => this.handleMove(event);
   private onPointerUp = () => {
+    if (this.dragging && this.dragging.kind !== 'playhead' && this.dragSnapshot) {
+      if (JSON.stringify(this.dragSnapshot) !== JSON.stringify(this.capture())) {
+        this.undoStack.push(this.dragSnapshot);
+        if (this.undoStack.length > 80) this.undoStack.shift();
+        this.redoStack = [];
+      }
+    }
+    this.dragSnapshot = null;
     this.dragging = null;
     this.paint();
+    this.syncUndoButtons();
+  };
+  private onKeyDown = (event: KeyboardEvent) => {
+    if (!this.root || this.root.style.display === 'none') return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('input, textarea, select')) return;
+    const key = event.key.toLowerCase();
+    const mod = event.metaKey || event.ctrlKey;
+    if (!mod) return;
+    if (key === 'z' && event.shiftKey) {
+      event.preventDefault();
+      this.redo();
+    } else if (key === 'z') {
+      event.preventDefault();
+      this.undo();
+    } else if (key === 'y') {
+      event.preventDefault();
+      this.redo();
+    }
   };
 
   constructor(private onSeek: (t: number) => void) {}
@@ -55,7 +95,11 @@ export class StoryTimelinePanel {
     root.innerHTML = `
       <div class="stl-head">
         <strong>Story Timeline</strong>
-        <span data-readout>t 0.00</span>
+        <div class="stl-actions">
+          <button type="button" data-undo>Undo</button>
+          <button type="button" data-redo>Redo</button>
+          <span data-readout>t 0.00</span>
+        </div>
       </div>
       <div class="stl-legend">
         <i class="stl-swatch" style="background:#6f0000"></i>red
@@ -70,12 +114,18 @@ export class StoryTimelinePanel {
     this.root = root;
     this.lanes = root.querySelector('.stl-lanes');
     this.readout = root.querySelector('[data-readout]');
+    this.undoBtn = root.querySelector('[data-undo]');
+    this.redoBtn = root.querySelector('[data-redo]');
+    this.undoBtn?.addEventListener('click', () => this.undo());
+    this.redoBtn?.addEventListener('click', () => this.redo());
     this.layout();
     this.paint();
+    this.syncUndoButtons();
     window.addEventListener(STORY_FRAME_EVENT, this.onFrame);
     window.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
     window.addEventListener('pointercancel', this.onPointerUp);
+    window.addEventListener('keydown', this.onKeyDown);
     root.addEventListener(
       'wheel',
       (event) => {
@@ -97,8 +147,8 @@ export class StoryTimelinePanel {
   layout() {
     if (!this.root) return;
     const studioLeft = TYPE_CHROME.studioCorner.endsWith('left');
-    this.root.style.left = studioLeft ? 'auto' : '16px';
-    this.root.style.right = studioLeft ? '16px' : 'auto';
+    this.root.style.left = '16px';
+    this.root.style.right = studioLeft ? '16px' : '168px';
   }
 
   destroy() {
@@ -106,6 +156,7 @@ export class StoryTimelinePanel {
     window.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerup', this.onPointerUp);
     window.removeEventListener('pointercancel', this.onPointerUp);
+    window.removeEventListener('keydown', this.onKeyDown);
     this.root?.remove();
     this.root = null;
     this.lanes = null;
@@ -128,9 +179,66 @@ export class StoryTimelinePanel {
     return clamp01((event.clientX - rect.left) / Math.max(1, rect.width));
   }
 
+  private capture(): TimingSnapshot {
+    return {
+      stops: SCENE_CONFIG.stops.map((stop) => stop.progress),
+      steps: FLOW_CONFIG.map((step) => [step.progressRange[0], step.progressRange[1]]),
+      clients: STORY_CONFIG.clients.map((client) => ({
+        appear: client.appear,
+        dispatch: client.dispatch,
+        arrive: client.arrive,
+      })),
+      captions: STORY_CONFIG.captions.map((caption) => [caption.range[0], caption.range[1]]),
+      chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
+    };
+  }
+
+  private applySnapshot(snapshot: TimingSnapshot) {
+    snapshot.stops.forEach((progress, index) => {
+      if (SCENE_CONFIG.stops[index]) SCENE_CONFIG.stops[index].progress = progress;
+    });
+    snapshot.steps.forEach((range, index) => {
+      if (FLOW_CONFIG[index]) FLOW_CONFIG[index].progressRange = [range[0], range[1]];
+    });
+    snapshot.clients.forEach((times, index) => {
+      const client = STORY_CONFIG.clients[index];
+      if (!client) return;
+      client.appear = times.appear;
+      client.dispatch = times.dispatch;
+      client.arrive = times.arrive;
+    });
+    snapshot.captions.forEach((range, index) => {
+      if (STORY_CONFIG.captions[index]) STORY_CONFIG.captions[index].range = [range[0], range[1]];
+    });
+    STORY_CONFIG.chipHoldAfterArrive = snapshot.chipHoldAfterArrive;
+    this.paint();
+  }
+
+  private undo() {
+    const prev = this.undoStack.pop();
+    if (!prev) return;
+    this.redoStack.push(this.capture());
+    this.applySnapshot(prev);
+    this.syncUndoButtons();
+  }
+
+  private redo() {
+    const next = this.redoStack.pop();
+    if (!next) return;
+    this.undoStack.push(this.capture());
+    this.applySnapshot(next);
+    this.syncUndoButtons();
+  }
+
+  private syncUndoButtons() {
+    if (this.undoBtn) this.undoBtn.disabled = this.undoStack.length === 0;
+    if (this.redoBtn) this.redoBtn.disabled = this.redoStack.length === 0;
+  }
+
   private startDrag(kind: DragKind, index: number, lane: HTMLElement, event: PointerEvent) {
     event.preventDefault();
     event.stopPropagation();
+    if (kind !== 'playhead') this.dragSnapshot = this.capture();
     this.dragging = { kind, index, lane };
     this.handleMove(event);
   }
@@ -383,14 +491,17 @@ export class StoryTimelinePanel {
     style.textContent = `
       #rastaak-story-timeline {
         position: fixed;
-        top: 88px;
-        bottom: 24px;
-        width: min(440px, 42vw);
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        top: auto;
+        height: min(268px, 34vh);
+        width: auto;
         z-index: 999998;
         display: none;
         flex-direction: column;
         gap: 8px;
-        padding: 12px;
+        padding: 10px 12px 12px;
         border-radius: 14px;
         background: rgba(12, 13, 18, 0.92);
         color: #f3f3f0;
@@ -407,6 +518,27 @@ export class StoryTimelinePanel {
         font-size: 12px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
+      }
+      #rastaak-story-timeline .stl-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #rastaak-story-timeline .stl-actions button {
+        border: 1px solid rgba(255,255,255,0.16);
+        background: rgba(255,255,255,0.08);
+        color: #f3f3f0;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font: inherit;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      #rastaak-story-timeline .stl-actions button:disabled {
+        opacity: 0.35;
+        cursor: default;
       }
       #rastaak-story-timeline .stl-legend {
         display: flex;
