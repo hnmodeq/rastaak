@@ -49,6 +49,11 @@ interface HubActor {
 
 const TRAIL_POINTS = 18;
 const CHIP_ROOF_PAD = 0.38;
+const CLIENT_ROOF_LIFT = 0.55;
+const HUB_LAUNCH_LIFT = 1.9;
+const HUB_LAUNCH_OUT = 2.8;
+const CITY_CENTER_X = 13.36;
+const CITY_CENTER_Z = -0.7;
 const PACKET_MARK_URL = '/img/rastaak-packet-mark.png';
 
 let packetMarkTexture: THREE.Texture | null = null;
@@ -195,12 +200,41 @@ function collectSlots(object: THREE.Object3D): TrackedSlot[] {
 function roofPoint(object: THREE.Object3D, target: THREE.Vector3) {
   _box.setFromObject(object);
   _box.getSize(_size);
-  const pad = Math.max(CHIP_ROOF_PAD, _size.y * 0.12);
+  const pad = Math.max(CHIP_ROOF_PAD, _size.y * 0.12) + CLIENT_ROOF_LIFT;
   target.set(
     (_box.min.x + _box.max.x) * 0.5,
     _box.max.y + pad,
     (_box.min.z + _box.max.z) * 0.5,
   );
+}
+
+/** Start the shooting logo above and outside the hub so it does not clip the tower. */
+function hubLaunchPoint(hub: THREE.Object3D, logo: THREE.Object3D | null, target: THREE.Vector3) {
+  roofPoint(hub, target);
+  target.y += HUB_LAUNCH_LIFT;
+
+  _box.setFromObject(hub);
+  _box.getSize(_size);
+  const cx = (_box.min.x + _box.max.x) * 0.5;
+  const cz = (_box.min.z + _box.max.z) * 0.5;
+
+  let dirX = CITY_CENTER_X - cx;
+  let dirZ = CITY_CENTER_Z - cz;
+  if (logo) {
+    logo.getWorldPosition(_projected);
+    const logoX = _projected.x - cx;
+    const logoZ = _projected.z - cz;
+    if (Math.hypot(logoX, logoZ) > 0.05) {
+      dirX = logoX;
+      dirZ = logoZ;
+    }
+    target.y = Math.max(target.y, _projected.y + HUB_LAUNCH_LIFT);
+  }
+
+  const len = Math.hypot(dirX, dirZ) || 1;
+  const clearance = Math.max(_size.x, _size.z) * 0.55 + HUB_LAUNCH_OUT;
+  target.x = cx + (dirX / len) * clearance;
+  target.z = cz + (dirZ / len) * clearance;
 }
 
 function restoreSlots(slots: TrackedSlot[]) {
@@ -361,9 +395,9 @@ function createPacketRig(): PacketRig {
 function updatePacketCurve(packet: PacketRig, from: THREE.Vector3, to: THREE.Vector3) {
   packet.curve.v0.copy(from);
   packet.curve.v2.copy(to);
-  packet.curve.v1.copy(from).lerp(to, 0.48);
+  packet.curve.v1.copy(from).lerp(to, 0.42);
   const span = from.distanceTo(to);
-  packet.curve.v1.y += Math.max(1.7, span * 0.38);
+  packet.curve.v1.y += Math.max(2.6, span * 0.46);
 }
 
 export class StoryRuntime {
@@ -395,12 +429,7 @@ export class StoryRuntime {
     }
     if (hubObj) {
       const origin = new THREE.Vector3();
-      if (logoObj) {
-        logoObj.getWorldPosition(origin);
-        origin.y += 0.16;
-      } else {
-        roofPoint(hubObj, origin);
-      }
+      hubLaunchPoint(hubObj, logoObj, origin);
       this.hub = {
         object: hubObj,
         origin,

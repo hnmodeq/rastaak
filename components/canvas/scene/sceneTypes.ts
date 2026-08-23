@@ -54,6 +54,9 @@ export interface MaterialsConfig {
   roughness?: number;
   metalness?: number;
   envMapIntensity?: number;
+  groundRoughness?: number;
+  groundMetalness?: number;
+  groundEnvMapIntensity?: number;
   overrides?: Record<string, BuildingMaterialOverride>;
 }
 

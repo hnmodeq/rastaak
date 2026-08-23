@@ -18,10 +18,13 @@ import {
   applyCategorySurface,
   collectCategoryGroups,
   collectMaterialsConfig,
+  GROUND_SURFACE_CATEGORIES,
+  OBJECT_SURFACE_CATEGORIES,
   resolvePalette,
   sampleCategoryColor,
   type CategoryPalette,
   type MaterialCategory,
+  type SurfaceParams,
 } from './materialKeys';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
@@ -105,12 +108,18 @@ export class SceneStudioGUI {
     treeTrunk: '#6b4f2a',
     treeLeaf: '#3d6b3a',
   };
-  private surface = {
+  private objectSurface: SurfaceParams & { roughness: number; metalness: number; envMapIntensity: number } = {
     roughness: 0.72,
     metalness: 0.04,
     envMapIntensity: 1,
   };
-  private surfaceTouched = false;
+  private groundSurface: SurfaceParams & { roughness: number; metalness: number; envMapIntensity: number } = {
+    roughness: 0.72,
+    metalness: 0.04,
+    envMapIntensity: 1,
+  };
+  private objectSurfaceTouched = false;
+  private groundSurfaceTouched = false;
 
   public isManualMode = false;
   public isOrbitMode = false;
@@ -153,11 +162,19 @@ export class SceneStudioGUI {
       this.lightGizmos = null;
     }
     const mats = SCENE_CONFIG.materials;
-    if (mats.roughness !== undefined) this.surface.roughness = mats.roughness;
-    if (mats.metalness !== undefined) this.surface.metalness = mats.metalness;
-    if (mats.envMapIntensity !== undefined) this.surface.envMapIntensity = mats.envMapIntensity;
-    this.surfaceTouched =
+    if (mats.roughness !== undefined) this.objectSurface.roughness = mats.roughness;
+    if (mats.metalness !== undefined) this.objectSurface.metalness = mats.metalness;
+    if (mats.envMapIntensity !== undefined) this.objectSurface.envMapIntensity = mats.envMapIntensity;
+    this.objectSurfaceTouched =
       mats.roughness !== undefined || mats.metalness !== undefined || mats.envMapIntensity !== undefined;
+    this.groundSurface.roughness = mats.groundRoughness ?? mats.roughness ?? this.groundSurface.roughness;
+    this.groundSurface.metalness = mats.groundMetalness ?? mats.metalness ?? this.groundSurface.metalness;
+    this.groundSurface.envMapIntensity =
+      mats.groundEnvMapIntensity ?? mats.envMapIntensity ?? this.groundSurface.envMapIntensity;
+    this.groundSurfaceTouched =
+      mats.groundRoughness !== undefined ||
+      mats.groundMetalness !== undefined ||
+      mats.groundEnvMapIntensity !== undefined;
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     window.addEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.addEventListener('resize', this.onChromeLayout);
@@ -189,8 +206,8 @@ export class SceneStudioGUI {
 
   private studioEdgeSvg(collapsed: boolean) {
     return collapsed
-      ? '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M8 2L4 6l4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      ? '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M8 2L4 6l4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 
   private injectPanelCss() {
@@ -204,8 +221,8 @@ export class SceneStudioGUI {
       #rastaak-studio-dock {
         position: fixed !important;
         top: calc((100dvh - var(--studio-bottom, 28px)) / 2) !important;
-        right: 0 !important;
-        left: auto !important;
+        left: 0 !important;
+        right: auto !important;
         bottom: auto !important;
         transform: translateY(-50%);
         z-index: 1000000 !important;
@@ -216,28 +233,20 @@ export class SceneStudioGUI {
         display: flex;
         flex-direction: column;
         align-items: stretch;
-      }
-      #rastaak-studio-dock[data-collapsed='true'] {
-        width: 0 !important;
-        height: 0 !important;
-        max-height: 0 !important;
         overflow: visible !important;
-      }
-      #rastaak-studio-dock[data-collapsed='true'] #rastaak-studio-panel {
-        display: none !important;
       }
       #rastaak-studio-dock .rastaak-studio-edge {
         position: fixed !important;
         top: 50% !important;
-        right: 300px !important;
-        left: auto !important;
+        left: 300px !important;
+        right: auto !important;
         bottom: auto !important;
         transform: translateY(-50%);
         width: 22px;
         height: 64px;
         border: 1px solid rgba(255,255,255,0.14);
-        border-right: 0;
-        border-radius: 8px 0 0 8px;
+        border-left: 0;
+        border-radius: 0 8px 8px 0;
         background: rgba(12, 13, 18, 0.92);
         color: #f3f3f0;
         display: flex;
@@ -246,10 +255,11 @@ export class SceneStudioGUI {
         cursor: pointer;
         pointer-events: auto;
         z-index: 1000002;
+        transition: left 0.28s ease;
       }
       #rastaak-studio-dock[data-collapsed='true'] .rastaak-studio-edge {
-        right: 0 !important;
-        border-right: 1px solid rgba(255,255,255,0.14);
+        left: 0 !important;
+        border-left: 1px solid rgba(255,255,255,0.14);
       }
       #rastaak-studio-panel {
         position: relative !important;
@@ -268,6 +278,14 @@ export class SceneStudioGUI {
         display: flex;
         flex-direction: column;
         flex: 0 0 auto;
+        transform: translateX(0);
+        opacity: 1;
+        transition: transform 0.28s ease, opacity 0.22s ease;
+      }
+      #rastaak-studio-dock[data-collapsed='true'] #rastaak-studio-panel {
+        transform: translateX(calc(-100% - 18px));
+        opacity: 0;
+        pointer-events: none !important;
       }
       #rastaak-studio-toolbar {
         position: sticky;
@@ -275,7 +293,7 @@ export class SceneStudioGUI {
         z-index: 2;
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: flex-start;
         gap: 8px;
         padding: 8px 10px;
         background: rgba(12, 13, 18, 0.94);
@@ -566,15 +584,23 @@ export class SceneStudioGUI {
       treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
       treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
     };
-    const surface = this.surfaceTouched
+    const objectSurface = this.objectSurfaceTouched
       ? {
-          roughness: this.surface.roughness,
-          metalness: this.surface.metalness,
-          envMapIntensity: this.surface.envMapIntensity,
+          roughness: this.objectSurface.roughness,
+          metalness: this.objectSurface.metalness,
+          envMapIntensity: this.objectSurface.envMapIntensity,
         }
       : undefined;
-    SCENE_CONFIG.materials = { ...SCENE_CONFIG.materials, ...palette, ...surface, overrides: {} };
-    return collectMaterialsConfig(palette, surface);
+    const groundSurface = this.groundSurfaceTouched
+      ? {
+          roughness: this.groundSurface.roughness,
+          metalness: this.groundSurface.metalness,
+          envMapIntensity: this.groundSurface.envMapIntensity,
+        }
+      : undefined;
+    const collected = collectMaterialsConfig(palette, objectSurface, groundSurface);
+    SCENE_CONFIG.materials = { ...SCENE_CONFIG.materials, ...palette, ...collected, overrides: {} };
+    return collected;
   }
 
   private notifyTimingChanged() {
@@ -2012,20 +2038,37 @@ export class SceneStudioGUI {
     const matFolder = this.addTab('Scene colors');
     this.materialsFolderPopulated = true;
 
-    const sampleMat =
-      groups.building[0] || groups.ground[0] || groups.plate[0] || groups.window[0];
-    if (!this.surfaceTouched && sampleMat) {
-      if (typeof sampleMat.roughness === 'number') this.surface.roughness = sampleMat.roughness;
-      if (typeof sampleMat.metalness === 'number') this.surface.metalness = sampleMat.metalness;
-      if (typeof sampleMat.envMapIntensity === 'number') this.surface.envMapIntensity = sampleMat.envMapIntensity;
+    const sampleObject =
+      groups.building[0] || groups.window[0] || groups.rastaak[0] || groups.logo[0];
+    const sampleGround = groups.ground[0] || groups.plate[0] || groups.border[0];
+    if (!this.objectSurfaceTouched && sampleObject) {
+      if (typeof sampleObject.roughness === 'number') this.objectSurface.roughness = sampleObject.roughness;
+      if (typeof sampleObject.metalness === 'number') this.objectSurface.metalness = sampleObject.metalness;
+      if (typeof sampleObject.envMapIntensity === 'number') {
+        this.objectSurface.envMapIntensity = sampleObject.envMapIntensity;
+      }
+    }
+    if (!this.groundSurfaceTouched && sampleGround) {
+      if (typeof sampleGround.roughness === 'number') this.groundSurface.roughness = sampleGround.roughness;
+      if (typeof sampleGround.metalness === 'number') this.groundSurface.metalness = sampleGround.metalness;
+      if (typeof sampleGround.envMapIntensity === 'number') {
+        this.groundSurface.envMapIntensity = sampleGround.envMapIntensity;
+      }
     }
 
     const persistPalette = () => {
-      const surface = this.surfaceTouched
+      const objectSurface = this.objectSurfaceTouched
         ? {
-            roughness: this.surface.roughness,
-            metalness: this.surface.metalness,
-            envMapIntensity: this.surface.envMapIntensity,
+            roughness: this.objectSurface.roughness,
+            metalness: this.objectSurface.metalness,
+            envMapIntensity: this.objectSurface.envMapIntensity,
+          }
+        : undefined;
+      const groundSurface = this.groundSurfaceTouched
+        ? {
+            roughness: this.groundSurface.roughness,
+            metalness: this.groundSurface.metalness,
+            envMapIntensity: this.groundSurface.envMapIntensity,
           }
         : undefined;
       SCENE_CONFIG.materials = {
@@ -2042,7 +2085,8 @@ export class SceneStudioGUI {
             treeTrunkColor: new THREE.Color(this.palette.treeTrunk).getHex(),
             treeLeafColor: new THREE.Color(this.palette.treeLeaf).getHex(),
           },
-          surface,
+          objectSurface,
+          groundSurface,
         ),
       };
     };
@@ -2066,22 +2110,38 @@ export class SceneStudioGUI {
     matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
     matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));
 
-    const applySurface = () => {
-      this.surfaceTouched = true;
+    const paintSurfaceGroup = (
+      categories: readonly Exclude<MaterialCategory, 'ignore'>[],
+      surface: SurfaceParams,
+    ) => {
       const groupsNow = liveGroups();
-      (Object.keys(groupsNow) as Array<keyof typeof groupsNow>).forEach((category) => {
-        applyCategorySurface(groupsNow[category], this.surface);
+      categories.forEach((category) => {
+        applyCategorySurface(groupsNow[category], surface);
       });
       persistPalette();
       this.broadcastLive();
       window.dispatchEvent(new CustomEvent('rastaak-studio-materials-changed'));
     };
-    matFolder.add(this.surface, 'metalness', 0, 1, 0.01).name('Metalness').onChange(applySurface);
-    matFolder.add(this.surface, 'roughness', 0, 1, 0.01).name('Roughness').onChange(applySurface);
+    const applyObjectSurface = () => {
+      this.objectSurfaceTouched = true;
+      paintSurfaceGroup(OBJECT_SURFACE_CATEGORIES, this.objectSurface);
+    };
+    const applyGroundSurface = () => {
+      this.groundSurfaceTouched = true;
+      paintSurfaceGroup(GROUND_SURFACE_CATEGORIES, this.groundSurface);
+    };
+    matFolder.add(this.objectSurface, 'metalness', 0, 1, 0.01).name('Objects metalness').onChange(applyObjectSurface);
+    matFolder.add(this.objectSurface, 'roughness', 0, 1, 0.01).name('Objects roughness').onChange(applyObjectSurface);
     matFolder
-      .add(this.surface, 'envMapIntensity', 0, 3, 0.05)
-      .name('Material reflection')
-      .onChange(applySurface);
+      .add(this.objectSurface, 'envMapIntensity', 0, 3, 0.05)
+      .name('Objects reflection')
+      .onChange(applyObjectSurface);
+    matFolder.add(this.groundSurface, 'metalness', 0, 1, 0.01).name('Ground metalness').onChange(applyGroundSurface);
+    matFolder.add(this.groundSurface, 'roughness', 0, 1, 0.01).name('Ground roughness').onChange(applyGroundSurface);
+    matFolder
+      .add(this.groundSurface, 'envMapIntensity', 0, 3, 0.05)
+      .name('Ground reflection')
+      .onChange(applyGroundSurface);
 
     persistPalette();
   }

@@ -211,6 +211,20 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         ...(body.materials?.envMapIntensity !== undefined
           ? { envMapIntensity: Math.min(5, Math.max(0, asFinite(body.materials.envMapIntensity, 1))) }
           : {}),
+        ...(body.materials?.groundRoughness !== undefined
+          ? { groundRoughness: Math.min(1, Math.max(0, asFinite(body.materials.groundRoughness, 0.72))) }
+          : {}),
+        ...(body.materials?.groundMetalness !== undefined
+          ? { groundMetalness: Math.min(1, Math.max(0, asFinite(body.materials.groundMetalness, 0.04))) }
+          : {}),
+        ...(body.materials?.groundEnvMapIntensity !== undefined
+          ? {
+              groundEnvMapIntensity: Math.min(
+                5,
+                Math.max(0, asFinite(body.materials.groundEnvMapIntensity, 1)),
+              ),
+            }
+          : {}),
         overrides: {},
       };
 
@@ -545,10 +559,14 @@ export function applyHeroCopy() {
         align: rawChrome?.align === 'right' ? 'right' : 'left',
         dir: rawChrome?.dir === 'rtl' ? 'rtl' : 'ltr',
         titleColor: hexLit(asHexNumber(rawChrome?.titleColor, 0xf5f5f2)),
+        titleBg: hexLit(asHexNumber(rawChrome?.titleBg, 0x0c0d12)),
+        titleBgOpacity: Math.min(1, Math.max(0, asFinite(rawChrome?.titleBgOpacity, 0))),
         numberColor: hexLit(asHexNumber(rawChrome?.numberColor, 0xf5f5f2)),
         numberActiveColor: hexLit(asHexNumber(rawChrome?.numberActiveColor, 0x1a1b22)),
         numberBg: hexLit(asHexNumber(rawChrome?.numberBg, 0xffffff)),
         descriptionColor: hexLit(asHexNumber(rawChrome?.descriptionColor, 0xe8e8e4)),
+        descriptionBg: hexLit(asHexNumber(rawChrome?.descriptionBg, 0x0c0d12)),
+        descriptionBgOpacity: Math.min(1, Math.max(0, asFinite(rawChrome?.descriptionBgOpacity, 0))),
         trackColor: hexLit(asHexNumber(rawChrome?.trackColor, 0xffffff)),
         trackFillColor: hexLit(asHexNumber(rawChrome?.trackFillColor, 0x1a1b22)),
       };

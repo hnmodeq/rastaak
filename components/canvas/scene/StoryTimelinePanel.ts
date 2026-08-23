@@ -615,7 +615,7 @@ export class StoryTimelinePanel {
         pointer-events: none;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         transform: translateY(0);
-        transition: transform 0.28s ease, right 0.28s ease;
+        transition: transform 0.28s ease;
       }
       #rastaak-story-timeline .stl-sheet {
         display: flex;
@@ -650,16 +650,10 @@ export class StoryTimelinePanel {
         z-index: 2;
       }
       #rastaak-story-timeline[data-collapsed='true'] {
-        transform: translateY(calc(100% - 22px));
+        transform: translateY(100%);
       }
       #rastaak-story-timeline[data-collapsed='true'] .stl-sheet {
-        visibility: hidden;
         pointer-events: none;
-      }
-      #rastaak-story-timeline[data-collapsed='true'] .stl-edge {
-        transform: translate(-50%, 0);
-        border-radius: 8px 8px 0 0;
-        border-bottom: 1px solid rgba(255,255,255,0.14);
       }
       #rastaak-story-timeline .stl-head {
         display: flex;

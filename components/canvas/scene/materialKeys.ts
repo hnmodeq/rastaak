@@ -27,6 +27,49 @@ export type CategoryPalette = {
   treeLeafColor?: number;
 };
 
+export type SurfaceParams = {
+  roughness?: number;
+  metalness?: number;
+  envMapIntensity?: number;
+};
+
+export const GROUND_SURFACE_CATEGORIES: ReadonlyArray<Exclude<MaterialCategory, 'ignore'>> = [
+  'ground',
+  'plate',
+  'border',
+];
+
+export const OBJECT_SURFACE_CATEGORIES: ReadonlyArray<Exclude<MaterialCategory, 'ignore'>> = [
+  'building',
+  'window',
+  'rastaak',
+  'logo',
+  'treeTrunk',
+  'treeLeaf',
+];
+
+function isGroundSurfaceCategory(category: Exclude<MaterialCategory, 'ignore'>): boolean {
+  return (GROUND_SURFACE_CATEGORIES as readonly string[]).includes(category);
+}
+
+function surfaceForCategory(
+  category: Exclude<MaterialCategory, 'ignore'>,
+  config: MaterialsConfig,
+): SurfaceParams {
+  if (isGroundSurfaceCategory(category)) {
+    return {
+      roughness: config.groundRoughness ?? config.roughness,
+      metalness: config.groundMetalness ?? config.metalness,
+      envMapIntensity: config.groundEnvMapIntensity ?? config.envMapIntensity,
+    };
+  }
+  return {
+    roughness: config.roughness,
+    metalness: config.metalness,
+    envMapIntensity: config.envMapIntensity,
+  };
+}
+
 const GENERIC_NODE = /^(scene|node|root|armature)$/i;
 const WINDOW_NAME = /window|glass|inset|pane|casement/i;
 const FEATURED_NAME = /building|market|rastaak|logo/i;
@@ -279,16 +322,13 @@ export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConf
         std.color.set(color);
         std.vertexColors = false;
       }
-      applySurfaceToMaterial(std, config);
+      applySurfaceToMaterial(std, surfaceForCategory(category, config));
       std.needsUpdate = true;
     });
   });
 }
 
-function applySurfaceToMaterial(
-  mat: THREE.MeshStandardMaterial,
-  surface: { roughness?: number; metalness?: number; envMapIntensity?: number },
-) {
+function applySurfaceToMaterial(mat: THREE.MeshStandardMaterial, surface: SurfaceParams) {
   if (surface.roughness !== undefined && 'roughness' in mat) mat.roughness = surface.roughness;
   if (surface.metalness !== undefined && 'metalness' in mat) mat.metalness = surface.metalness;
   if (surface.envMapIntensity !== undefined && 'envMapIntensity' in mat) {
@@ -298,7 +338,7 @@ function applySurfaceToMaterial(
 
 export function applyCategorySurface(
   mats: THREE.MeshStandardMaterial[],
-  surface: { roughness?: number; metalness?: number; envMapIntensity?: number },
+  surface: SurfaceParams,
 ): void {
   mats.forEach((mat) => {
     applySurfaceToMaterial(mat, surface);
@@ -321,7 +361,8 @@ export function applyCategoryColor(
 /** Scene palette → codes. Does not write per-mesh overrides. */
 export function collectMaterialsConfig(
   palette: CategoryPalette,
-  surface?: { roughness?: number; metalness?: number; envMapIntensity?: number },
+  objectSurface?: SurfaceParams,
+  groundSurface?: SurfaceParams,
 ): MaterialsConfig {
   return {
     buildingColor: palette.buildingColor,
@@ -335,9 +376,16 @@ export function collectMaterialsConfig(
     treeLeafColor: palette.treeLeafColor,
     globalFacadeColor: palette.buildingColor,
     globalWindowColor: palette.windowColor,
-    ...(surface?.roughness !== undefined ? { roughness: surface.roughness } : {}),
-    ...(surface?.metalness !== undefined ? { metalness: surface.metalness } : {}),
-    ...(surface?.envMapIntensity !== undefined ? { envMapIntensity: surface.envMapIntensity } : {}),
+    ...(objectSurface?.roughness !== undefined ? { roughness: objectSurface.roughness } : {}),
+    ...(objectSurface?.metalness !== undefined ? { metalness: objectSurface.metalness } : {}),
+    ...(objectSurface?.envMapIntensity !== undefined
+      ? { envMapIntensity: objectSurface.envMapIntensity }
+      : {}),
+    ...(groundSurface?.roughness !== undefined ? { groundRoughness: groundSurface.roughness } : {}),
+    ...(groundSurface?.metalness !== undefined ? { groundMetalness: groundSurface.metalness } : {}),
+    ...(groundSurface?.envMapIntensity !== undefined
+      ? { groundEnvMapIntensity: groundSurface.envMapIntensity }
+      : {}),
     overrides: {},
   };
 }
