@@ -23,6 +23,7 @@ import {
   type CategoryPalette,
   type MaterialCategory,
 } from './materialKeys';
+import { StoryTimelinePanel } from './StoryTimelinePanel';
 
 function downloadJSON(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -65,6 +66,7 @@ export class SceneStudioGUI {
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
+  private timelinePanel: StoryTimelinePanel | null = null;
   private palette = {
     building: '#a3a3a3',
     window: '#ffffff',
@@ -152,6 +154,7 @@ export class SceneStudioGUI {
         } else {
           this.gui.hide();
         }
+        this.timelinePanel?.setVisible(this.isOpen);
       }
     });
 
@@ -167,7 +170,8 @@ export class SceneStudioGUI {
       if (!this.isOpen && !this.isManualMode && !this.isOrbitMode) return;
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
-        (e.target as HTMLElement)?.id === 'rastaak-studio-btn'
+        (e.target as HTMLElement)?.id === 'rastaak-studio-btn' ||
+        (e.target as HTMLElement)?.closest('#rastaak-story-timeline')
       ) {
         return;
       }
@@ -373,6 +377,7 @@ export class SceneStudioGUI {
         this.isOpen = true;
         this.gui.show();
         this.gui.open();
+        this.timelinePanel?.setVisible(true);
       }
       return;
     }
@@ -629,6 +634,10 @@ export class SceneStudioGUI {
       this.populateMaterials();
       this.populateStoryControls();
       this.populateStoryTiming();
+      if (!this.timelinePanel) {
+        this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t));
+        this.timelinePanel.mount();
+      }
 
       const envFolder = this.gui.addFolder('Environment & Fog');
       const currentBgHex = '#' + (
@@ -849,6 +858,7 @@ export class SceneStudioGUI {
       .onChange((value: typeof TYPE_CHROME.studioCorner) => {
         TYPE_CHROME.studioCorner = value;
         applyStudioChrome();
+        this.timelinePanel?.layout();
       });
 
     const brandFolder = this.gui.addFolder('Site name');
@@ -1581,5 +1591,7 @@ export class SceneStudioGUI {
       this.gui.destroy();
       this.gui = null;
     }
+    this.timelinePanel?.destroy();
+    this.timelinePanel = null;
   }
 }
