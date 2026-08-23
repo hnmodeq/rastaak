@@ -20,6 +20,8 @@ const ignored = new Set([
   'components/canvas/scene/storyConfig.ts',
   'components/canvas/scene/storyRuntime.ts',
   'components/canvas/scene/lookConfig.ts',
+  'components/canvas/scene/buildingNamesConfig.ts',
+  'components/canvas/scene/BuildingNamePlates.ts',
   'components/home/flowConfig.ts',
   'components/home/heroCopy.ts',
   'components/home/typeChrome.ts',

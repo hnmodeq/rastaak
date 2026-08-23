@@ -34,6 +34,8 @@ import { BlenderViewport } from './BlenderViewport';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
 import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
+import { BUILDING_NAMES } from './buildingNamesConfig';
+import { notifyBuildingNamesChanged } from './BuildingNamePlates';
 
 const isPointLight = (l: THREE.Light) =>
   (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
@@ -800,6 +802,10 @@ export class SceneStudioGUI {
       heroCopy: { ...HERO_COPY },
       flowChrome: { ...FLOW_CHROME },
       look: { ...LOOK_CONFIG },
+      buildingNames: BUILDING_NAMES.map((plate) => ({
+        ...plate,
+        position: [...plate.position] as [number, number, number],
+      })),
       typeChrome: {
         siteName: TYPE_CHROME.siteName,
         siteNameColor: TYPE_CHROME.siteNameColor,
@@ -1146,6 +1152,7 @@ export class SceneStudioGUI {
       this.populateMaterials();
       this.populateStoryControls();
       this.populateStoryTiming();
+      this.populateBuildingNames();
       if (!this.timelinePanel) {
         this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t), {
           onApply: async () => {
@@ -2096,6 +2103,39 @@ export class SceneStudioGUI {
       .onChange((value: number) => {
         STORY_CONFIG.captionFadeIn = clamp01(value);
       });
+  }
+
+  private populateBuildingNames() {
+    if (!this.gui) return;
+    const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+    const root = this.addTab('Building Names');
+    BUILDING_NAMES.forEach((plate, index) => {
+      const folder = root.addFolder(`${index + 1}. ${plate.text || plate.building}`);
+      const row = {
+        text: plate.text,
+        size: plate.size,
+        color: hex(plate.color),
+        posX: plate.position[0],
+        posY: plate.position[1],
+        posZ: plate.position[2],
+        extrude: plate.extrude,
+      };
+      const push = () => {
+        plate.text = row.text;
+        plate.size = row.size;
+        plate.color = new THREE.Color(row.color).getHex();
+        plate.position = [row.posX, row.posY, row.posZ];
+        plate.extrude = row.extrude;
+        notifyBuildingNamesChanged();
+      };
+      folder.add(row, 'text').name('Text').onChange(push);
+      folder.add(row, 'size', 0.08, 1.2, 0.01).name('Size').onChange(push);
+      folder.addColor(row, 'color').name('Color').onChange(push);
+      folder.add(row, 'posX', -4, 4, 0.02).name('Position X').onChange(push);
+      folder.add(row, 'posY', -3, 4, 0.02).name('Position Y').onChange(push);
+      folder.add(row, 'posZ', -2, 2, 0.01).name('Position Z').onChange(push);
+      folder.add(row, 'extrude', 0.01, 0.28, 0.005).name('Extrude').onChange(push);
+    });
   }
 
   public populateLightsAndShadows() {

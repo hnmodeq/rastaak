@@ -20,6 +20,7 @@ import { applyMaterialsConfig } from './scene/materialKeys';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
+import { BuildingNamePlateSet } from './scene/BuildingNamePlates';
 import { subscribeLive } from '@/components/live/liveChannel';
 import type { LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
 import {
@@ -223,6 +224,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     let world: THREE.Group | null = null;
     let studioGUI: SceneStudioGUI | null = null;
     const story = new StoryRuntime();
+    const namePlates = new BuildingNamePlateSet();
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const onStudioBeforeSave = () => story.restoreBase();
@@ -395,6 +397,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
           console.info('[story] loaded world nodes', named.length, named);
         }
         story.attach(world, scene);
+        namePlates.attach(world, scene);
         studioGUI?.populateMaterials();
 
         window.dispatchEvent(
@@ -558,6 +561,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       window.removeEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
       unsubscribeLive();
       story.dispose();
+      namePlates.dispose();
       controls.dispose();
       viewport.dispose();
       studioGUI?.destroy();
