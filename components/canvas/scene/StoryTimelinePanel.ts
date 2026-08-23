@@ -59,7 +59,6 @@ export class StoryTimelinePanel {
   private redoStack: TimingSnapshot[] = [];
   private dragSnapshot: TimingSnapshot | null = null;
   private collapsed = false;
-  private studioCollapsed = false;
   private onFrame = (event: Event) => {
     const detail = (event as CustomEvent<StoryFrame>).detail;
     if (!detail || this.dragging) return;
@@ -112,10 +111,11 @@ export class StoryTimelinePanel {
     document.querySelectorAll('[id="rastaak-story-timeline"]').forEach((el) => el.remove());
     const root = document.createElement('div');
     root.id = 'rastaak-story-timeline';
+    root.dataset.collapsed = 'true';
     if (host) root.dataset.docked = 'true';
     root.innerHTML = `
-      <button type="button" class="stl-edge" title="Hide story timeline" aria-label="Hide story timeline">
-        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button type="button" class="stl-edge" title="Show story timeline" aria-label="Show story timeline">
+        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="stl-sheet">
         <div class="stl-head">
@@ -167,6 +167,7 @@ export class StoryTimelinePanel {
     this.layout();
     this.paint();
     this.syncUndoButtons();
+    this.setCollapsed(true);
     window.addEventListener(STORY_FRAME_EVENT, this.onFrame);
     window.addEventListener(TIMING_EVENT, this.onTiming);
     window.addEventListener('pointermove', this.onPointerMove);
@@ -202,6 +203,7 @@ export class StoryTimelinePanel {
       this.layout();
       this.paint();
     }
+    this.emitLayout();
   }
 
   isCollapsed() {
@@ -212,11 +214,15 @@ export class StoryTimelinePanel {
     return this.sheet;
   }
 
-  layout(opts?: { studioCollapsed?: boolean }) {
-    if (opts?.studioCollapsed !== undefined) this.studioCollapsed = opts.studioCollapsed;
+  layout() {
     if (!this.root) return;
     this.root.style.left = '16px';
-    this.root.style.right = this.studioCollapsed ? '36px' : '312px';
+    this.root.style.right = '16px';
+    this.emitLayout();
+  }
+
+  private emitLayout() {
+    window.dispatchEvent(new CustomEvent('rastaak-studio-chrome-layout'));
   }
 
   refresh() {
@@ -592,7 +598,7 @@ export class StoryTimelinePanel {
       #rastaak-story-timeline {
         position: fixed;
         left: 16px;
-        right: 312px;
+        right: 16px;
         bottom: 0;
         top: auto;
         height: auto;

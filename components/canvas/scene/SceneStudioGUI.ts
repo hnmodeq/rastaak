@@ -70,9 +70,10 @@ export class SceneStudioGUI {
   private studioEdge: HTMLButtonElement | null = null;
   private foldAllBtn: HTMLButtonElement | null = null;
   private panelOpacity = 1;
-  private isOpen = true;
-  private studioCollapsed = false;
+  private isOpen = false;
+  private studioCollapsed = true;
   private foldersExpanded = false;
+  private chromeObserver: ResizeObserver | null = null;
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
@@ -167,6 +168,8 @@ export class SceneStudioGUI {
     this.surfaceTouched =
       mats.roughness !== undefined || mats.metalness !== undefined || mats.envMapIntensity !== undefined;
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
+    window.addEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
+    window.addEventListener('resize', this.onChromeLayout);
     this.initGUI();
     this.initRaycaster();
   }
@@ -209,30 +212,34 @@ export class SceneStudioGUI {
     style.textContent = `
       #rastaak-studio-dock {
         position: fixed !important;
-        top: 0 !important;
-        right: 0 !important;
+        top: auto !important;
+        right: 16px !important;
         left: auto !important;
-        bottom: 0 !important;
+        bottom: var(--studio-bottom, 28px) !important;
         z-index: 1000000 !important;
         width: 300px !important;
-        height: 100vh !important;
-        height: 100dvh !important;
+        height: auto !important;
+        max-height: calc(100dvh - var(--studio-bottom, 28px) - 16px) !important;
         pointer-events: none !important;
-        transform: translateX(0);
-        transition: transform 0.28s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        transition: bottom 0.28s ease;
       }
       #rastaak-studio-dock[data-collapsed='true'] {
-        transform: translateX(calc(100% - 22px));
+        right: 0 !important;
+        width: 22px !important;
+        height: 64px !important;
+        max-height: 64px !important;
       }
       #rastaak-studio-dock[data-collapsed='true'] #rastaak-studio-panel {
-        visibility: hidden;
-        pointer-events: none !important;
+        display: none !important;
       }
       #rastaak-studio-dock .rastaak-studio-edge {
         position: absolute;
-        top: 50%;
+        top: 12px;
         left: 0;
-        transform: translate(-100%, -50%);
+        transform: translateX(-100%);
         width: 22px;
         height: 64px;
         border: 1px solid rgba(255,255,255,0.14);
@@ -248,22 +255,28 @@ export class SceneStudioGUI {
         z-index: 3;
       }
       #rastaak-studio-dock[data-collapsed='true'] .rastaak-studio-edge {
-        transform: translate(0, -50%);
+        top: 0;
+        left: 0;
+        transform: none;
         border-right: 1px solid rgba(255,255,255,0.14);
-        border-radius: 8px 0 0 8px;
       }
       #rastaak-studio-panel {
-        position: absolute !important;
-        inset: 0 !important;
+        position: relative !important;
+        inset: auto !important;
         z-index: 1 !important;
         width: 100% !important;
-        height: 100% !important;
+        height: auto !important;
+        max-height: inherit !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         pointer-events: auto !important;
-        background: rgba(12, 13, 18, 0.72);
+        background: rgba(12, 13, 18, 0.92);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 14px;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.28);
         display: flex;
         flex-direction: column;
+        flex: 0 0 auto;
       }
       #rastaak-studio-toolbar {
         position: sticky;
@@ -276,6 +289,7 @@ export class SceneStudioGUI {
         padding: 8px 10px;
         background: rgba(12, 13, 18, 0.94);
         border-bottom: 1px solid rgba(255,255,255,0.08);
+        flex: 0 0 auto;
       }
       #rastaak-studio-foldall {
         border: 1px solid rgba(255,255,255,0.16);
@@ -297,9 +311,12 @@ export class SceneStudioGUI {
         left: auto !important;
         bottom: auto !important;
         width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
         max-height: none !important;
+        --max-height: none;
         z-index: 1 !important;
-        flex: 1 1 auto;
+        flex: 0 0 auto;
       }
       #rastaak-studio-panel .lil-gui:not(.root) {
         position: static !important;
@@ -322,12 +339,13 @@ export class SceneStudioGUI {
     if (!dock) {
       dock = document.createElement('div');
       dock.id = 'rastaak-studio-dock';
+      dock.dataset.collapsed = 'true';
       const edge = document.createElement('button');
       edge.type = 'button';
       edge.className = 'rastaak-studio-edge';
-      edge.title = 'Hide 3D Studio';
-      edge.setAttribute('aria-label', 'Hide 3D Studio');
-      edge.innerHTML = this.studioEdgeSvg(false);
+      edge.title = 'Show 3D Studio';
+      edge.setAttribute('aria-label', 'Show 3D Studio');
+      edge.innerHTML = this.studioEdgeSvg(true);
       edge.addEventListener('click', () => {
         this.setStudioCollapsed(!this.studioCollapsed);
       });
@@ -368,6 +386,29 @@ export class SceneStudioGUI {
     if (this.gui) walk(this.gui);
     this.foldersExpanded = open;
     if (this.foldAllBtn) this.foldAllBtn.textContent = open ? 'Collapse all' : 'Expand all';
+    this.syncStudioDockBottom();
+  }
+
+  private onChromeLayout = () => {
+    this.syncStudioDockBottom();
+  };
+
+  private observeChromeLayout() {
+    this.chromeObserver?.disconnect();
+    const sheet = document.querySelector('#rastaak-story-timeline .stl-sheet');
+    if (typeof ResizeObserver === 'undefined' || !(sheet instanceof HTMLElement)) return;
+    this.chromeObserver = new ResizeObserver(() => this.syncStudioDockBottom());
+    this.chromeObserver.observe(sheet);
+  }
+
+  private syncStudioDockBottom() {
+    const dock = document.getElementById('rastaak-studio-dock');
+    if (!dock) return;
+    const timeline = document.getElementById('rastaak-story-timeline');
+    const sheet = timeline?.querySelector('.stl-sheet') as HTMLElement | null;
+    const hidden = !timeline || timeline.dataset.collapsed === 'true';
+    const bottom = hidden ? 28 : Math.max(28, Math.ceil((sheet?.offsetHeight ?? 0) + 24));
+    dock.style.setProperty('--studio-bottom', `${bottom}px`);
   }
 
   private initRaycaster() {
@@ -938,7 +979,8 @@ export class SceneStudioGUI {
         });
         const dock = document.getElementById('admin-timeline-dock');
         this.timelinePanel.mount(dock);
-        this.timelinePanel.layout({ studioCollapsed: this.studioCollapsed });
+        this.timelinePanel.setCollapsed(true);
+        this.observeChromeLayout();
         this.applyPanelOpacity(this.panelOpacity);
       }
 
@@ -1050,7 +1092,8 @@ export class SceneStudioGUI {
 
       if (guiEl.parentElement !== host) host.appendChild(guiEl);
       this.setAllFoldersOpen(false);
-      this.setStudioCollapsed(false);
+      this.setStudioCollapsed(true);
+      this.syncStudioDockBottom();
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
@@ -2055,7 +2098,8 @@ export class SceneStudioGUI {
       this.studioEdge.setAttribute('aria-label', this.studioEdge.title);
       this.studioEdge.innerHTML = this.studioEdgeSvg(collapsed);
     }
-    this.timelinePanel?.layout({ studioCollapsed: collapsed });
+    this.timelinePanel?.layout();
+    this.syncStudioDockBottom();
     this.syncGizmoVisibility();
     if (collapsed) this.setGrabMode(false);
     window.dispatchEvent(new CustomEvent('rastaak-studio-open', { detail: { open: !collapsed } }));
@@ -2090,6 +2134,10 @@ export class SceneStudioGUI {
   public destroy() {
     this.disposed = true;
     window.removeEventListener('rastaak-studio-toggle', this.onExternalToggle);
+    window.removeEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
+    window.removeEventListener('resize', this.onChromeLayout);
+    this.chromeObserver?.disconnect();
+    this.chromeObserver = null;
     this.setGrabMode(false);
     document.body.classList.remove('studio-grab-lamps');
     if (this.pointerHandler) {
