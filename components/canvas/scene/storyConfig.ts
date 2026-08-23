@@ -9,6 +9,7 @@ export interface StoryClientConfig {
   id: string;
   building: string;
   need: string;
+  needAfter?: string;
   appear: number;
   dispatch: number;
   arrive: number;
@@ -186,6 +187,19 @@ export const STORY_CONFIG: StoryConfig = {
   chipBackgroundOpacity: 0,
   chipText: 0xf5f5f2
 };
+
+export function needTitleAt(
+  client: { need: string; needAfter?: string; arrive: number },
+  t: number,
+  burstDelay?: number,
+): string {
+  const delay = Math.max(0, burstDelay ?? STORY_CONFIG.burstDelay ?? 0.045);
+  const after = client.needAfter;
+  if (typeof after === 'string' && after.trim() && t >= client.arrive + delay) {
+    return after;
+  }
+  return client.need;
+}
 
 export interface StoryChipFrame {
   id: string;

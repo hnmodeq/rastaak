@@ -3,7 +3,8 @@ import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import { applySceneShadows } from './shadowTint';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
-import { STORY_CONFIG, applyStoryTheme, resolveAt } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, resolveAt, type StoryFrame } from './storyConfig';
+import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
 import {
@@ -85,6 +86,12 @@ export class SceneStudioGUI {
   private preGrabOrbit = false;
   private orbitLockedByGizmo = false;
   private currentStopIndex = 0;
+  private playheadT = 0;
+  private readonly journeySample = {
+    camera: [0, 0, 0] as [number, number, number],
+    target: [0, 0, 0] as [number, number, number],
+    fov: 45,
+  };
   private lightUi = new Map<
     string,
     {
@@ -202,6 +209,7 @@ export class SceneStudioGUI {
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     window.addEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.addEventListener('resize', this.onChromeLayout);
+    window.addEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
     this.initGUI();
     this.initRaycaster();
   }
@@ -1513,60 +1521,63 @@ export class SceneStudioGUI {
     storyFolder.addColor(colorParams, 'chipNeed').name('Tick before solve').onChange((v: string) => applyColor('chipNeed', v));
     storyFolder.addColor(colorParams, 'chipResolved').name('Tick after solve').onChange((v: string) => applyColor('chipResolved', v));
 
-    const chipBoxFolder = storyFolder.addFolder('Need chip box');
-    const chipBoxParams = {
+    const needsFolder = this.addTab('Needs');
+    const needsBoxParams = {
       chipBorder: hex(STORY_CONFIG.chipBorder ?? 0xe0a01a),
       chipBorderOpacity: STORY_CONFIG.chipBorderOpacity ?? 0.55,
       chipBackground: hex(STORY_CONFIG.chipBackground ?? 0x14151a),
       chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity ?? 0.72,
       chipText: hex(STORY_CONFIG.chipText ?? 0xf5f5f2),
     };
-    chipBoxFolder
-      .addColor(chipBoxParams, 'chipBorder')
+    needsFolder
+      .addColor(needsBoxParams, 'chipBorder')
       .name('Border color')
       .onChange((value: string) => {
         STORY_CONFIG.chipBorder = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
-    chipBoxFolder
-      .add(chipBoxParams, 'chipBorderOpacity', 0, 1, 0.01)
+    needsFolder
+      .add(needsBoxParams, 'chipBorderOpacity', 0, 1, 0.01)
       .name('Border opacity')
       .onChange((value: number) => {
         STORY_CONFIG.chipBorderOpacity = value;
         applyStoryTheme();
       });
-    chipBoxFolder
-      .addColor(chipBoxParams, 'chipBackground')
+    needsFolder
+      .addColor(needsBoxParams, 'chipBackground')
       .name('Background color')
       .onChange((value: string) => {
         STORY_CONFIG.chipBackground = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
-    chipBoxFolder
-      .add(chipBoxParams, 'chipBackgroundOpacity', 0, 1, 0.01)
+    needsFolder
+      .add(needsBoxParams, 'chipBackgroundOpacity', 0, 1, 0.01)
       .name('Background opacity')
       .onChange((value: number) => {
         STORY_CONFIG.chipBackgroundOpacity = value;
         applyStoryTheme();
       });
-    chipBoxFolder
-      .addColor(chipBoxParams, 'chipText')
+    needsFolder
+      .addColor(needsBoxParams, 'chipText')
       .name('Text color')
       .onChange((value: string) => {
         STORY_CONFIG.chipText = new THREE.Color(value).getHex();
         applyStoryTheme();
       });
-    this.addTypeControls(chipBoxFolder, TYPE_CHROME.chipText, hex);
+    this.addTypeControls(needsFolder.addFolder('Type'), TYPE_CHROME.chipText, hex);
 
-    const chipsFolder = storyFolder.addFolder('Need chip titles');
     STORY_CONFIG.clients.forEach((client) => {
-      const params = { need: client.need };
-      chipsFolder
-        .add(params, 'need')
-        .name(client.building)
-        .onChange((value: string) => {
-          client.need = value;
-        });
+      const folder = needsFolder.addFolder(client.building);
+      const params = {
+        need: client.need,
+        needAfter: client.needAfter ?? '',
+      };
+      folder.add(params, 'need').name('Before explosion').onChange((value: string) => {
+        client.need = value;
+      });
+      folder.add(params, 'needAfter').name('After explosion').onChange((value: string) => {
+        client.needAfter = value;
+      });
     });
 
     const chapterFolder = this.addTab('Chapter panel');
@@ -1657,8 +1668,15 @@ export class SceneStudioGUI {
   }
 
   private seekStory(t: number) {
-    this.onProgressChange?.(clamp01(t));
+    this.playheadT = clamp01(t);
+    this.onProgressChange?.(this.playheadT);
   }
+
+  private onStoryFrame = (event: Event) => {
+    const detail = (event as CustomEvent<StoryFrame>).detail;
+    if (!detail || typeof detail.t !== 'number') return;
+    this.playheadT = detail.t;
+  };
 
   private populateStoryTiming() {
     if (!this.gui) return;
@@ -1903,7 +1921,7 @@ export class SceneStudioGUI {
     };
     root
       .add(hold, 'chipHoldAfterArrive', 0, 0.4, 0.01)
-      .name('Chip hold after arrive')
+      .name('Needs hold after arrive')
       .onChange((value: number) => {
         STORY_CONFIG.chipHoldAfterArrive = clamp01(value);
         this.notifyTimingChanged();
@@ -2435,8 +2453,21 @@ export class SceneStudioGUI {
 
   public tick() {
     this.lightGizmos?.syncAll();
+    if (!this.cameraGizmos) return;
+    this.cameraGizmos.syncPath(SCENE_CONFIG.stops);
+    const aspect = this.camera.aspect;
+    if (this.grabCamera) {
+      const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+      if (stop) this.cameraGizmos.sync(stop, aspect);
+      return;
+    }
+    if (this.isOrbitMode && this.showCameraGizmos) {
+      sampleSceneJourney(this.playheadT, this.journeySample);
+      this.cameraGizmos.syncPose(this.journeySample, aspect);
+      return;
+    }
     const stop = SCENE_CONFIG.stops[this.currentStopIndex];
-    if (stop) this.cameraGizmos?.sync(stop, this.camera.aspect);
+    if (stop) this.cameraGizmos.sync(stop, aspect);
   }
 
   public destroy() {
@@ -2444,6 +2475,7 @@ export class SceneStudioGUI {
     window.removeEventListener('rastaak-studio-toggle', this.onExternalToggle);
     window.removeEventListener('rastaak-studio-chrome-layout', this.onChromeLayout);
     window.removeEventListener('resize', this.onChromeLayout);
+    window.removeEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
     this.chromeObserver?.disconnect();
     this.chromeObserver = null;
     this.setGrabMode(false);

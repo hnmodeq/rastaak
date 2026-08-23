@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { SCENE_CONFIG } from './sceneConfig';
 
 function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): number {
@@ -10,6 +11,28 @@ function catmullRom(p0: number, p1: number, p2: number, p3: number, t: number): 
       (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
       (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
   );
+}
+
+const _from = new THREE.Vector3();
+const _to = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+const _matrix = new THREE.Matrix4();
+const _qA = new THREE.Quaternion();
+const _qB = new THREE.Quaternion();
+const _forward = new THREE.Vector3();
+
+function lookQuat(
+  camera: readonly [number, number, number],
+  target: readonly [number, number, number],
+  out: THREE.Quaternion,
+) {
+  _from.set(camera[0], camera[1], camera[2]);
+  _to.set(target[0], target[1], target[2]);
+  if (_from.distanceToSquared(_to) < 1e-8) {
+    _to.z -= 1;
+  }
+  _matrix.lookAt(_from, _to, _up);
+  out.setFromRotationMatrix(_matrix);
 }
 
 export function sampleSceneJourney(
@@ -57,14 +80,21 @@ export function sampleSceneJourney(
       p3.camera[axis],
       f,
     );
-    out.target[axis] = catmullRom(
-      p0.target[axis],
-      p1.target[axis],
-      p2.target[axis],
-      p3.target[axis],
-      f,
-    );
   }
+
+  // Slerp the look, do not Catmull-Rom the target. Independent target curves
+  // overshoot and make lookAt spin around world-up with no stop to edit.
+  lookQuat(p1.camera, p1.target, _qA);
+  lookQuat(p2.camera, p2.target, _qB);
+  if (_qA.dot(_qB) < 0) _qB.set(-_qB.x, -_qB.y, -_qB.z, -_qB.w);
+  _qA.slerp(_qB, f);
+  _forward.set(0, 0, -1).applyQuaternion(_qA).normalize();
+  const d1 = Math.hypot(p1.target[0] - p1.camera[0], p1.target[1] - p1.camera[1], p1.target[2] - p1.camera[2]);
+  const d2 = Math.hypot(p2.target[0] - p2.camera[0], p2.target[1] - p2.camera[1], p2.target[2] - p2.camera[2]);
+  const dist = THREE.MathUtils.lerp(Math.max(0.2, d1), Math.max(0.2, d2), f);
+  out.target[0] = out.camera[0] + _forward.x * dist;
+  out.target[1] = out.camera[1] + _forward.y * dist;
+  out.target[2] = out.camera[2] + _forward.z * dist;
 
   const fov1 = p1.fov ?? SCENE_CONFIG.camera.defaultFov;
   const fov2 = p2.fov ?? SCENE_CONFIG.camera.defaultFov;

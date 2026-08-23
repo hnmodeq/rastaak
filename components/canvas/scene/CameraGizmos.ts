@@ -1,12 +1,19 @@
 import * as THREE from 'three';
 import { tokens } from '@/tokens/design-tokens';
 import type { CameraStop } from './sceneTypes';
+import { sampleSceneJourney } from './journeyMath';
 
 export type CameraHandle = 'source' | 'aim';
 
 export interface CameraGizmoHit {
   handle: CameraHandle;
 }
+
+export type CameraPose = {
+  camera: [number, number, number];
+  target: [number, number, number];
+  fov?: number;
+};
 
 type TransformControlsLike = {
   attach: (object: THREE.Object3D) => void;
@@ -83,6 +90,8 @@ export class CameraGizmoSet {
   private readonly wireMat: THREE.LineBasicMaterial;
   private readonly aimMat: THREE.LineBasicMaterial;
   private readonly dashMat: THREE.LineDashedMaterial;
+  private readonly pathMat: THREE.LineBasicMaterial;
+  private readonly targetPathMat: THREE.LineDashedMaterial;
   private readonly sourceMat: THREE.MeshBasicMaterial;
   private readonly aimFillMat: THREE.MeshBasicMaterial;
   private readonly bodyMat: THREE.MeshBasicMaterial;
@@ -93,6 +102,7 @@ export class CameraGizmoSet {
   private readonly lens: THREE.Mesh;
   private readonly sourceHandle: THREE.Mesh;
   private readonly aimHandle: THREE.Mesh;
+  private readonly aimLocator: THREE.Mesh;
   private readonly arrow: THREE.Mesh;
   private readonly sourceGround: THREE.Mesh;
   private readonly aimGround: THREE.Mesh;
@@ -102,13 +112,19 @@ export class CameraGizmoSet {
   private readonly aimLine: THREE.Line;
   private readonly sourceDrop: THREE.Line;
   private readonly aimDrop: THREE.Line;
+  private readonly camPath: THREE.Line;
+  private readonly targetPath: THREE.Line;
+  private readonly stopMarks = new THREE.Group();
 
-  private controls: TransformControlsLike | null = null;
-  private controlHelper: THREE.Object3D | null = null;
+  private sourceControls: TransformControlsLike | null = null;
+  private aimControls: TransformControlsLike | null = null;
+  private sourceHelper: THREE.Object3D | null = null;
+  private aimHelper: THREE.Object3D | null = null;
   private grab = false;
   private dragging = false;
   private selected: CameraHandle = 'source';
   private boundStop: CameraStop | null = null;
+  private pathKey = '';
   private readonly orientation = new THREE.Quaternion();
   private readonly lookMatrix = new THREE.Matrix4();
   private readonly up = new THREE.Vector3(0, 1, 0);
@@ -117,23 +133,30 @@ export class CameraGizmoSet {
   private readonly forward = new THREE.Vector3();
   private readonly right = new THREE.Vector3();
   private readonly camUp = new THREE.Vector3();
+  private readonly journeySample = {
+    camera: [0, 0, 0] as [number, number, number],
+    target: [0, 0, 0] as [number, number, number],
+    fov: 45,
+  };
 
   private readonly onDragging = (event: { value?: boolean }) => {
     this.dragging = Boolean(event.value);
     this.onOrbitLock?.(this.dragging);
   };
 
-  private readonly onTransform = () => {
+  private readonly onSourceTransform = () => {
     if (!this.boundStop) return;
-    if (this.selected === 'source') {
-      this.boundStop.camera[0] = this.sourceDummy.position.x;
-      this.boundStop.camera[1] = this.sourceDummy.position.y;
-      this.boundStop.camera[2] = this.sourceDummy.position.z;
-    } else {
-      this.boundStop.target[0] = this.aimDummy.position.x;
-      this.boundStop.target[1] = this.aimDummy.position.y;
-      this.boundStop.target[2] = this.aimDummy.position.z;
-    }
+    this.boundStop.camera[0] = this.sourceDummy.position.x;
+    this.boundStop.camera[1] = this.sourceDummy.position.y;
+    this.boundStop.camera[2] = this.sourceDummy.position.z;
+    this.onEdited?.();
+  };
+
+  private readonly onAimTransform = () => {
+    if (!this.boundStop) return;
+    this.boundStop.target[0] = this.aimDummy.position.x;
+    this.boundStop.target[1] = this.aimDummy.position.y;
+    this.boundStop.target[2] = this.aimDummy.position.z;
     this.onEdited?.();
   };
 
@@ -151,18 +174,24 @@ export class CameraGizmoSet {
     this.wireMat = overlayLine(LAMP) as THREE.LineBasicMaterial;
     this.aimMat = overlayLine(AIM) as THREE.LineBasicMaterial;
     this.dashMat = overlayLine(AIM, true) as THREE.LineDashedMaterial;
+    this.pathMat = overlayLine(LAMP) as THREE.LineBasicMaterial;
+    this.pathMat.opacity = 0.7;
+    this.targetPathMat = overlayLine(AIM, true) as THREE.LineDashedMaterial;
+    this.targetPathMat.opacity = 0.7;
     this.sourceMat = overlayMesh(LAMP, 0.88);
-    this.aimFillMat = overlayMesh(AIM, 0.9);
+    this.aimFillMat = overlayMesh(AIM, 0.92);
     this.bodyMat = overlayMesh(LAMP, 0.22);
 
     this.body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.3, 0.28), this.bodyMat);
     this.lens = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.16, 12), this.sourceMat);
     this.lens.rotation.x = Math.PI / 2;
     this.sourceHandle = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10), this.sourceMat);
-    this.aimHandle = new THREE.Mesh(new THREE.OctahedronGeometry(0.36, 0), this.aimFillMat);
+    this.aimHandle = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), this.aimFillMat);
+    this.aimLocator = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.72, 36), overlayMesh(AIM, 0.85));
+    this.aimLocator.rotation.x = -Math.PI / 2;
     this.arrow = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.46, 10), this.aimFillMat);
     this.sourceGround = new THREE.Mesh(new THREE.RingGeometry(0.26, 0.4, 28), overlayMesh(LAMP, 0.7));
-    this.aimGround = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.34, 28), overlayMesh(AIM, 0.7));
+    this.aimGround = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.46, 28), overlayMesh(AIM, 0.8));
     this.sourceGround.rotation.x = -Math.PI / 2;
     this.aimGround.rotation.x = -Math.PI / 2;
 
@@ -172,19 +201,35 @@ export class CameraGizmoSet {
     this.aimLine = new THREE.Line(new THREE.BufferGeometry(), this.dashMat);
     this.sourceDrop = new THREE.Line(new THREE.BufferGeometry(), overlayLine(LAMP, true));
     this.aimDrop = new THREE.Line(new THREE.BufferGeometry(), overlayLine(AIM, true));
+    this.camPath = new THREE.Line(new THREE.BufferGeometry(), this.pathMat);
+    this.targetPath = new THREE.Line(new THREE.BufferGeometry(), this.targetPathMat);
+    this.stopMarks.name = 'camera-stop-marks';
 
     markPick(this.body, 'source');
     markPick(this.lens, 'source');
     markPick(this.sourceHandle, 'source');
     markPick(this.sourceGround, 'source');
     markPick(this.aimHandle, 'aim');
+    markPick(this.aimLocator, 'aim');
     markPick(this.aimGround, 'aim');
-    this.pickables.push(this.body, this.lens, this.sourceHandle, this.sourceGround, this.aimHandle, this.aimGround);
+    this.pickables.push(
+      this.body,
+      this.lens,
+      this.sourceHandle,
+      this.sourceGround,
+      this.aimHandle,
+      this.aimLocator,
+      this.aimGround,
+    );
 
     this.sourceDummy.name = 'camera:source';
     this.aimDummy.name = 'camera:aim';
+    this.aimLocator.visible = false;
 
     this.root.add(
+      this.camPath,
+      this.targetPath,
+      this.stopMarks,
       this.nearRect,
       this.farRect,
       this.sides,
@@ -195,6 +240,7 @@ export class CameraGizmoSet {
       this.lens,
       this.sourceHandle,
       this.aimHandle,
+      this.aimLocator,
       this.arrow,
       this.sourceGround,
       this.aimGround,
@@ -215,13 +261,15 @@ export class CameraGizmoSet {
 
   setGrabEnabled(enabled: boolean) {
     this.grab = enabled;
+    this.aimLocator.visible = enabled;
     if (!enabled) {
       this.detach();
       return;
     }
     void this.ensureControls().then(() => {
       if (!this.grab) return;
-      this.select(this.selected);
+      this.sourceControls?.attach(this.sourceDummy);
+      this.aimControls?.attach(this.aimDummy);
     });
   }
 
@@ -235,9 +283,58 @@ export class CameraGizmoSet {
   select(handle: CameraHandle) {
     this.selected = handle;
     this.sourceHandle.scale.setScalar(handle === 'source' ? 1.35 : 1);
-    this.aimHandle.scale.setScalar(handle === 'aim' ? 1.35 : 1);
-    if (!this.grab || !this.controls) return;
-    this.controls.attach(handle === 'aim' ? this.aimDummy : this.sourceDummy);
+    this.aimHandle.scale.setScalar(handle === 'aim' ? 1.45 : 1.15);
+    if (!this.grab) return;
+    if (handle === 'aim') this.aimControls?.attach(this.aimDummy);
+    else this.sourceControls?.attach(this.sourceDummy);
+  }
+
+  syncPath(stops: CameraStop[]) {
+    const key = stops
+      .map((stop) => `${stop.progress}:${stop.camera.join(',')}:${stop.target.join(',')}:${stop.fov ?? 0}`)
+      .join('|');
+    if (key === this.pathKey) return;
+    this.pathKey = key;
+
+    const camPts: THREE.Vector3[] = [];
+    const aimPts: THREE.Vector3[] = [];
+    const steps = Math.max(24, stops.length * 16);
+    for (let i = 0; i <= steps; i += 1) {
+      sampleSceneJourney(i / steps, this.journeySample);
+      camPts.push(
+        new THREE.Vector3(this.journeySample.camera[0], this.journeySample.camera[1], this.journeySample.camera[2]),
+      );
+      aimPts.push(
+        new THREE.Vector3(this.journeySample.target[0], this.journeySample.target[1], this.journeySample.target[2]),
+      );
+    }
+    setLinePoints(this.camPath, camPts.length ? camPts : [new THREE.Vector3()]);
+    setLinePoints(this.targetPath, aimPts.length ? aimPts : [new THREE.Vector3()]);
+    this.camPath.visible = camPts.length > 1;
+    this.targetPath.visible = aimPts.length > 1;
+
+    while (this.stopMarks.children.length) {
+      const child = this.stopMarks.children[0];
+      this.stopMarks.remove(child);
+      const mesh = child as THREE.Mesh;
+      mesh.geometry?.dispose?.();
+      const material = mesh.material;
+      if (Array.isArray(material)) material.forEach((item) => item.dispose());
+      else material?.dispose?.();
+    }
+    for (const stop of stops) {
+      const camMark = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), overlayMesh(LAMP, 0.9));
+      camMark.position.set(stop.camera[0], stop.camera[1], stop.camera[2]);
+      const aimMark = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), overlayMesh(AIM, 0.9));
+      aimMark.position.set(stop.target[0], stop.target[1], stop.target[2]);
+      this.stopMarks.add(camMark, aimMark);
+    }
+  }
+
+  syncPose(pose: CameraPose, aspect: number) {
+    this.origin.set(pose.camera[0], pose.camera[1], pose.camera[2]);
+    this.aim.set(pose.target[0], pose.target[1], pose.target[2]);
+    this.applyPose(pose.fov ?? 45, aspect, false);
   }
 
   sync(stop: CameraStop | null, aspect: number) {
@@ -245,10 +342,15 @@ export class CameraGizmoSet {
     this.boundStop = stop;
     this.origin.set(stop.camera[0], stop.camera[1], stop.camera[2]);
     this.aim.set(stop.target[0], stop.target[1], stop.target[2]);
+    this.applyPose(stop.fov ?? 45, aspect, true);
+  }
 
+  private applyPose(fovDeg: number, aspect: number, writeDummies: boolean) {
     this.wireMat.color.copy(this.lampColor);
     this.aimMat.color.copy(this.aimColor);
     this.dashMat.color.copy(this.aimColor);
+    this.pathMat.color.copy(this.lampColor);
+    this.targetPathMat.color.copy(this.aimColor);
     (this.sourceDrop.material as THREE.LineDashedMaterial).color.copy(this.lampColor);
     (this.aimDrop.material as THREE.LineDashedMaterial).color.copy(this.aimColor);
     this.sourceMat.color.copy(this.lampColor);
@@ -256,14 +358,17 @@ export class CameraGizmoSet {
     this.bodyMat.color.copy(this.lampColor);
     (this.sourceGround.material as THREE.MeshBasicMaterial).color.copy(this.lampColor);
     (this.aimGround.material as THREE.MeshBasicMaterial).color.copy(this.aimColor);
+    (this.aimLocator.material as THREE.MeshBasicMaterial).color.copy(this.aimColor);
 
-    if (!this.dragging) {
+    if (this.dragging) {
+      if (this.selected === 'source') this.origin.copy(this.sourceDummy.position);
+      else this.aim.copy(this.aimDummy.position);
+    } else if (writeDummies) {
       this.sourceDummy.position.copy(this.origin);
       this.aimDummy.position.copy(this.aim);
-    } else if (this.selected === 'source') {
-      this.origin.copy(this.sourceDummy.position);
     } else {
-      this.aim.copy(this.aimDummy.position);
+      this.sourceDummy.position.copy(this.origin);
+      this.aimDummy.position.copy(this.aim);
     }
 
     this.forward.copy(this.aim).sub(this.origin);
@@ -278,10 +383,11 @@ export class CameraGizmoSet {
     this.lens.quaternion.copy(this.orientation);
     this.sourceHandle.position.copy(this.origin);
     this.aimHandle.position.copy(this.aim);
+    this.aimLocator.position.set(this.aim.x, this.aim.y + 0.02, this.aim.z);
     this.sourceGround.position.set(this.origin.x, 0.03, this.origin.z);
     this.aimGround.position.set(this.aim.x, 0.03, this.aim.z);
 
-    const fov = THREE.MathUtils.degToRad(stop.fov ?? 45);
+    const fov = THREE.MathUtils.degToRad(fovDeg);
     const safeAspect = Math.max(0.2, aspect || 1.6);
     const dist = this.origin.distanceTo(this.aim);
     const near = 0.55;
@@ -325,22 +431,14 @@ export class CameraGizmoSet {
     setLinePoints(this.aimDrop, [this.aim.clone(), new THREE.Vector3(this.aim.x, 0, this.aim.z)]);
     this.sourceDrop.visible = Math.abs(this.origin.y) > 0.2;
     this.aimDrop.visible = Math.abs(this.aim.y) > 0.2;
-    this.sourceHandle.scale.setScalar(this.selected === 'source' ? 1.35 : 1);
-    this.aimHandle.scale.setScalar(this.selected === 'aim' ? 1.35 : 1);
+    const grabBoost = this.grab ? 1.2 : 1;
+    this.sourceHandle.scale.setScalar((this.selected === 'source' ? 1.35 : 1) * grabBoost);
+    this.aimHandle.scale.setScalar((this.selected === 'aim' ? 1.55 : 1.2) * grabBoost);
   }
 
   dispose() {
     this.detach();
-    if (this.controls) {
-      this.controls.removeEventListener('dragging-changed', this.onDragging);
-      this.controls.removeEventListener('objectChange', this.onTransform);
-      this.controls.dispose();
-      this.controls = null;
-    }
-    if (this.controlHelper) {
-      this.scene.remove(this.controlHelper);
-      this.controlHelper = null;
-    }
+    this.disposeControls();
     this.root.traverse((child) => {
       const mesh = child as THREE.Mesh;
       mesh.geometry?.dispose?.();
@@ -352,32 +450,74 @@ export class CameraGizmoSet {
   }
 
   private async ensureControls() {
-    if (this.controls) return;
+    if (this.sourceControls && this.aimControls) {
+      this.sourceControls.attach(this.sourceDummy);
+      this.aimControls.attach(this.aimDummy);
+      return;
+    }
     try {
       // @ts-ignore
       const mod = await import('three/examples/jsm/controls/TransformControls.js');
       const TransformControls = mod.TransformControls;
-      const controls = new TransformControls(this.camera, this.renderer.domElement) as TransformControlsLike;
-      controls.setMode('translate');
-      controls.setSize(0.85);
-      controls.setSpace?.('world');
-      controls.addEventListener('dragging-changed', this.onDragging);
-      controls.addEventListener('objectChange', this.onTransform);
-      const helper =
-        typeof controls.getHelper === 'function'
-          ? controls.getHelper()
-          : (controls as unknown as THREE.Object3D);
-      this.scene.add(helper);
-      this.controls = controls;
-      this.controlHelper = helper;
+      if (!this.sourceControls) {
+        const source = new TransformControls(this.camera, this.renderer.domElement) as TransformControlsLike;
+        source.setMode('translate');
+        source.setSize(0.8);
+        source.setSpace?.('world');
+        source.addEventListener('dragging-changed', this.onDragging);
+        source.addEventListener('objectChange', this.onSourceTransform);
+        const sourceHelper =
+          typeof source.getHelper === 'function' ? source.getHelper() : (source as unknown as THREE.Object3D);
+        this.scene.add(sourceHelper);
+        this.sourceControls = source;
+        this.sourceHelper = sourceHelper;
+      }
+      if (!this.aimControls) {
+        const aim = new TransformControls(this.camera, this.renderer.domElement) as TransformControlsLike;
+        aim.setMode('translate');
+        aim.setSize(0.9);
+        aim.setSpace?.('world');
+        aim.addEventListener('dragging-changed', this.onDragging);
+        aim.addEventListener('objectChange', this.onAimTransform);
+        const aimHelper = typeof aim.getHelper === 'function' ? aim.getHelper() : (aim as unknown as THREE.Object3D);
+        this.scene.add(aimHelper);
+        this.aimControls = aim;
+        this.aimHelper = aimHelper;
+      }
+      this.sourceControls.attach(this.sourceDummy);
+      this.aimControls.attach(this.aimDummy);
     } catch (error) {
       console.warn('[studio] TransformControls unavailable; camera gizmos stay visual-only.', error);
     }
   }
 
   private detach() {
-    this.controls?.detach();
+    this.sourceControls?.detach();
+    this.aimControls?.detach();
     this.dragging = false;
     this.onOrbitLock?.(false);
+  }
+
+  private disposeControls() {
+    if (this.sourceControls) {
+      this.sourceControls.removeEventListener('dragging-changed', this.onDragging);
+      this.sourceControls.removeEventListener('objectChange', this.onSourceTransform);
+      this.sourceControls.dispose();
+      this.sourceControls = null;
+    }
+    if (this.aimControls) {
+      this.aimControls.removeEventListener('dragging-changed', this.onDragging);
+      this.aimControls.removeEventListener('objectChange', this.onAimTransform);
+      this.aimControls.dispose();
+      this.aimControls = null;
+    }
+    if (this.sourceHelper) {
+      this.scene.remove(this.sourceHelper);
+      this.sourceHelper = null;
+    }
+    if (this.aimHelper) {
+      this.scene.remove(this.aimHelper);
+      this.aimHelper = null;
+    }
   }
 }
