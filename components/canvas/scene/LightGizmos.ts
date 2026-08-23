@@ -231,18 +231,30 @@ class LightGizmo {
     this.aimHandle.position.copy(aim);
     this.ground.position.set(origin.x, 0.03, origin.z);
 
-    const area = isAreaLight(light);
-    if (area) {
-      const width = Math.max(0.1, area.width);
-      const height = Math.max(0.1, area.height);
+    if (isAreaLight(light)) {
+      const width = Math.max(0.1, light.width);
+      const height = Math.max(0.1, light.height);
       if (width !== this.lastWidth || height !== this.lastHeight) {
         this.fill.geometry.dispose();
         this.fill.geometry = new THREE.PlaneGeometry(width, height);
         this.lastWidth = width;
         this.lastHeight = height;
       }
+
+      const orientation = new THREE.Quaternion();
+      if (light.quaternion) {
+        orientation.copy(light.quaternion);
+      } else {
+        const matrix = new THREE.Matrix4();
+        const up = new THREE.Vector3(0, 1, 0);
+        const toward = aim.clone();
+        if (toward.distanceToSquared(origin) < 1e-6) toward.y -= 1;
+        matrix.lookAt(origin, toward, up);
+        orientation.setFromRotationMatrix(matrix);
+      }
+
       this.fill.position.copy(origin);
-      this.fill.quaternion.copy(area.quaternion);
+      this.fill.quaternion.copy(orientation);
 
       const hw = width * 0.5;
       const hh = height * 0.5;
@@ -252,11 +264,13 @@ class LightGizmo {
         new THREE.Vector3(hw, hh, 0),
         new THREE.Vector3(-hw, hh, 0),
       ];
-      const world = local.map((point) => point.applyMatrix4(area.matrixWorld));
+      const world = local.map((point) => point.applyQuaternion(orientation).add(origin));
       setLinePoints(this.corners, [...world, world[0]]);
       setLinePoints(this.cross, [world[0], world[2], world[1], world[3]]);
 
-      const normal = new THREE.Vector3(0, 0, -1).applyQuaternion(area.quaternion);
+      const normal = new THREE.Vector3(0, 0, -1).applyQuaternion(orientation);
+      if (normal.lengthSq() < 1e-8) normal.set(0, -1, 0);
+      normal.normalize();
       const dist = Math.max(0.2, origin.distanceTo(aim));
       const rayLen = THREE.MathUtils.clamp(dist * 0.28, 1.6, 9);
       const rayPts: THREE.Vector3[] = [];
@@ -267,7 +281,7 @@ class LightGizmo {
 
       const arrowPos = origin.clone().addScaledVector(normal, rayLen);
       this.arrow.position.copy(arrowPos);
-      this.arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal.clone().normalize());
+      this.arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
     }
 
     if (isPointLight(light)) {
