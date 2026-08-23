@@ -64,9 +64,14 @@ function Field({
 export function AdminApp() {
   const [tab, setTab] = useState<Tab>('scene');
   const [saving, setSaving] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(true);
   const [note, setNote] = useState('Live. Homepage in another window updates as you type.');
   const [, bump] = useState(0);
   const refresh = () => bump((value) => value + 1);
+
+  const toggleStudio = () => {
+    window.dispatchEvent(new CustomEvent('rastaak-studio-toggle'));
+  };
 
   if (typeof document !== 'undefined') {
     document.documentElement.dataset.admin = 'true';
