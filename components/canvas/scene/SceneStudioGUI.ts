@@ -176,12 +176,15 @@ export class SceneStudioGUI {
 
     const btn = document.createElement('button');
     btn.id = 'rastaak-studio-btn';
-    btn.innerHTML = '🎛️ 3D Studio';
+    btn.type = 'button';
+    btn.textContent = 'Hide panels';
     btn.style.cssText = `
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 999999;
+      top: 16px;
+      left: 16px;
+      bottom: auto;
+      right: auto;
+      z-index: 1000001;
       background: ${tokens.colors.debugPanelBg};
       color: ${tokens.colors.textLight};
       border: 1px solid ${tokens.colors.borderDarkSubtle};
@@ -240,6 +243,75 @@ export class SceneStudioGUI {
     });
     document.body.appendChild(btn);
     this.logoutButton = btn;
+  }
+
+  private injectPanelCss() {
+    if (document.getElementById('rastaak-studio-panel-css')) return;
+    const style = document.createElement('style');
+    style.id = 'rastaak-studio-panel-css';
+    style.textContent = `
+      #rastaak-studio-panel {
+        position: fixed !important;
+        top: 72px !important;
+        right: 16px !important;
+        left: auto !important;
+        bottom: auto !important;
+        z-index: 1000000 !important;
+        width: 300px !important;
+        max-height: calc(100vh - 360px) !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        pointer-events: auto !important;
+      }
+      #rastaak-studio-panel[hidden] { display: none !important; }
+      #rastaak-studio-panel .lil-gui,
+      #rastaak-studio-panel .lil-gui.root,
+      #rastaak-studio-panel .rastaak-studio-gui {
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        left: auto !important;
+        bottom: auto !important;
+        width: 100% !important;
+        max-height: none !important;
+        z-index: 1 !important;
+      }
+      #rastaak-studio-panel .lil-gui:not(.root) {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        left: auto !important;
+        bottom: auto !important;
+      }
+      html[data-studio='true'] #rastaak-studio-btn {
+        top: 16px !important;
+        left: 16px !important;
+        right: auto !important;
+        bottom: auto !important;
+      }
+      html[data-studio='true'] #rastaak-studio-logout {
+        top: 16px !important;
+        left: 148px !important;
+        right: auto !important;
+        bottom: auto !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  private ensurePanelHost(): HTMLDivElement {
+    this.injectPanelCss();
+    let host = document.getElementById('rastaak-studio-panel') as HTMLDivElement | null;
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'rastaak-studio-panel';
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  private syncToggleLabel() {
+    if (this.toggleButton) this.toggleButton.textContent = this.isOpen ? 'Hide panels' : 'Show panels';
   }
 
   private initRaycaster() {
@@ -491,28 +563,25 @@ export class SceneStudioGUI {
       if (this.disposed) return;
 
       const isAdmin = this.isAdminHost();
-      const preview = document.querySelector<HTMLElement>('.admin-preview');
-      const dock = document.getElementById('admin-studio-dock');
-      const host = dock || preview;
-      if (isAdmin && host) {
-        host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
-      }
+      const host = this.ensurePanelHost();
+      host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
 
       this.gui = new GUI({
         title: 'Rastaak 3D Studio',
-        autoPlace: !(isAdmin && host),
-        width: dock ? 280 : 288,
-        container: isAdmin && host ? host : undefined,
+        autoPlace: false,
+        width: 288,
+        container: host,
       });
 
       const guiEl = this.gui.domElement;
       guiEl.classList.add('rastaak-studio-gui');
-      guiEl.style.zIndex = '999999';
-      guiEl.style.position = 'fixed';
-      guiEl.style.top = '90px';
-      guiEl.style.right = '24px';
-      guiEl.style.maxHeight = '80vh';
-      guiEl.style.overflowY = 'auto';
+      guiEl.style.position = 'relative';
+      guiEl.style.top = 'auto';
+      guiEl.style.right = 'auto';
+      guiEl.style.left = 'auto';
+      guiEl.style.bottom = 'auto';
+      guiEl.style.width = '100%';
+      guiEl.style.maxHeight = 'none';
       guiEl.style.pointerEvents = 'auto';
       applyStudioChrome();
 
@@ -898,31 +967,7 @@ export class SceneStudioGUI {
       exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
-      if (isAdmin && host && guiEl.parentElement !== host) {
-        host.appendChild(guiEl);
-      }
-      if (isAdmin && dock) {
-        guiEl.style.position = 'relative';
-        guiEl.style.top = 'auto';
-        guiEl.style.right = 'auto';
-        guiEl.style.left = 'auto';
-        guiEl.style.bottom = 'auto';
-        guiEl.style.width = '100%';
-        guiEl.style.maxHeight = 'none';
-        guiEl.style.height = 'auto';
-        guiEl.style.zIndex = '1';
-        guiEl.style.overflowY = 'auto';
-      } else if (isAdmin && preview) {
-        guiEl.style.position = 'absolute';
-        guiEl.style.top = '12px';
-        guiEl.style.right = '12px';
-        guiEl.style.left = 'auto';
-        guiEl.style.bottom = 'auto';
-        guiEl.style.zIndex = '30';
-        guiEl.style.maxHeight = 'calc(100% - 24px)';
-        guiEl.style.width = '288px';
-        guiEl.style.overflowY = 'auto';
-      }
+      if (guiEl.parentElement !== host) host.appendChild(guiEl);
       this.setStudioOpen(true);
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
@@ -1862,6 +1907,8 @@ export class SceneStudioGUI {
 
   private setStudioOpen(open: boolean) {
     this.isOpen = open;
+    const host = document.getElementById('rastaak-studio-panel');
+    if (host) host.hidden = !open;
     if (this.gui) {
       if (open) {
         this.gui.show();
@@ -1870,7 +1917,8 @@ export class SceneStudioGUI {
         this.gui.hide();
       }
     }
-    this.timelinePanel?.setVisible(open || this.isAdminHost());
+    this.timelinePanel?.setVisible(open);
+    this.syncToggleLabel();
     this.syncGizmoVisibility();
     if (!open) this.setGrabMode(false);
     window.dispatchEvent(new CustomEvent('rastaak-studio-open', { detail: { open } }));
@@ -1923,6 +1971,7 @@ export class SceneStudioGUI {
       this.gui.destroy();
       this.gui = null;
     }
+    document.getElementById('rastaak-studio-panel')?.remove();
     this.lightGizmos?.dispose();
     this.lightGizmos = null;
     this.lightUi.clear();
