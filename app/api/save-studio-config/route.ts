@@ -381,6 +381,7 @@ export interface StoryClientConfig {
   resolve?: number;
   needEnd?: number;
   land?: [number, number, number];
+  launch?: [number, number, number];
   needOffset?: [number, number, number];
 }
 
@@ -961,8 +962,5 @@ export const BUILDING_NAMES: BuildingNamePlate[] = ${emit(names, 0)};
     const message = error instanceof Error ? error.message : 'Failed to save config';
     console.error('Failed to save studio config:', error);
     return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
-00 });
   }
 }
