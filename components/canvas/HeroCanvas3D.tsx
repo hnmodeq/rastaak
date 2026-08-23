@@ -26,7 +26,6 @@ import { applyCategoryColor, collectCategoryGroups } from './scene/materialKeys'
 type HeroCanvasMode = 'public' | 'admin';
 
 export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'public' }) => {
-  const studioEnabled = mode === 'admin';
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -270,7 +269,9 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       }
     });
 
-    if (studioEnabled) {
+    const bootStudio = () => {
+      if (studioGUI || isDisposed) return;
+      document.documentElement.dataset.studio = 'true';
       studioGUI = new SceneStudioGUI(
         scene,
         camera,
@@ -289,18 +290,20 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
           } else {
             controls.enabled = false;
           }
-          if (mode === 'admin') {
-            host.style.pointerEvents = 'auto';
-            renderer.domElement.style.pointerEvents = 'auto';
-            return;
-          }
           if (containerRef.current) {
             containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
           }
         },
       );
-      if (mode === 'admin') studioGUI.isOrbitMode = true;
-    }
+      if (world) studioGUI.populateMaterials();
+    };
+
+    void fetch('/api/admin/session')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok) bootStudio();
+      })
+      .catch(() => undefined);
 
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
@@ -513,6 +516,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       story.dispose();
       controls.dispose();
       studioGUI?.destroy();
+      delete document.documentElement.dataset.studio;
 
       if (world) {
         world.traverse((child) => {

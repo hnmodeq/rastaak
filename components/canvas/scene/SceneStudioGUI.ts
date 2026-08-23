@@ -68,6 +68,7 @@ export class SceneStudioGUI {
   private gui: any = null;
   private disposed = false;
   private toggleButton: HTMLButtonElement | null = null;
+  private logoutButton: HTMLButtonElement | null = null;
   private isOpen = false;
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
@@ -151,6 +152,7 @@ export class SceneStudioGUI {
       this.lightGizmos = null;
     }
     this.createToggleButton();
+    this.createLogoutButton();
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     this.initGUI();
     this.initRaycaster();
@@ -205,6 +207,39 @@ export class SceneStudioGUI {
 
     document.body.appendChild(btn);
     this.toggleButton = btn;
+  }
+
+  private createLogoutButton() {
+    if (document.getElementById('rastaak-studio-logout')) return;
+    const btn = document.createElement('button');
+    btn.id = 'rastaak-studio-logout';
+    btn.type = 'button';
+    btn.textContent = 'Log out';
+    btn.style.cssText = `
+      position: fixed;
+      top: 24px;
+      left: 170px;
+      bottom: auto;
+      right: auto;
+      z-index: 999999;
+      background: ${tokens.colors.debugPanelBg};
+      color: ${tokens.colors.textLight};
+      border: 1px solid ${tokens.colors.borderDarkSubtle};
+      padding: 10px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      pointer-events: auto;
+    `;
+    btn.addEventListener('click', () => {
+      void fetch('/api/admin/logout', { method: 'POST' }).finally(() => {
+        window.location.reload();
+      });
+    });
+    document.body.appendChild(btn);
+    this.logoutButton = btn;
   }
 
   private initRaycaster() {
@@ -863,7 +898,6 @@ export class SceneStudioGUI {
       exportFolder.add(exportParams, 'exportSceneJSON').name('📥 Export Scene (.json)');
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
-      const urlParams = new URLSearchParams(window.location.search);
       if (isAdmin && host && guiEl.parentElement !== host) {
         host.appendChild(guiEl);
       }
@@ -889,13 +923,7 @@ export class SceneStudioGUI {
         guiEl.style.width = '288px';
         guiEl.style.overflowY = 'auto';
       }
-      const startOpen =
-        forceOpen ||
-        isAdmin ||
-        urlParams.has('studio') ||
-        urlParams.has('debug');
-
-      this.setStudioOpen(startOpen);
+      this.setStudioOpen(true);
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
@@ -1886,6 +1914,10 @@ export class SceneStudioGUI {
     if (this.toggleButton) {
       this.toggleButton.remove();
       this.toggleButton = null;
+    }
+    if (this.logoutButton) {
+      this.logoutButton.remove();
+      this.logoutButton = null;
     }
     if (this.gui) {
       this.gui.destroy();

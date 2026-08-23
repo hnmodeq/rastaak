@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AdminApp } from '@/components/admin/AdminApp';
 import '@/components/admin/admin.css';
 
 export default function AdminPage() {
   const [ready, setReady] = useState(false);
-  const [ok, setOk] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,7 +18,10 @@ export default function AdminPage() {
     fetch('/api/admin/session')
       .then((res) => res.json())
       .then((data) => {
-        setOk(Boolean(data.ok));
+        if (data.ok) {
+          window.location.replace('/');
+          return;
+        }
         setReady(true);
       })
       .catch(() => setReady(true));
@@ -38,30 +39,27 @@ export default function AdminPage() {
       setError('Wrong username or password.');
       return;
     }
-    setOk(true);
+    window.location.replace('/');
   };
 
   if (!ready) return <div className="admin-login" />;
-  if (!ok) {
-    return (
-      <div className="admin-login">
-        <form onSubmit={(event) => void login(event)}>
-          <h1>Admin</h1>
-          <p>Sign in to control the live website.</p>
-          <label className="admin-field">
-            <span>Username</span>
-            <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
-          </label>
-          <label className="admin-field">
-            <span>Password</span>
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
-          </label>
-          {error ? <p>{error}</p> : null}
-          <button type="submit">Enter</button>
-        </form>
-      </div>
-    );
-  }
 
-  return <AdminApp />;
+  return (
+    <div className="admin-login">
+      <form onSubmit={(event) => void login(event)}>
+        <h1>Admin</h1>
+        <p>Sign in to open 3D Studio on the live homepage. Visitors will not see the panels.</p>
+        <label className="admin-field">
+          <span>Username</span>
+          <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
+        </label>
+        <label className="admin-field">
+          <span>Password</span>
+          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
+        </label>
+        {error ? <p>{error}</p> : null}
+        <button type="submit">Enter</button>
+      </form>
+    </div>
+  );
 }
