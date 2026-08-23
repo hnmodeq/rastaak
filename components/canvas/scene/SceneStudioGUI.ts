@@ -757,7 +757,7 @@ export class SceneStudioGUI {
         });
       envFolder
         .add(envParams, 'shadowOpacity', 0, 1, 0.01)
-        .name('Building shadow opacity')
+        .name('Shadow tint amount')
         .onChange((v: number) => {
           SCENE_CONFIG.environment.shadowOpacity = v;
           applySceneShadows(this.lightsMap.values());

@@ -15,8 +15,10 @@ export function applySceneShadows(lights?: Iterable<THREE.Light>) {
   if (!lights) return;
   for (const light of lights) {
     const shadow = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
+    // Do not write tint opacity onto LightShadow.intensity.
+    // That slider is the extra color mix. Intensity 0 kills the shadow map.
     if (shadow && 'intensity' in shadow) {
-      (shadow as THREE.LightShadow & { intensity: number }).intensity = opacity;
+      (shadow as THREE.LightShadow & { intensity: number }).intensity = 1;
     }
   }
 }
