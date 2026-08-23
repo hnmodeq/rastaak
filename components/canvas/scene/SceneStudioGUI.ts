@@ -1104,6 +1104,7 @@ export class SceneStudioGUI {
       siteName: TYPE_CHROME.siteName,
       siteNameColor: hex(TYPE_CHROME.siteNameColor),
       siteNameLayoutColor: hex(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22),
+      paddingTop: TYPE_CHROME.siteNamePaddingTop ?? 0,
     };
     brandFolder.add(brandParams, 'siteName').name('Name').onChange((value: string) => {
       TYPE_CHROME.siteName = value;
@@ -1117,6 +1118,13 @@ export class SceneStudioGUI {
       TYPE_CHROME.siteNameLayoutColor = new THREE.Color(value).getHex();
       applyTypeChrome();
     });
+    brandFolder
+      .add(brandParams, 'paddingTop', 0, 120, 1)
+      .name('Top padding')
+      .onChange((value: number) => {
+        TYPE_CHROME.siteNamePaddingTop = value;
+        applyTypeChrome();
+      });
     this.addTypeControls(brandFolder, TYPE_CHROME.siteNameType, hex);
 
     const heroFolder = this.gui.addFolder('Hero copy');
