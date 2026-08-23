@@ -7,9 +7,11 @@ export interface HeroCopyConfig {
   titleLine1: string;
   titleLine2: string;
   titleColor: number;
+  titlePaddingTop?: number;
   subtitleLine1: string;
   subtitleLine2: string;
   subtitleColor: number;
+  subtitlePaddingTop?: number;
   scrollHint: string;
   scrollHintColor: number;
 }
@@ -35,6 +37,8 @@ export function applyHeroCopy() {
   root.style.setProperty('--hero-title-color', hexCss(HERO_COPY.titleColor));
   root.style.setProperty('--hero-subtitle-color', hexCss(HERO_COPY.subtitleColor));
   root.style.setProperty('--hero-scroll-color', hexCss(HERO_COPY.scrollHintColor));
+  root.style.setProperty('--hero-title-padding-top', (HERO_COPY.titlePaddingTop ?? 0) + 'px');
+  root.style.setProperty('--hero-subtitle-padding-top', (HERO_COPY.subtitlePaddingTop ?? 0) + 'px');
 
   const title = document.querySelector<HTMLElement>('.hero__title');
   if (title) {

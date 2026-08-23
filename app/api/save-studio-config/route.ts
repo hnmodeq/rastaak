@@ -446,6 +446,7 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
         titleLine1: sanitizeText(rawHero.titleLine1, 'The New Standard', 160),
         titleLine2: sanitizeText(rawHero.titleLine2, 'in Staffing', 160),
         titleColor: hexLit(asHexNumber(rawHero.titleColor, 0xf5f5f2)),
+        titlePaddingTop: Math.min(200, Math.max(0, asFinite(rawHero.titlePaddingTop, 0))),
         subtitleLine1: sanitizeText(rawHero.subtitleLine1, 'AI driven speed. Expert curation.', 240),
         subtitleLine2: sanitizeText(
           rawHero.subtitleLine2,
@@ -453,6 +454,7 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
           400,
         ),
         subtitleColor: hexLit(asHexNumber(rawHero.subtitleColor, 0xe8e8e4)),
+        subtitlePaddingTop: Math.min(200, Math.max(0, asFinite(rawHero.subtitlePaddingTop, 0))),
         scrollHint: sanitizeText(rawHero.scrollHint, 'scroll to discover our process', 160),
         scrollHintColor: hexLit(asHexNumber(rawHero.scrollHintColor, 0xf5f5f2)),
       };
@@ -467,9 +469,11 @@ export interface HeroCopyConfig {
   titleLine1: string;
   titleLine2: string;
   titleColor: number;
+  titlePaddingTop?: number;
   subtitleLine1: string;
   subtitleLine2: string;
   subtitleColor: number;
+  subtitlePaddingTop?: number;
   scrollHint: string;
   scrollHintColor: number;
 }
@@ -486,6 +490,8 @@ export function applyHeroCopy() {
   root.style.setProperty('--hero-title-color', hexCss(HERO_COPY.titleColor));
   root.style.setProperty('--hero-subtitle-color', hexCss(HERO_COPY.subtitleColor));
   root.style.setProperty('--hero-scroll-color', hexCss(HERO_COPY.scrollHintColor));
+  root.style.setProperty('--hero-title-padding-top', (HERO_COPY.titlePaddingTop ?? 0) + 'px');
+  root.style.setProperty('--hero-subtitle-padding-top', (HERO_COPY.subtitlePaddingTop ?? 0) + 'px');
 
   const title = document.querySelector<HTMLElement>('.hero__title');
   if (title) {

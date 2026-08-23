@@ -117,6 +117,7 @@ main[data-taxi],
   line-height: var(--hero-title-leading, var(--leading-tight)) !important;
   letter-spacing: var(--hero-title-tracking, var(--tracking-hero)) !important;
   text-shadow: var(--hero-title-shadow, none);
+  padding-top: var(--hero-title-padding-top, 0px);
   direction: rtl;
 }
 
@@ -127,6 +128,7 @@ main[data-taxi],
   line-height: var(--hero-subtitle-leading, var(--leading-snug)) !important;
   letter-spacing: var(--hero-subtitle-tracking, 0px) !important;
   text-shadow: var(--hero-subtitle-shadow, none);
+  padding-top: var(--hero-subtitle-padding-top, 0px);
   direction: rtl;
 }
 

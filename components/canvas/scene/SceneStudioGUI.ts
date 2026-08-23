@@ -1148,12 +1148,20 @@ export class SceneStudioGUI {
       .addColor(heroParams, 'titleColor')
       .name('Title color')
       .onChange((value: string) => applyHeroField('titleColor', new THREE.Color(value).getHex()));
+    heroFolder
+      .add(heroParams, 'titlePaddingTop', 0, 200, 1)
+      .name('Title top padding')
+      .onChange((value: number) => applyHeroField('titlePaddingTop', value));
     heroFolder.add(heroParams, 'subtitleLine1').name('Description line 1').onChange((value: string) => applyHeroField('subtitleLine1', value));
     heroFolder.add(heroParams, 'subtitleLine2').name('Description line 2').onChange((value: string) => applyHeroField('subtitleLine2', value));
     heroFolder
       .addColor(heroParams, 'subtitleColor')
       .name('Description color')
       .onChange((value: string) => applyHeroField('subtitleColor', new THREE.Color(value).getHex()));
+    heroFolder
+      .add(heroParams, 'subtitlePaddingTop', 0, 200, 1)
+      .name('Description top padding')
+      .onChange((value: number) => applyHeroField('subtitlePaddingTop', value));
     heroFolder.add(heroParams, 'scrollHint').name('Scroll hint').onChange((value: string) => applyHeroField('scrollHint', value));
     heroFolder
       .addColor(heroParams, 'scrollHintColor')
