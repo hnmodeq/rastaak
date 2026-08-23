@@ -92,6 +92,9 @@ export class SceneStudioGUI {
   private currentStopIndex = 0;
   private playheadT = 0;
   private refreshNeedTimes = () => {};
+  private onStudioTiming = () => {
+    this.refreshNeedTimes();
+  };
   private readonly journeySample = {
     camera: [0, 0, 0] as [number, number, number],
     target: [0, 0, 0] as [number, number, number],
@@ -682,6 +685,7 @@ export class SceneStudioGUI {
 
   private notifyTimingChanged() {
     this.timelinePanel?.refresh();
+    this.refreshNeedTimes();
     window.dispatchEvent(new CustomEvent('rastaak-studio-timing-changed'));
   }
 
