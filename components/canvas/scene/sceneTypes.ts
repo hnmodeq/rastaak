@@ -142,6 +142,7 @@ export interface StudioStorySave {
     resolve?: number;
     needEnd?: number;
     land?: [number, number, number];
+    launch?: [number, number, number];
     needOffset?: [number, number, number];
   }>;
   captions: Array<{ id: string; text: string; range: [number, number] }>;

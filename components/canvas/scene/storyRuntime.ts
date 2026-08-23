@@ -170,6 +170,7 @@ const _box = new THREE.Box3();
 const _size = new THREE.Vector3();
 const _projected = new THREE.Vector3();
 const _landing = new THREE.Vector3();
+const _launch = new THREE.Vector3();
 const _needColor = new THREE.Color(STORY_CONFIG.colors.need);
 const _needWindow = new THREE.Color(STORY_CONFIG.colors.needWindow ?? STORY_CONFIG.colors.need);
 const _resolvedColor = new THREE.Color(STORY_CONFIG.colors.resolved);
@@ -263,6 +264,15 @@ function applyLanding(client: ClientActor, target: THREE.Vector3) {
   target.x += land[0];
   target.y += land[1];
   target.z += land[2];
+}
+
+function applyLaunch(client: ClientActor, hubOrigin: THREE.Vector3, target: THREE.Vector3) {
+  target.copy(hubOrigin);
+  const launch = client.config.launch;
+  if (!launch || launch.length < 3) return;
+  target.x += launch[0];
+  target.y += launch[1];
+  target.z += launch[2];
 }
 
 function roofPoint(object: THREE.Object3D, target: THREE.Vector3) {
@@ -740,7 +750,10 @@ export class StoryRuntime {
     const bursting = t >= blastStart;
     const burstK = bursting ? Math.max(0, Math.min(1, (t - blastStart) / burst.span)) : 0;
     applyLanding(client, _landing);
-    if (this.hub) updatePacketCurve(packet, this.hub.origin, _landing);
+    if (this.hub) {
+      applyLaunch(client, this.hub.origin, _launch);
+      updatePacketCurve(packet, _launch, _landing);
+    }
     if (onTarget) packet.group.position.copy(_landing);
     else packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;

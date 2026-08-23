@@ -328,6 +328,7 @@ export const SCENE_CONFIG: SceneConfig = {
               ? undefined
               : asFinite(client.needEnd, asFinite(client?.arrive, 0.24)),
           land: asVec3(client?.land, [0, 0, 0]),
+          launch: asVec3(client?.launch, [0, 0, 0]),
           needOffset: asVec3(client?.needOffset, [0, 0, 0]),
         })),
         captions: rawCaptions.map((caption, index) => ({

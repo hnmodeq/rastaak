@@ -1912,6 +1912,9 @@ export class SceneStudioGUI {
         landX: client.land?.[0] ?? 0,
         landY: client.land?.[1] ?? 0,
         landZ: client.land?.[2] ?? 0,
+        launchX: client.launch?.[0] ?? 0,
+        launchY: client.launch?.[1] ?? 0,
+        launchZ: client.launch?.[2] ?? 0,
         previewRed: () => this.seekStory(client.appear),
         previewBlue: () => this.seekStory(resolveAt(client)),
         previewLaunch: () => this.seekStory(client.dispatch),
@@ -1928,6 +1931,9 @@ export class SceneStudioGUI {
         row.landX = client.land?.[0] ?? 0;
         row.landY = client.land?.[1] ?? 0;
         row.landZ = client.land?.[2] ?? 0;
+        row.launchX = client.launch?.[0] ?? 0;
+        row.launchY = client.launch?.[1] ?? 0;
+        row.launchZ = client.launch?.[2] ?? 0;
         appearCtrl.updateDisplay();
         resolveCtrl.updateDisplay();
         dispatchCtrl.updateDisplay();
@@ -1936,6 +1942,9 @@ export class SceneStudioGUI {
         landXCtrl.updateDisplay();
         landYCtrl.updateDisplay();
         landZCtrl.updateDisplay();
+        launchXCtrl.updateDisplay();
+        launchYCtrl.updateDisplay();
+        launchZCtrl.updateDisplay();
       };
 
       const appearCtrl = folder
@@ -2010,6 +2019,23 @@ export class SceneStudioGUI {
         .add(row, 'landZ', -8, 8, 0.05)
         .name('Land Z')
         .onChange(writeLand);
+
+      const writeLaunch = () => {
+        client.launch = [row.launchX, row.launchY, row.launchZ];
+        this.seekStory(client.dispatch);
+      };
+      const launchXCtrl = folder
+        .add(row, 'launchX', -12, 12, 0.05)
+        .name('Launch X')
+        .onChange(writeLaunch);
+      const launchYCtrl = folder
+        .add(row, 'launchY', -8, 12, 0.05)
+        .name('Launch Y')
+        .onChange(writeLaunch);
+      const launchZCtrl = folder
+        .add(row, 'launchZ', -12, 12, 0.05)
+        .name('Launch Z')
+        .onChange(writeLaunch);
 
       folder.add(row, 'previewRed').name('Preview — turns red');
       folder.add(row, 'previewBlue').name('Preview — turns blue');
