@@ -25,16 +25,16 @@ export interface LookConfig {
 export const LOOK_CONFIG: LookConfig = {
   envEnabled: true,
   envIntensity: 0.75,
-  grain: 0.25,
-  grainSize: 1.25,
-  vignette: 0.8,
-  vignetteStart: 0.42,
+  grain: 0.21,
+  grainSize: 1.7,
+  vignette: 0.5,
+  vignetteStart: 0.46,
   vignetteSoft: 0.55,
-  bloom: 0.4,
-  bloomRadius: 0.55,
+  bloom: 0.3,
+  bloomRadius: 0.65,
   gradeShadows: 0,
-  gradeMids: 0,
-  gradeHighlights: 0,
+  gradeMids: 0.08,
+  gradeHighlights: 0.04
 };
 
 let envTexture: THREE.Texture | null = null;

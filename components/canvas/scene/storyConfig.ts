@@ -104,7 +104,7 @@ export const STORY_CONFIG: StoryConfig = {
       building: "Hyper Market Building",
       need: "به 200 ترابایت فضای ذخیره‌سازی امن نیاز داریم!",
       needAfter: "انجام شد.",
-      appear: 0.14,
+      appear: 0.080206,
       dispatch: 0.2,
       arrive: 0.3,
       resolve: 0.3,

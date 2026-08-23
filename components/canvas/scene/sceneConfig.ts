@@ -15,14 +15,14 @@ export const SCENE_CONFIG: SceneConfig = {
       id: "stop_1_overview",
       progress: 0,
       camera: [15.036727, 1.036661, -12],
-      target: [15, 1.2, 1.5],
+      target: [15, 0.5, 1.5],
       fov: 45
     },
     {
       id: "stop_2_hyper",
       progress: 0.1,
       camera: [15, 0.720672, -1.5],
-      target: [15, 1, 1.5],
+      target: [14, -0.5, 1.5],
       fov: 45
     },
     {
@@ -87,8 +87,8 @@ export const SCENE_CONFIG: SceneConfig = {
   environment: {
     backgroundColor: 0x0b0b0b,
     fogColor: 0x0b0b0b,
-    fogStart: 19,
-    fogEnd: 34,
+    fogStart: 0,
+    fogEnd: 20,
     fogEnabled: true,
     shadowColor: 0x202020,
     shadowOpacity: 0
