@@ -101,7 +101,8 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "hyper",
       building: "Hyper Market Building",
-      need: "۲ ترابایت فضای ذخیره",
+      need: "به 200 ترابایت فضای ذخیره‌سازی امن نیاز داریم!",
+      needAfter: "انجام شد.",
       appear: 0.14,
       dispatch: 0.2,
       arrive: 0.3,
@@ -111,7 +112,8 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "b7",
       building: "Building 7",
-      need: "سرور ۲۴ سینی",
+      need: "به یه زیرساخت با سرعت 200 ترابیت در ثانیه نیاز داریم!",
+      needAfter: "انجام شد.",
       appear: 0.4,
       dispatch: 0.46,
       arrive: 0.56,
@@ -121,7 +123,8 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "b30",
       building: "Building 30",
-      need: "شبکه ۱۰ گیگابیت",
+      need: "به یک بایگانی داده تا 3 هزار زتابایت نیاز داریم!",
+      needAfter: "انجام شد.",
       appear: 0.58,
       dispatch: 0.64,
       arrive: 0.72,
@@ -131,7 +134,8 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "b34",
       building: "Building 34",
-      need: "SSD سازمانی",
+      need: "به زیرساخت ابری داخلی با پایین‌ترین ضریب خطر نیاز داریم!",
+      needAfter: "انجام شد.",
       appear: 0.72,
       dispatch: 0.78,
       arrive: 0.86,
