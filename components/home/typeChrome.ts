@@ -52,6 +52,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   heroTitle: {
     size: 119,
     weight: 700,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0.39,
     shadowBlur: 9,
@@ -61,6 +63,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   heroSubtitle: {
     size: 22,
     weight: 400,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0.64,
     shadowBlur: 4,
@@ -70,6 +74,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   scrollHint: {
     size: 14,
     weight: 400,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0.09,
     shadowBlur: 0,
@@ -79,6 +85,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowTitle: {
     size: 24,
     weight: 500,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 8.5,
@@ -88,6 +96,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowNumber: {
     size: 14,
     weight: 500,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -97,6 +107,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   flowDescription: {
     size: 18,
     weight: 400,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 1,
     shadowBlur: 2.5,
@@ -106,6 +118,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   chipText: {
     size: 8,
     weight: 600,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
     shadowBlur: 0,
@@ -115,6 +129,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteNameType: {
     size: 46,
     weight: 800,
+    lineHeight: 1.15,
+    letterSpacing: 0,
     shadowColor: 0x272727,
     shadowOpacity: 0,
     shadowBlur: 1.5,
