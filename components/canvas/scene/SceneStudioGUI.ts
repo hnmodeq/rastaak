@@ -1592,6 +1592,7 @@ export class SceneStudioGUI {
       chipBackground: hex(STORY_CONFIG.chipBackground ?? 0x14151a),
       chipBackgroundOpacity: STORY_CONFIG.chipBackgroundOpacity ?? 0.72,
       chipText: hex(STORY_CONFIG.chipText ?? 0xf5f5f2),
+      chipSize: TYPE_CHROME.chipText.size ?? 13,
       chipMaxWidth: STORY_CONFIG.chipMaxWidth ?? 680,
     };
     needsFolder
@@ -1628,6 +1629,13 @@ export class SceneStudioGUI {
       .onChange((value: string) => {
         STORY_CONFIG.chipText = new THREE.Color(value).getHex();
         applyStoryTheme();
+      });
+    needsFolder
+      .add(needsBoxParams, 'chipSize', 10, 48, 1)
+      .name('Size')
+      .onChange((value: number) => {
+        TYPE_CHROME.chipText.size = value;
+        applyTypeChrome();
       });
     needsFolder
       .add(needsBoxParams, 'chipMaxWidth', 240, 960, 10)

@@ -54,7 +54,7 @@ export function StoryOverlay() {
           dir="rtl"
         >
           <span className="story-chip__mark" aria-hidden="true">
-            <svg className="story-chip__check" viewBox="0 0 16 16" width="12" height="12">
+            <svg className="story-chip__check" viewBox="0 0 16 16">
               <path
                 d="M3.2 8.4 6.3 11.4 12.8 4.6"
                 fill="none"
