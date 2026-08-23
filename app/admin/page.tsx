@@ -11,6 +11,10 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.admin = 'true';
+  }
+
   useEffect(() => {
     document.documentElement.dataset.admin = 'true';
     fetch('/api/admin/session')

@@ -68,6 +68,10 @@ export function AdminApp() {
   const [, bump] = useState(0);
   const refresh = () => bump((value) => value + 1);
 
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.admin = 'true';
+  }
+
   useEffect(() => {
     document.documentElement.dataset.admin = 'true';
     document.body.style.overflow = 'hidden';
@@ -166,8 +170,7 @@ export function AdminApp() {
       <main className="admin-main">
         <p className="admin-note">{note}</p>
 
-        {tab === 'scene' && (
-          <section className="admin-grid">
+        <section className="admin-grid" hidden={tab !== 'scene'}>
             <div className="admin-card">
               <h2>Section on/off</h2>
               <label className="admin-toggle">
@@ -219,8 +222,7 @@ export function AdminApp() {
             <div className="admin-preview">
               <HeroCanvas3D mode="admin" />
             </div>
-          </section>
-        )}
+        </section>
 
         {tab === 'features' && (
           <section className="admin-card">

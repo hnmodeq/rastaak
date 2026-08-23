@@ -47,25 +47,32 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     scene.background = backgroundColor;
     scene.fog = new THREE.Fog(fogColor, env.fogStart, env.fogEnd);
 
+    const host = containerRef.current;
+    const viewW = () => Math.max(1, host.clientWidth || window.innerWidth);
+    const viewH = () => Math.max(1, host.clientHeight || window.innerHeight);
+
     const camera = new THREE.PerspectiveCamera(
       camConfig.defaultFov,
-      window.innerWidth / window.innerHeight,
+      viewW() / viewH(),
       camConfig.near,
       camConfig.far,
     );
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(viewW(), viewH());
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = SCENE_CONFIG.renderer.toneMappingExposure ?? 1.15;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
-    containerRef.current.innerHTML = '';
+    host.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
     if (mode !== 'admin') renderer.domElement.style.zIndex = '-1';
-    containerRef.current.appendChild(renderer.domElement);
+    host.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enabled = false;
@@ -360,12 +367,14 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
 
     const handleResize = () => {
       if (!containerRef.current) return;
-      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.aspect = viewW() / viewH();
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(viewW(), viewH(), false);
       handleScroll();
     };
     window.addEventListener('resize', handleResize);
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    resizeObserver?.observe(host);
 
     const startTime = performance.now();
     let lastTime = startTime;
@@ -442,6 +451,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      resizeObserver?.disconnect();
       window.removeEventListener('rastaak-studio-before-save', onStudioBeforeSave);
       window.removeEventListener('rastaak-studio-after-save', onStudioAfterSave);
       window.removeEventListener('rastaak-studio-materials-changed', onStudioMaterialsChanged);
@@ -476,7 +486,18 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         containerRef.current.innerHTML = '';
       }
     };
-  }, []);
+  }, [mode]);
+
+  if (mode === 'admin') {
+    return (
+      <div
+        ref={containerRef}
+        className={`rastaak-admin-canvas ${isLoaded ? 'is-ready' : ''}`}
+        id="rastaak-admin-canvas"
+        style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 1 }}
+      />
+    );
+  }
 
   return (
     <div

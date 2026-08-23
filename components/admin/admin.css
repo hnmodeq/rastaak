@@ -88,6 +88,10 @@
   min-height: calc(100vh - 80px);
 }
 
+.admin-grid[hidden] {
+  display: none !important;
+}
+
 .admin-card,
 .admin-preview {
   background: var(--color-surface-dark-elevated);
@@ -101,6 +105,8 @@
   min-height: 640px;
   overflow: hidden;
   padding: 0;
+  isolation: isolate;
+  background: var(--color-surface-dark);
 }
 
 .admin-card h2,
@@ -190,28 +196,35 @@ html[data-admin='true'] #rastaak-studio-btn {
   display: none !important;
 }
 
+html[data-admin='true'] .admin-preview .lil-gui,
 html[data-admin='true'] .lil-gui {
   position: absolute !important;
-  top: 16px !important;
-  right: 16px !important;
+  top: 12px !important;
+  right: 12px !important;
   left: auto !important;
   bottom: auto !important;
-  max-height: calc(100% - 32px);
+  z-index: 50 !important;
+  max-height: calc(100% - 24px);
+  pointer-events: auto !important;
 }
 
 html[data-admin='true'] #rastaak-story-timeline {
-  left: 16px !important;
-  right: 16px !important;
-  bottom: 16px !important;
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: 12px !important;
+  z-index: 50 !important;
+  pointer-events: auto !important;
 }
 
 html[data-admin='true'] #rastaak-admin-canvas,
-html[data-admin='true'] #rastaak-admin-canvas canvas {
+html[data-admin='true'] #rastaak-admin-canvas canvas,
+html[data-admin='true'] .admin-preview canvas {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  z-index: 0 !important;
+  z-index: 1 !important;
   pointer-events: auto !important;
   opacity: 1 !important;
 }

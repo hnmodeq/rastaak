@@ -693,6 +693,9 @@ export class SceneStudioGUI {
       if (!this.timelinePanel) {
         this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t));
         this.timelinePanel.mount();
+        const preview = document.querySelector<HTMLElement>('.admin-preview');
+        const timeline = document.getElementById('rastaak-story-timeline');
+        if (preview && timeline) preview.appendChild(timeline);
       }
 
       const envFolder = this.gui.addFolder('Environment & Fog');
@@ -829,8 +832,25 @@ export class SceneStudioGUI {
       exportFolder.add(exportParams, 'exportConfigJSON').name('📥 Export Config (.json)');
 
       const urlParams = new URLSearchParams(window.location.search);
+      const isAdmin =
+        document.documentElement.dataset.admin === 'true' ||
+        window.location.pathname.startsWith('/admin');
+      const preview = document.querySelector<HTMLElement>('.admin-preview');
+      if (isAdmin && preview) {
+        preview.appendChild(guiEl);
+        guiEl.style.position = 'absolute';
+        guiEl.style.top = '12px';
+        guiEl.style.right = '12px';
+        guiEl.style.left = 'auto';
+        guiEl.style.bottom = 'auto';
+        guiEl.style.zIndex = '30';
+        guiEl.style.maxHeight = 'calc(100% - 24px)';
+      }
       const startOpen =
-        forceOpen || urlParams.has('studio') || urlParams.has('debug');
+        forceOpen ||
+        isAdmin ||
+        urlParams.has('studio') ||
+        urlParams.has('debug');
 
       this.setStudioOpen(startOpen);
     } catch (e) {
