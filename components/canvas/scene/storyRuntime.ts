@@ -51,6 +51,9 @@ interface HubActor {
 }
 
 const TRAIL_POINTS = 18;
+const BURST_SPARKS = 18;
+const FADE_IN_T = 0.028;
+const BURST_SPAN = 0.055;
 const CHIP_ROOF_PAD = 0.38;
 const HUB_LAUNCH_OUT = 0.48;
 const CITY_CENTER_X = 13.36;
@@ -840,6 +843,10 @@ export class StoryRuntime {
       (packet.glowOuter.material as THREE.Material).dispose();
       packet.sparks.geometry.dispose();
       (packet.sparks.material as THREE.Material).dispose();
+      (packet.burstCore.material as THREE.Material).dispose();
+      (packet.burstRing.material as THREE.Material).dispose();
+      packet.burstSparks.geometry.dispose();
+      (packet.burstSparks.material as THREE.Material).dispose();
       packet.trail.geometry.dispose();
       (packet.trail.material as THREE.Material).dispose();
       packet.light.dispose();
