@@ -24,6 +24,7 @@ import {
   type MaterialCategory,
 } from './materialKeys';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
+import { LightGizmoSet } from './LightGizmos';
 
 function downloadJSON(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -69,6 +70,31 @@ export class SceneStudioGUI {
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
   private timelinePanel: StoryTimelinePanel | null = null;
+  private lightGizmos: LightGizmoSet | null = null;
+  private showGizmos = true;
+  private grabMode = false;
+  private preGrabOrbit = false;
+  private orbitLockedByGizmo = false;
+  private lightUi = new Map<
+    string,
+    {
+      params: {
+        enabled: boolean;
+        intensity: number;
+        color: string;
+        posX: number;
+        posY: number;
+        posZ: number;
+        width: number;
+        height: number;
+        aimX: number;
+        aimY: number;
+        aimZ: number;
+      };
+      persist: () => void;
+      pullFromLight: () => void;
+    }
+  >();
   private palette = {
     building: '#a3a3a3',
     window: '#ffffff',
@@ -101,6 +127,26 @@ export class SceneStudioGUI {
   ) {
     if (typeof window === 'undefined') return;
     this.hydrateGlobalsFromConfig();
+    try {
+      this.lightGizmos = new LightGizmoSet(
+        scene,
+        camera,
+        renderer,
+        lightsMap,
+        (id) => {
+          const row = this.lightUi.get(id);
+          row?.pullFromLight();
+          row?.persist();
+        },
+        (locked) => {
+          this.orbitLockedByGizmo = locked;
+          if (this.grabMode) this.onOrbitModeToggle?.(!locked);
+        },
+      );
+    } catch (error) {
+      console.warn('[studio] lamp gizmos failed to start', error);
+      this.lightGizmos = null;
+    }
     this.createToggleButton();
     this.initGUI();
     this.initRaycaster();
@@ -149,14 +195,7 @@ export class SceneStudioGUI {
       if (!this.gui) {
         this.initGUI(true);
       } else {
-        this.isOpen = !this.isOpen;
-        if (this.isOpen) {
-          this.gui.show();
-          this.gui.open();
-        } else {
-          this.gui.hide();
-        }
-        this.timelinePanel?.setVisible(this.isOpen);
+        this.setStudioOpen(!this.isOpen);
       }
     });
 
@@ -169,7 +208,7 @@ export class SceneStudioGUI {
     const mouse = new THREE.Vector2();
 
     this.pointerHandler = (e: MouseEvent) => {
-      if (!this.isOpen && !this.isManualMode && !this.isOrbitMode) return;
+      if (!this.isOpen && !this.isManualMode && !this.isOrbitMode && !this.grabMode) return;
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
         (e.target as HTMLElement)?.id === 'rastaak-studio-btn' ||
@@ -182,6 +221,13 @@ export class SceneStudioGUI {
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, this.camera);
+
+      if (this.grabMode && this.lightGizmos) {
+        const hit = this.lightGizmos.pick(raycaster);
+        if (hit) this.lightGizmos.select(hit.id, hit.handle);
+        return;
+      }
+
       const worldGroup = this.worldGroupSupplier();
       if (!worldGroup) return;
 
@@ -194,7 +240,7 @@ export class SceneStudioGUI {
       }
     };
 
-    window.addEventListener('pointerdown', this.pointerHandler);
+    window.addEventListener('pointerdown', this.pointerHandler, true);
   }
 
   private collectCurrentLights(): LightConfig[] {
@@ -211,6 +257,7 @@ export class SceneStudioGUI {
         type: lightType as LightConfig['type'],
         color: colorToHexNumber(light.color),
         intensity: light.intensity,
+        enabled: light.visible !== false,
       };
 
       if (isHemisphereLight(light)) {
@@ -384,12 +431,7 @@ export class SceneStudioGUI {
 
   private async initGUI(forceOpen = false) {
     if (this.gui) {
-      if (forceOpen) {
-        this.isOpen = true;
-        this.gui.show();
-        this.gui.open();
-        this.timelinePanel?.setVisible(true);
-      }
+      if (forceOpen) this.setStudioOpen(true);
       return;
     }
 
@@ -787,14 +829,7 @@ export class SceneStudioGUI {
       const startOpen =
         forceOpen || urlParams.has('studio') || urlParams.has('debug');
 
-      this.isOpen = startOpen;
-      if (startOpen) {
-        this.gui.show();
-        this.gui.open();
-      } else {
-        this.gui.hide();
-      }
-      this.timelinePanel?.setVisible(startOpen);
+      this.setStudioOpen(startOpen);
     } catch (e) {
       console.log('[SceneStudioGUI] lil-gui dynamic import skipped:', e);
     }
@@ -1348,9 +1383,29 @@ export class SceneStudioGUI {
     this.lightsFolderPopulated = true;
 
     const lightFolder = this.gui.addFolder('Lighting Controller');
+    lightFolder.open();
+
+    const view = {
+      showGizmos: this.showGizmos,
+      grabLamps: this.grabMode,
+    };
+    lightFolder
+      .add(view, 'showGizmos')
+      .name('Show lamp gizmos')
+      .onChange((value: boolean) => {
+        this.showGizmos = value;
+        this.syncGizmoVisibility();
+      });
+    lightFolder
+      .add(view, 'grabLamps')
+      .name('Move lamps in scene')
+      .onChange((value: boolean) => {
+        this.setGrabMode(value);
+      });
 
     for (const [id, light] of this.lightsMap.entries()) {
       const sub = lightFolder.addFolder(id);
+      if (isAreaLight(light)) sub.open();
       const isPt = isPointLight(light);
       const isSpot = isSpotLight(light);
       const isArea = isAreaLight(light);
@@ -1360,6 +1415,7 @@ export class SceneStudioGUI {
         : [0, 0, 0]) as [number, number, number];
 
       const lightParams = {
+        enabled: light.visible !== false,
         type: light.type,
         intensity: light.intensity,
         color: '#' + light.color.getHexString(),
@@ -1378,6 +1434,7 @@ export class SceneStudioGUI {
       const persistLight = () => {
         const cfg = LIGHTS_CONFIG.find((l) => l.id === id);
         if (!cfg) return;
+        cfg.enabled = light.visible !== false;
         cfg.intensity = light.intensity;
         cfg.color = colorToHexNumber(light.color);
         if (light.position) {
@@ -1403,14 +1460,55 @@ export class SceneStudioGUI {
         }
       };
 
+      const pullFromLight = () => {
+        lightParams.enabled = light.visible !== false;
+        lightParams.intensity = light.intensity;
+        lightParams.color = '#' + light.color.getHexString();
+        if (light.position) {
+          lightParams.posX = light.position.x;
+          lightParams.posY = light.position.y;
+          lightParams.posZ = light.position.z;
+        }
+        if (isArea) {
+          lightParams.width = area.width;
+          lightParams.height = area.height;
+          const aim = (area.userData.lookTarget as [number, number, number]) || [area.position.x, 0, area.position.z];
+          lightParams.aimX = aim[0];
+          lightParams.aimY = aim[1];
+          lightParams.aimZ = aim[2];
+        }
+      };
+
+      this.lightUi.set(id, { params: lightParams, persist: persistLight, pullFromLight });
+
       sub
-        .add(lightParams, 'intensity', 0, 5000, 10)
-        .name('Power / Intensity')
+        .add(lightParams, 'enabled')
+        .name('On')
         .listen()
-        .onChange((v: number) => {
-          light.intensity = v;
+        .onChange((value: boolean) => {
+          light.visible = value;
           persistLight();
         });
+
+      if (isArea) {
+        sub
+          .add(lightParams, 'intensity', 0, 200, 0.1)
+          .name('Power / Intensity')
+          .listen()
+          .onChange((v: number) => {
+            light.intensity = v;
+            persistLight();
+          });
+      } else {
+        sub
+          .add(lightParams, 'intensity', 0, 5000, 10)
+          .name('Power / Intensity')
+          .listen()
+          .onChange((v: number) => {
+            light.intensity = v;
+            persistLight();
+          });
+      }
 
       sub
         .addColor(lightParams, 'color')
@@ -1466,6 +1564,7 @@ export class SceneStudioGUI {
         sub
           .add(lightParams, 'width', 0.2, 80, 0.1)
           .name('Lamp width')
+          .listen()
           .onChange((v: number) => {
             area.width = v;
             persistLight();
@@ -1473,13 +1572,14 @@ export class SceneStudioGUI {
         sub
           .add(lightParams, 'height', 0.2, 80, 0.1)
           .name('Lamp height')
+          .listen()
           .onChange((v: number) => {
             area.height = v;
             persistLight();
           });
-        sub.add(lightParams, 'aimX', -80, 80, 0.5).name('Aim X').onChange(aimArea);
-        sub.add(lightParams, 'aimY', -10, 40, 0.5).name('Aim Y').onChange(aimArea);
-        sub.add(lightParams, 'aimZ', -80, 80, 0.5).name('Aim Z').onChange(aimArea);
+        sub.add(lightParams, 'aimX', -80, 80, 0.5).name('Aim X').listen().onChange(aimArea);
+        sub.add(lightParams, 'aimY', -10, 40, 0.5).name('Aim Y').listen().onChange(aimArea);
+        sub.add(lightParams, 'aimZ', -80, 80, 0.5).name('Aim Z').listen().onChange(aimArea);
       }
 
       if (isPt || isSpot) {
@@ -1639,9 +1739,52 @@ export class SceneStudioGUI {
 
   private refreshCamDisplay = () => {};
 
+  private setStudioOpen(open: boolean) {
+    this.isOpen = open;
+    if (this.gui) {
+      if (open) {
+        this.gui.show();
+        this.gui.open();
+      } else {
+        this.gui.hide();
+      }
+    }
+    this.timelinePanel?.setVisible(open);
+    this.syncGizmoVisibility();
+    if (!open) this.setGrabMode(false);
+  }
+
+  private syncGizmoVisibility() {
+    this.lightGizmos?.setVisible(this.isOpen && this.showGizmos);
+  }
+
+  private setGrabMode(on: boolean) {
+    if (this.grabMode === on) return;
+    this.grabMode = on;
+    document.body.classList.toggle('studio-grab-lamps', on);
+    this.lightGizmos?.setGrabEnabled(on);
+    if (on) {
+      this.preGrabOrbit = this.isOrbitMode;
+      this.isOrbitMode = true;
+      this.onOrbitModeToggle?.(!this.orbitLockedByGizmo);
+      this.renderer.domElement.style.pointerEvents = 'auto';
+    } else {
+      this.isOrbitMode = this.preGrabOrbit;
+      this.onOrbitModeToggle?.(this.isOrbitMode);
+      this.renderer.domElement.style.pointerEvents = '';
+      this.orbitLockedByGizmo = false;
+    }
+  }
+
+  public tick() {
+    this.lightGizmos?.syncAll();
+  }
+
   public destroy() {
+    this.setGrabMode(false);
+    document.body.classList.remove('studio-grab-lamps');
     if (this.pointerHandler) {
-      window.removeEventListener('pointerdown', this.pointerHandler);
+      window.removeEventListener('pointerdown', this.pointerHandler, true);
       this.pointerHandler = null;
     }
     if (this.toggleButton) {
@@ -1652,6 +1795,9 @@ export class SceneStudioGUI {
       this.gui.destroy();
       this.gui = null;
     }
+    this.lightGizmos?.dispose();
+    this.lightGizmos = null;
+    this.lightUi.clear();
     this.timelinePanel?.destroy();
     this.timelinePanel = null;
   }

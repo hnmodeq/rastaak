@@ -418,6 +418,12 @@ html[data-chrome='scene'] .mobile-nav .site-name,
   left: var(--studio-btn-left, auto) !important;
 }
 
+body.studio-grab-lamps #rastaak-hero-canvas,
+body.studio-grab-lamps #rastaak-hero-canvas canvas {
+  z-index: 4 !important;
+  pointer-events: auto !important;
+}
+
 .lil-gui {
   top: var(--studio-gui-top, 90px) !important;
   right: var(--studio-gui-right, 24px) !important;

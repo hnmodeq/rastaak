@@ -68,6 +68,8 @@ export const HeroCanvas3D: React.FC = () => {
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
+    RectAreaLightUniformsLib.init();
+
     const lightsMap = new Map<string, THREE.Light>();
 
     for (const cfg of LIGHTS_CONFIG) {
@@ -164,6 +166,7 @@ export const HeroCanvas3D: React.FC = () => {
       }
 
       if (light) {
+        light.visible = cfg.enabled !== false;
         scene.add(light);
         lightsMap.set(cfg.id, light);
       }
@@ -360,6 +363,7 @@ export const HeroCanvas3D: React.FC = () => {
       });
       window.dispatchEvent(new CustomEvent(STORY_FRAME_EVENT, { detail: frame }));
 
+      studioGUI?.tick();
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
     };

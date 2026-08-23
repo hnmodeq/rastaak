@@ -114,6 +114,7 @@ function sanitizeLight(raw: unknown, index: number): LightConfig | null {
   if (item.angle !== undefined) light.angle = asFinite(item.angle, 45);
   if (item.penumbra !== undefined) light.penumbra = asFinite(item.penumbra, 0.5);
   if (item.castShadow !== undefined) light.castShadow = Boolean(item.castShadow);
+  if (item.enabled !== undefined) light.enabled = Boolean(item.enabled);
   if (item.shadowMapSize !== undefined) light.shadowMapSize = asFinite(item.shadowMapSize, 2048);
   if (item.shadowBias !== undefined) light.shadowBias = asFinite(item.shadowBias, -0.0001);
 

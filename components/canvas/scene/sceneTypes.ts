@@ -18,6 +18,7 @@ export interface LightConfig {
   castShadow?: boolean;
   shadowMapSize?: number;
   shadowBias?: number;
+  enabled?: boolean;
 }
 
 export interface CameraStop {

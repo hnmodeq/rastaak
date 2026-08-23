@@ -104,6 +104,9 @@ export const tokens = {
     gridSecondary: 0x1c1e24,
     lightFacadeDefault: 0x8c8c8c,
     windowInsetDefault: 0x222222,
+    gizmoLamp: 0xffc14a,
+    gizmoAim: 0xff6a3d,
+    gizmoOff: 0x8a9099,
   },
 
   dataStorageScene: {
