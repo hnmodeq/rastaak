@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   STORY_CONFIG,
+  resolveAt,
   type StoryBuildingState,
   type StoryChipFrame,
   type StoryClientConfig,
@@ -615,7 +616,7 @@ export class StoryRuntime {
 
     for (const client of this.clients) {
       let state: StoryBuildingState = 'idle';
-      if (t >= client.config.arrive) state = 'resolved';
+      if (t >= resolveAt(client.config)) state = 'resolved';
       else if (t >= client.config.appear) state = 'need';
 
       const targetBlend = state === 'idle' ? 0 : state === 'need' ? 1 : 2;

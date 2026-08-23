@@ -364,6 +364,7 @@ export interface StoryClientConfig {
   appear: number;
   dispatch: number;
   arrive: number;
+  resolve?: number;
 }
 
 export interface StoryCaptionConfig {
@@ -408,6 +409,14 @@ export interface StoryConfig {
   chipBackground: number;
   chipBackgroundOpacity: number;
   chipText: number;
+}
+
+export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
+  const value = client.resolve;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.min(1, Math.max(client.appear, value));
+  }
+  return client.arrive;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';

@@ -3,7 +3,7 @@ import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import { applySceneShadows } from './shadowTint';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
-import { STORY_CONFIG, applyStoryTheme } from './storyConfig';
+import { STORY_CONFIG, applyStoryTheme, resolveAt } from './storyConfig';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
 import {
@@ -1656,10 +1656,12 @@ export class SceneStudioGUI {
       const folder = beatsFolder.addFolder(client.building);
       const row = {
         appear: client.appear,
+        resolve: resolveAt(client),
         dispatch: client.dispatch,
         arrive: client.arrive,
         flight: Math.max(MIN_FLIGHT, client.arrive - client.dispatch),
         previewRed: () => this.seekStory(client.appear),
+        previewBlue: () => this.seekStory(resolveAt(client)),
         previewLaunch: () => this.seekStory(client.dispatch),
         previewArrive: () => this.seekStory(client.arrive),
         previewBurst: () => this.seekStory(client.arrive + (STORY_CONFIG.burstDelay ?? 0.045)),
@@ -1667,10 +1669,12 @@ export class SceneStudioGUI {
 
       const syncRow = () => {
         row.appear = client.appear;
+        row.resolve = resolveAt(client);
         row.dispatch = client.dispatch;
         row.arrive = client.arrive;
         row.flight = Math.max(MIN_FLIGHT, client.arrive - client.dispatch);
         appearCtrl.updateDisplay();
+        resolveCtrl.updateDisplay();
         dispatchCtrl.updateDisplay();
         arriveCtrl.updateDisplay();
         flightCtrl.updateDisplay();
@@ -1685,8 +1689,19 @@ export class SceneStudioGUI {
           if (client.arrive < client.dispatch + MIN_FLIGHT) {
             client.arrive = Math.min(1, client.dispatch + MIN_FLIGHT);
           }
+          if (resolveAt(client) < client.appear) client.resolve = client.appear;
           syncRow();
           this.seekStory(client.appear);
+          this.notifyTimingChanged();
+        });
+
+      const resolveCtrl = folder
+        .add(row, 'resolve', 0, 1, 0.01)
+        .name('Turns blue')
+        .onChange((value: number) => {
+          client.resolve = clampOrdered(value, client.appear, 1);
+          syncRow();
+          this.seekStory(client.resolve);
           this.notifyTimingChanged();
         });
 
@@ -1722,6 +1737,7 @@ export class SceneStudioGUI {
         });
 
       folder.add(row, 'previewRed').name('Preview — turns red');
+      folder.add(row, 'previewBlue').name('Preview — turns blue');
       folder.add(row, 'previewLaunch').name('Preview — logo launches');
       folder.add(row, 'previewArrive').name('Preview — logo arrives');
       folder.add(row, 'previewBurst').name('Preview — explosion');

@@ -12,6 +12,15 @@ export interface StoryClientConfig {
   appear: number;
   dispatch: number;
   arrive: number;
+  resolve?: number;
+}
+
+export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
+  const value = client.resolve;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.min(1, Math.max(client.appear, value));
+  }
+  return client.arrive;
 }
 
 export interface StoryCaptionConfig {
@@ -93,7 +102,8 @@ export const STORY_CONFIG: StoryConfig = {
       need: "۲ ترابایت فضای ذخیره",
       appear: 0.14,
       dispatch: 0.2,
-      arrive: 0.3
+      arrive: 0.3,
+      resolve: 0.3
     },
     {
       id: "b7",
@@ -101,7 +111,8 @@ export const STORY_CONFIG: StoryConfig = {
       need: "سرور ۲۴ سینی",
       appear: 0.4,
       dispatch: 0.46,
-      arrive: 0.56
+      arrive: 0.56,
+      resolve: 0.56
     },
     {
       id: "b30",
@@ -109,7 +120,8 @@ export const STORY_CONFIG: StoryConfig = {
       need: "شبکه ۱۰ گیگابیت",
       appear: 0.58,
       dispatch: 0.64,
-      arrive: 0.72
+      arrive: 0.72,
+      resolve: 0.72
     },
     {
       id: "b34",
@@ -117,7 +129,8 @@ export const STORY_CONFIG: StoryConfig = {
       need: "SSD سازمانی",
       appear: 0.72,
       dispatch: 0.78,
-      arrive: 0.86
+      arrive: 0.86,
+      resolve: 0.86
     }
   ],
   captions: [

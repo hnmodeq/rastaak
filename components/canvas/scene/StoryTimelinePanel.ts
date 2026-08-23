@@ -1,5 +1,5 @@
 import { SCENE_CONFIG } from './sceneConfig';
-import { STORY_CONFIG, STORY_FRAME_EVENT, type StoryFrame } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, resolveAt, type StoryFrame } from './storyConfig';
 import { FLOW_CONFIG } from '@/components/home/flowConfig';
 
 const MIN_FLIGHT = 0.02;
@@ -20,7 +20,7 @@ function pct(t: number): string {
   return `${(clamp01(t) * 100).toFixed(3)}%`;
 }
 
-type DragKind = 'playhead' | 'cam' | 'step-start' | 'step-end' | 'need' | 'launch' | 'arrive' | 'cap-start' | 'cap-end';
+type DragKind = 'playhead' | 'cam' | 'step-start' | 'step-end' | 'need' | 'launch' | 'arrive' | 'resolve' | 'cap-start' | 'cap-end';
 
 type DragState = {
   kind: DragKind;
@@ -134,6 +134,7 @@ export class StoryTimelinePanel {
         </div>
         <div class="stl-legend">
           <i class="stl-swatch" style="background:#6f0000"></i>red
+          <i class="stl-swatch" style="background:#229afd"></i>blue
           <i class="stl-swatch" style="background:#1c6bff"></i>logo
           <i class="stl-swatch" style="background:#7a5cff"></i>page
           <i class="stl-swatch" style="background:#c9a227"></i>camera
@@ -289,6 +290,7 @@ export class StoryTimelinePanel {
         appear: client.appear,
         dispatch: client.dispatch,
         arrive: client.arrive,
+        resolve: resolveAt(client),
       })),
       captions: STORY_CONFIG.captions.map((caption) => [caption.range[0], caption.range[1]]),
       chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
@@ -387,16 +389,19 @@ export class StoryTimelinePanel {
       return;
     }
 
-    if (kind === 'need' || kind === 'launch' || kind === 'arrive') {
+    if (kind === 'need' || kind === 'launch' || kind === 'arrive' || kind === 'resolve') {
       const client = STORY_CONFIG.clients[index];
       if (!client) return;
       if (kind === 'need') {
         client.appear = clampOrdered(t, 0, client.arrive - MIN_FLIGHT);
         if (client.dispatch < client.appear) client.dispatch = client.appear;
+        if (resolveAt(client) < client.appear) client.resolve = client.appear;
       } else if (kind === 'launch') {
         client.dispatch = clampOrdered(t, client.appear, client.arrive - MIN_FLIGHT);
-      } else {
+      } else if (kind === 'arrive') {
         client.arrive = clampOrdered(t, client.dispatch + MIN_FLIGHT, 1);
+      } else {
+        client.resolve = clampOrdered(t, client.appear, 1);
       }
       this.setPlayhead(t);
       this.onSeek(t);
@@ -506,6 +511,14 @@ export class StoryTimelinePanel {
           }),
         );
       }
+      const blue = document.createElement('button');
+      blue.type = 'button';
+      blue.className = 'stl-resolve';
+      blue.style.left = pct(resolveAt(client));
+      blue.title = `${client.building} turns blue @ ${resolveAt(client).toFixed(2)}`;
+      blue.textContent = 'B';
+      blue.addEventListener('pointerdown', (event) => this.startDrag('resolve', index, lane, event));
+      lane.appendChild(blue);
       this.bindSeek(lane);
       this.lanes!.appendChild(row);
     });
@@ -539,7 +552,7 @@ export class StoryTimelinePanel {
 
   private bindSeek(lane: HTMLElement) {
     lane.addEventListener('pointerdown', (event) => {
-      if ((event.target as HTMLElement).closest('.stl-clip, .stl-cam, .stl-handle')) return;
+      if ((event.target as HTMLElement).closest('.stl-clip, .stl-cam, .stl-handle, .stl-resolve')) return;
       this.startDrag('playhead', -1, lane, event);
     });
   }
