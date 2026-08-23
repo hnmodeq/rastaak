@@ -14,7 +14,7 @@ export const SCENE_CONFIG: SceneConfig = {
     {
       id: "stop_1_overview",
       progress: 0,
-      camera: [-8.5, 14, -20.5],
+      camera: [2.5, 1.5, -20.5],
       target: [13.4, 1.2, -0.5],
       fov: 45
     },
@@ -87,8 +87,9 @@ export const SCENE_CONFIG: SceneConfig = {
   environment: {
     backgroundColor: 0x0b0b0b,
     fogColor: 0x0b0b0b,
-    fogStart: 14,
+    fogStart: 19,
     fogEnd: 34,
+    fogEnabled: true,
     shadowColor: 0x202020,
     shadowOpacity: 0
   },
@@ -109,6 +110,12 @@ export const SCENE_CONFIG: SceneConfig = {
     treeLeafColor: 0x3d6b3a,
     globalFacadeColor: 0x000000,
     globalWindowColor: 0xc1c1c1,
+    roughness: 0.8,
+    metalness: 0.25,
+    envMapIntensity: 1.55,
+    groundRoughness: 1,
+    groundMetalness: 1,
+    groundEnvMapIntensity: 1.4,
     overrides: {}
   } as MaterialsConfig,
 };

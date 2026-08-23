@@ -1,6 +1,6 @@
 /**
- * Chapter panel (the 4 scroll steps on the homepage).
- * Not the Story Timeline. Saved automatically from 3D Studio.
+ * RASTAAK FLOW STEPS CONTROLLER CONFIG
+ * Saved automatically from 3D Studio
  */
 
 export interface FlowStepConfig {
@@ -62,10 +62,14 @@ export const FLOW_CHROME: FlowChromeConfig = {
   align: "right",
   dir: "rtl",
   titleColor: 0x535353,
+  titleBg: 0x0c0d12,
+  titleBgOpacity: 0,
   numberColor: 0x1f1f1f,
   numberActiveColor: 0xffffff,
   numberBg: 0x585858,
   descriptionColor: 0xffffff,
+  descriptionBg: 0x0c0d12,
+  descriptionBgOpacity: 0,
   trackColor: 0xcecece,
   trackFillColor: 0x585858
 };

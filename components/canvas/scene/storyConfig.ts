@@ -16,14 +16,6 @@ export interface StoryClientConfig {
   land?: [number, number, number];
 }
 
-export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
-  const value = client.resolve;
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.min(1, Math.max(client.appear, value));
-  }
-  return client.arrive;
-}
-
 export interface StoryCaptionConfig {
   id: string;
   text: string;
@@ -61,18 +53,19 @@ export interface StoryConfig {
   packetGlowSize: number;
   packetCoreSize: number;
   packetTrail: number;
-  burstDelay?: number;
-  burstSpan?: number;
-  burstLight?: number;
-  burstLightRadius?: number;
-  burstSize?: number;
-  burstExposure?: number;
-  burstSparks?: number;
   chipBorder: number;
   chipBorderOpacity: number;
   chipBackground: number;
   chipBackgroundOpacity: number;
   chipText: number;
+}
+
+export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
+  const value = client.resolve;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.min(1, Math.max(client.appear, value));
+  }
+  return client.arrive;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -104,7 +97,8 @@ export const STORY_CONFIG: StoryConfig = {
       appear: 0.14,
       dispatch: 0.2,
       arrive: 0.3,
-      resolve: 0.3
+      resolve: 0.3,
+      land: [0, 0, 0]
     },
     {
       id: "b7",
@@ -113,7 +107,8 @@ export const STORY_CONFIG: StoryConfig = {
       appear: 0.4,
       dispatch: 0.46,
       arrive: 0.56,
-      resolve: 0.56
+      resolve: 0.56,
+      land: [0, 0, 0]
     },
     {
       id: "b30",
@@ -122,7 +117,8 @@ export const STORY_CONFIG: StoryConfig = {
       appear: 0.58,
       dispatch: 0.64,
       arrive: 0.72,
-      resolve: 0.72
+      resolve: 0.72,
+      land: [0, 0, 0]
     },
     {
       id: "b34",
@@ -131,7 +127,8 @@ export const STORY_CONFIG: StoryConfig = {
       appear: 0.72,
       dispatch: 0.78,
       arrive: 0.86,
-      resolve: 0.86
+      resolve: 0.86,
+      land: [0, 0, 0]
     }
   ],
   captions: [
@@ -169,13 +166,13 @@ export const STORY_CONFIG: StoryConfig = {
   packetGlowSize: 0.04,
   packetCoreSize: 0.095,
   packetTrail: 1,
-  burstDelay: 0.045,
-  burstSpan: 0.06,
-  burstLight: 3.2,
-  burstLightRadius: 10,
-  burstSize: 1,
-  burstExposure: 1,
-  burstSparks: 1,
+  burstDelay: 0,
+  burstSpan: 0.035,
+  burstLight: 0.45,
+  burstLightRadius: 2.8,
+  burstSize: 0.4,
+  burstExposure: 0.65,
+  burstSparks: 0.7,
   chipBorder: 0x0424ff,
   chipBorderOpacity: 0,
   chipBackground: 0x14151a,

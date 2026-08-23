@@ -15,10 +15,10 @@ export interface LookConfig {
 
 export const LOOK_CONFIG: LookConfig = {
   envEnabled: true,
-  envIntensity: 1.2,
-  grain: 0,
-  grainSize: 1.15,
-  vignette: 0,
+  envIntensity: 0.75,
+  grain: 0.25,
+  grainSize: 1.25,
+  vignette: 0.8
 };
 
 let envTexture: THREE.Texture | null = null;
