@@ -15,7 +15,7 @@ export interface LookConfig {
 
 export const LOOK_CONFIG: LookConfig = {
   envEnabled: true,
-  envIntensity: 0.85,
+  envIntensity: 1.2,
   grain: 0,
   grainSize: 1.15,
   vignette: 0,
@@ -23,6 +23,56 @@ export const LOOK_CONFIG: LookConfig = {
 
 let envTexture: THREE.Texture | null = null;
 let pmrem: THREE.PMREMGenerator | null = null;
+
+function unlit(color: number) {
+  return new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+}
+
+function buildStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
+  pmrem?.dispose();
+  pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x8b93a3);
+
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(16, 24, 16), unlit(0x6a7180));
+  const shellMat = shell.material as THREE.MeshBasicMaterial;
+  shellMat.side = THREE.BackSide;
+  envScene.add(shell);
+
+  const key = new THREE.Mesh(new THREE.PlaneGeometry(10, 6), unlit(0xffffff));
+  key.position.set(0, 3.2, -11);
+  envScene.add(key);
+
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(6, 7), unlit(0xd5e4ff));
+  fill.position.set(-11, 2.2, 1);
+  fill.rotation.y = Math.PI / 2;
+  envScene.add(fill);
+
+  const rim = new THREE.Mesh(new THREE.PlaneGeometry(6, 7), unlit(0xffe2c0));
+  rim.position.set(11, 2.2, 1);
+  rim.rotation.y = -Math.PI / 2;
+  envScene.add(rim);
+
+  const zenith = new THREE.Mesh(new THREE.PlaneGeometry(12, 4), unlit(0xf4f6fb));
+  zenith.position.set(0, 8.4, 0);
+  zenith.rotation.x = Math.PI / 2;
+  envScene.add(zenith);
+
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 32), unlit(0xc8ccd4));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -6.2;
+  envScene.add(floor);
+
+  const texture = pmrem.fromScene(envScene, 0.03).texture;
+  envScene.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh) return;
+    mesh.geometry?.dispose();
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    mats.forEach((mat) => mat?.dispose());
+  });
+  return texture;
+}
 
 export function applySceneEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRenderer) {
   if (!LOOK_CONFIG.envEnabled) {
@@ -34,52 +84,7 @@ export function applySceneEnvironment(scene: THREE.Scene, renderer: THREE.WebGLR
   }
 
   if (!envTexture) {
-    pmrem?.dispose();
-    pmrem = new THREE.PMREMGenerator(renderer);
-    const envScene = new THREE.Scene();
-    envScene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    envScene.add(new THREE.HemisphereLight(0xf2f4ff, 0x1a1b22, 0.9));
-
-    const shell = new THREE.Mesh(
-      new THREE.BoxGeometry(20, 12, 20),
-      new THREE.MeshStandardMaterial({ color: 0x8a8c94, side: THREE.BackSide, roughness: 0.85, metalness: 0 }),
-    );
-    envScene.add(shell);
-
-    const panelMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0xf4f6ff,
-      emissiveIntensity: 2.4,
-      roughness: 1,
-      metalness: 0,
-    });
-    const makePanel = (w: number, h: number, x: number, y: number, z: number, rotY = 0) => {
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), panelMat);
-      mesh.position.set(x, y, z);
-      mesh.rotation.y = rotY;
-      envScene.add(mesh);
-    };
-    makePanel(6, 4, 0, 2.2, -9.6);
-    makePanel(3.2, 5, -9.6, 1.4, 0, Math.PI / 2);
-    makePanel(3.2, 5, 9.6, 1.4, 0, -Math.PI / 2);
-    makePanel(8, 1.2, 0, 5.4, 0, 0);
-    const floorGlow = new THREE.Mesh(
-      new THREE.PlaneGeometry(12, 12),
-      new THREE.MeshStandardMaterial({ color: 0xd8dbe3, roughness: 0.4, metalness: 0.05 }),
-    );
-    floorGlow.rotation.x = -Math.PI / 2;
-    floorGlow.position.y = -5.8;
-    envScene.add(floorGlow);
-
-    envTexture = pmrem.fromScene(envScene, 0.04).texture;
-    envScene.traverse((child) => {
-      const mesh = child as THREE.Mesh;
-      if ((mesh as THREE.Mesh & { isMesh?: boolean }).isMesh) {
-        mesh.geometry?.dispose();
-        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        mats.forEach((mat) => mat?.dispose());
-      }
-    });
+    envTexture = buildStudioEnv(renderer);
   }
 
   scene.environment = envTexture;

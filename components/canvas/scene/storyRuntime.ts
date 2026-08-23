@@ -49,9 +49,7 @@ interface HubActor {
 
 const TRAIL_POINTS = 18;
 const CHIP_ROOF_PAD = 0.38;
-const CLIENT_ROOF_LIFT = 0.55;
-const HUB_LAUNCH_LIFT = 1.9;
-const HUB_LAUNCH_OUT = 2.8;
+const HUB_LAUNCH_OUT = 0.48;
 const CITY_CENTER_X = 13.36;
 const CITY_CENTER_Z = -0.7;
 const PACKET_MARK_URL = '/img/rastaak-packet-mark.png';
@@ -200,7 +198,7 @@ function collectSlots(object: THREE.Object3D): TrackedSlot[] {
 function roofPoint(object: THREE.Object3D, target: THREE.Vector3) {
   _box.setFromObject(object);
   _box.getSize(_size);
-  const pad = Math.max(CHIP_ROOF_PAD, _size.y * 0.12) + CLIENT_ROOF_LIFT;
+  const pad = Math.max(CHIP_ROOF_PAD, _size.y * 0.12);
   target.set(
     (_box.min.x + _box.max.x) * 0.5,
     _box.max.y + pad,
@@ -208,33 +206,31 @@ function roofPoint(object: THREE.Object3D, target: THREE.Vector3) {
   );
 }
 
-/** Start the shooting logo above and outside the hub so it does not clip the tower. */
+/** Start on the Rastaak facade (logo), just outside the wall so the sprite does not sit inside the mesh. */
 function hubLaunchPoint(hub: THREE.Object3D, logo: THREE.Object3D | null, target: THREE.Vector3) {
-  roofPoint(hub, target);
-  target.y += HUB_LAUNCH_LIFT;
-
   _box.setFromObject(hub);
   _box.getSize(_size);
   const cx = (_box.min.x + _box.max.x) * 0.5;
   const cz = (_box.min.z + _box.max.z) * 0.5;
 
-  let dirX = CITY_CENTER_X - cx;
-  let dirZ = CITY_CENTER_Z - cz;
   if (logo) {
-    logo.getWorldPosition(_projected);
-    const logoX = _projected.x - cx;
-    const logoZ = _projected.z - cz;
-    if (Math.hypot(logoX, logoZ) > 0.05) {
-      dirX = logoX;
-      dirZ = logoZ;
-    }
-    target.y = Math.max(target.y, _projected.y + HUB_LAUNCH_LIFT);
+    logo.getWorldPosition(target);
+  } else {
+    target.set(cx, _box.min.y + _size.y * 0.78, cz);
   }
 
+  let dirX = target.x - cx;
+  let dirZ = target.z - cz;
+  if (Math.hypot(dirX, dirZ) < 0.05) {
+    dirX = CITY_CENTER_X - cx;
+    dirZ = CITY_CENTER_Z - cz;
+  }
   const len = Math.hypot(dirX, dirZ) || 1;
-  const clearance = Math.max(_size.x, _size.z) * 0.55 + HUB_LAUNCH_OUT;
-  target.x = cx + (dirX / len) * clearance;
-  target.z = cz + (dirZ / len) * clearance;
+  const facade = Math.max(_size.x, _size.z) * 0.5;
+  const dist = Math.max(len, facade) + HUB_LAUNCH_OUT;
+  target.x = cx + (dirX / len) * dist;
+  target.z = cz + (dirZ / len) * dist;
+  target.y = Math.min(_box.max.y - 0.12, Math.max(_box.min.y + _size.y * 0.4, target.y + 0.16));
 }
 
 function restoreSlots(slots: TrackedSlot[]) {
