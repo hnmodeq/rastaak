@@ -76,16 +76,26 @@ function headerPose(object: THREE.Object3D): { position: THREE.Vector3; quaterni
   _toward.set(CITY_CENTER_X - _center.x, 0, CITY_CENTER_Z - _center.z);
   if (_toward.lengthSq() < 0.0001) _toward.set(0, 0, 1);
   _toward.normalize();
-  if (Math.abs(_toward.x) >= Math.abs(_toward.z)) {
-    const sign = _toward.x >= 0 ? 1 : -1;
-    _normal.set(sign, 0, 0);
-    _center.x += sign * (_size.x * 0.5);
-  } else {
-    const sign = _toward.z >= 0 ? 1 : -1;
-    _normal.set(0, 0, sign);
-    _center.z += sign * (_size.z * 0.5);
+  const faces: Array<{ nx: number; nz: number; width: number }> = [
+    { nx: 1, nz: 0, width: _size.z },
+    { nx: -1, nz: 0, width: _size.z },
+    { nx: 0, nz: 1, width: _size.x },
+    { nx: 0, nz: -1, width: _size.x },
+  ];
+  let best = faces[0];
+  let bestScore = -Infinity;
+  for (const face of faces) {
+    const facing = face.nx * _toward.x + face.nz * _toward.z;
+    const score = face.width * Math.max(0, facing);
+    if (score > bestScore) {
+      bestScore = score;
+      best = face;
+    }
   }
-  _center.y = _box.max.y - Math.max(0.14, _size.y * 0.1);
+  _normal.set(best.nx, 0, best.nz);
+  _center.x += best.nx * (_size.x * 0.5);
+  _center.z += best.nz * (_size.z * 0.5);
+  _center.y = _box.max.y - Math.max(0.08, Math.min(0.16, _size.y * 0.12));
   const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), _normal);
   return { position: _center.clone(), quaternion };
 }
