@@ -200,34 +200,35 @@ export class SceneStudioGUI {
     style.textContent = `
       #rastaak-studio-dock {
         position: fixed !important;
-        top: auto !important;
-        right: 16px !important;
+        top: 0 !important;
+        right: 0 !important;
         left: auto !important;
-        bottom: var(--studio-bottom, 28px) !important;
+        bottom: auto !important;
         z-index: 1000000 !important;
         width: 300px !important;
         height: auto !important;
-        max-height: calc(100dvh - var(--studio-bottom, 28px) - 16px) !important;
+        max-height: calc(100dvh - var(--studio-bottom, 28px)) !important;
         pointer-events: none !important;
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        transition: bottom 0.28s ease;
       }
       #rastaak-studio-dock[data-collapsed='true'] {
-        right: 0 !important;
-        width: 22px !important;
-        height: 64px !important;
-        max-height: 64px !important;
+        width: 0 !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: visible !important;
       }
       #rastaak-studio-dock[data-collapsed='true'] #rastaak-studio-panel {
         display: none !important;
       }
       #rastaak-studio-dock .rastaak-studio-edge {
-        position: absolute;
-        top: 12px;
-        left: 0;
-        transform: translateX(-100%);
+        position: fixed !important;
+        top: 50% !important;
+        right: 300px !important;
+        left: auto !important;
+        bottom: auto !important;
+        transform: translateY(-50%);
         width: 22px;
         height: 64px;
         border: 1px solid rgba(255,255,255,0.14);
@@ -240,12 +241,10 @@ export class SceneStudioGUI {
         justify-content: center;
         cursor: pointer;
         pointer-events: auto;
-        z-index: 3;
+        z-index: 1000002;
       }
       #rastaak-studio-dock[data-collapsed='true'] .rastaak-studio-edge {
-        top: 0;
-        left: 0;
-        transform: none;
+        right: 0 !important;
         border-right: 1px solid rgba(255,255,255,0.14);
       }
       #rastaak-studio-panel {
@@ -312,6 +311,9 @@ export class SceneStudioGUI {
         right: auto !important;
         left: auto !important;
         bottom: auto !important;
+      }
+      #rastaak-studio-panel .lil-gui.root > .title {
+        display: none !important;
       }
       html[data-studio='true'] #rastaak-studio-btn,
       html[data-studio='true'] #rastaak-studio-logout,
@@ -685,7 +687,7 @@ export class SceneStudioGUI {
       host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
 
       this.gui = new GUI({
-        title: 'Rastaak 3D Studio',
+        title: '',
         autoPlace: false,
         width: 288,
         container: host,
