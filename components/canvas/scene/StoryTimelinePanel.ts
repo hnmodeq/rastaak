@@ -148,7 +148,7 @@ export class StoryTimelinePanel {
   layout() {
     if (!this.root) return;
     this.root.style.left = '16px';
-    this.root.style.right = '328px';
+    this.root.style.right = '312px';
   }
 
   destroy() {
@@ -492,7 +492,7 @@ export class StoryTimelinePanel {
       #rastaak-story-timeline {
         position: fixed;
         left: 16px;
-        right: 328px;
+        right: 312px;
         bottom: 16px;
         top: auto;
         height: min(268px, 34vh);

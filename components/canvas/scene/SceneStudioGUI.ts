@@ -69,6 +69,8 @@ export class SceneStudioGUI {
   private disposed = false;
   private toggleButton: HTMLButtonElement | null = null;
   private logoutButton: HTMLButtonElement | null = null;
+  private opacityControl: HTMLLabelElement | null = null;
+  private panelOpacity = 1;
   private isOpen = false;
   private materialsFolderPopulated = false;
   private lightsFolderPopulated = false;
@@ -153,6 +155,7 @@ export class SceneStudioGUI {
     }
     this.createToggleButton();
     this.createLogoutButton();
+    this.createOpacityControl();
     window.addEventListener('rastaak-studio-toggle', this.onExternalToggle);
     this.initGUI();
     this.initRaycaster();
@@ -245,6 +248,29 @@ export class SceneStudioGUI {
     this.logoutButton = btn;
   }
 
+  private createOpacityControl() {
+    if (document.getElementById('rastaak-studio-opacity')) return;
+    const wrap = document.createElement('label');
+    wrap.id = 'rastaak-studio-opacity';
+    wrap.title = 'Panel opacity';
+    wrap.innerHTML = '<span>Opacity</span><input type="range" min="0.2" max="1" step="0.05" value="1" />';
+    const input = wrap.querySelector('input');
+    input?.addEventListener('input', () => {
+      this.applyPanelOpacity(Number(input.value));
+    });
+    document.body.appendChild(wrap);
+    this.opacityControl = wrap;
+  }
+
+  private applyPanelOpacity(value: number) {
+    const next = Math.min(1, Math.max(0.2, Number.isFinite(value) ? value : 1));
+    this.panelOpacity = next;
+    const host = document.getElementById('rastaak-studio-panel');
+    const timeline = document.getElementById('rastaak-story-timeline');
+    if (host) host.style.opacity = String(next);
+    if (timeline) timeline.style.opacity = String(next);
+  }
+
   private injectPanelCss() {
     if (document.getElementById('rastaak-studio-panel-css')) return;
     const style = document.createElement('style');
@@ -252,16 +278,19 @@ export class SceneStudioGUI {
     style.textContent = `
       #rastaak-studio-panel {
         position: fixed !important;
-        top: 72px !important;
-        right: 16px !important;
+        top: 0 !important;
+        right: 0 !important;
         left: auto !important;
-        bottom: auto !important;
+        bottom: 0 !important;
         z-index: 1000000 !important;
         width: 300px !important;
-        max-height: calc(100vh - 360px) !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: none !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         pointer-events: auto !important;
+        background: rgba(12, 13, 18, 0.72);
       }
       #rastaak-studio-panel[hidden] { display: none !important; }
       #rastaak-studio-panel .lil-gui,
@@ -295,6 +324,27 @@ export class SceneStudioGUI {
         right: auto !important;
         bottom: auto !important;
       }
+      html[data-studio='true'] #rastaak-studio-opacity {
+        position: fixed;
+        top: 16px;
+        left: 250px;
+        z-index: 1000001;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(12, 13, 18, 0.72);
+        color: #f3f3f0;
+        border: 1px solid rgba(255,255,255,0.12);
+        font-size: 12px;
+        pointer-events: auto;
+      }
+      html[data-studio='true'] #rastaak-studio-opacity input {
+        width: 88px;
+        accent-color: #f3f3f0;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -323,7 +373,8 @@ export class SceneStudioGUI {
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
         (e.target as HTMLElement)?.id === 'rastaak-studio-btn' ||
-        (e.target as HTMLElement)?.closest('#rastaak-story-timeline')
+        (e.target as HTMLElement)?.closest('#rastaak-story-timeline') ||
+        (e.target as HTMLElement)?.closest('#rastaak-studio-opacity')
       ) {
         return;
       }
@@ -832,6 +883,7 @@ export class SceneStudioGUI {
         this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t));
         const dock = document.getElementById('admin-timeline-dock');
         this.timelinePanel.mount(dock);
+        this.applyPanelOpacity(this.panelOpacity);
       }
 
       const envFolder = this.gui.addFolder('Environment & Fog');
@@ -1966,6 +2018,10 @@ export class SceneStudioGUI {
     if (this.logoutButton) {
       this.logoutButton.remove();
       this.logoutButton = null;
+    }
+    if (this.opacityControl) {
+      this.opacityControl.remove();
+      this.opacityControl = null;
     }
     if (this.gui) {
       this.gui.destroy();

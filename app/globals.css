@@ -426,11 +426,11 @@ body.studio-grab-lamps #rastaak-hero-canvas canvas {
 }
 
 .lil-gui.root {
-  top: 72px !important;
-  right: 16px !important;
+  top: auto !important;
+  right: auto !important;
   bottom: auto !important;
   left: auto !important;
-  z-index: 1000000 !important;
+  z-index: 1 !important;
 }
 
 .lil-gui:not(.root) {
