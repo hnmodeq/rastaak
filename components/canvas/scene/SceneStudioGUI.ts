@@ -859,7 +859,7 @@ export class SceneStudioGUI {
       const host = this.ensurePanelHost();
       host.querySelectorAll(':scope > .lil-gui').forEach((el) => el.remove());
       applyStudioChrome();
-      host.addEventLi host.addEventListener(
+      host.addEventListener(
         'wheel',
         (e: WheelEvent) => {
           e.stopPropagation();
