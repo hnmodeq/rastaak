@@ -148,9 +148,11 @@ export interface StudioHeroCopySave {
   titleLine1: string;
   titleLine2: string;
   titleColor: number;
+  titlePaddingTop?: number;
   subtitleLine1: string;
   subtitleLine2: string;
   subtitleColor: number;
+  subtitlePaddingTop?: number;
   scrollHint: string;
   scrollHintColor: number;
 }

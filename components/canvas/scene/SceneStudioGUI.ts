@@ -355,13 +355,14 @@ export class SceneStudioGUI {
   }
 
   private setAllFoldersOpen(open: boolean) {
-    const walk = (folder: { folders?: Array<{ open: () => void; close: () => void; folders?: unknown[] }> }) => {
+    const walk = (folder: { folders?: unknown; open?: () => void; close?: () => void }) => {
       const kids = folder?.folders;
       if (!Array.isArray(kids)) return;
       for (const child of kids) {
-        if (open) child.open();
-        else child.close();
-        walk(child);
+        const next = child as { folders?: unknown; open?: () => void; close?: () => void };
+        if (open) next.open?.();
+        else next.close?.();
+        walk(next);
       }
     };
     if (this.gui) walk(this.gui);
