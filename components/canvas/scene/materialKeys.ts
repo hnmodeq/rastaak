@@ -63,9 +63,30 @@ function surfaceForCategory(
       envMapIntensity: config.groundEnvMapIntensity ?? config.envMapIntensity,
     };
   }
+  if (category === 'window') {
+    return {
+      roughness: config.globalWindowRoughness ?? 0.22,
+      metalness: config.globalWindowMetalness ?? 0.06,
+      envMapIntensity: config.envMapIntensity,
+    };
+  }
+  if (category === 'treeTrunk' || category === 'treeLeaf') {
+    return {
+      roughness: 0.92,
+      metalness: 0.02,
+      envMapIntensity: 0.35,
+    };
+  }
+  if (category === 'logo') {
+    return {
+      roughness: 0.28,
+      metalness: 0.15,
+      envMapIntensity: config.envMapIntensity,
+    };
+  }
   return {
-    roughness: config.roughness,
-    metalness: config.metalness,
+    roughness: config.globalFacadeRoughness ?? config.roughness,
+    metalness: config.globalFacadeMetalness ?? config.metalness,
     envMapIntensity: config.envMapIntensity,
   };
 }
@@ -312,19 +333,32 @@ export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConf
     const mesh = child as THREE.Mesh;
     if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh || !mesh.material) return;
     const mats = getMeshMaterials(mesh);
+    const categories: MaterialCategory[] = [];
     mats.forEach((mat, slot) => {
-      const std = mat as THREE.MeshStandardMaterial;
+      let std = mat as THREE.MeshStandardMaterial;
       if (!std?.color) return;
       const category = classifyCategory(mesh, slot, mats.length, std);
+      categories[slot] = category;
       if (category === 'ignore') return;
+      if (category === 'building' || category === 'rastaak') {
+        std = upgradeFacadeMaterial(mesh, slot, std, config);
+      }
       const color = colorForCategory(category, palette);
       if (color !== undefined) {
         std.color.set(color);
         std.vertexColors = false;
       }
       applySurfaceToMaterial(std, surfaceForCategory(category, config));
+      applyEmissiveToMaterial(std, category, config);
       std.needsUpdate = true;
     });
+    const live = getMeshMaterials(mesh);
+    const known = live
+      .map((mat, slot) => categories[slot] ?? classifyCategory(mesh, slot, live.length, mat))
+      .filter((category) => category !== 'ignore');
+    if (known.length > 0 && known.every((category) => category === 'window' || category === 'logo')) {
+      mesh.layers.enable(1);
+    }
   });
 }
 
@@ -334,6 +368,57 @@ function applySurfaceToMaterial(mat: THREE.MeshStandardMaterial, surface: Surfac
   if (surface.envMapIntensity !== undefined && 'envMapIntensity' in mat) {
     mat.envMapIntensity = surface.envMapIntensity;
   }
+}
+
+function applyEmissiveToMaterial(
+  mat: THREE.MeshStandardMaterial,
+  category: Exclude<MaterialCategory, 'ignore'>,
+  config: MaterialsConfig,
+) {
+  if (!mat.emissive) return;
+  const intensity =
+    category === 'window'
+      ? config.windowEmissiveIntensity
+      : category === 'logo'
+        ? config.logoEmissiveIntensity
+        : 0;
+  if (!intensity || intensity <= 0.01) {
+    if (category === 'window' || category === 'logo') {
+      mat.emissive.setRGB(0, 0, 0);
+      mat.emissiveIntensity = 0;
+    }
+    return;
+  }
+  mat.emissive.copy(mat.color);
+  mat.emissiveIntensity = intensity;
+}
+
+function upgradeFacadeMaterial(
+  mesh: THREE.Mesh,
+  slot: number,
+  mat: THREE.MeshStandardMaterial,
+  config: MaterialsConfig,
+): THREE.MeshStandardMaterial {
+  const coat = config.clearcoat ?? 0;
+  if (coat <= 0.01) return mat;
+
+  const existing = mat as THREE.MeshPhysicalMaterial;
+  const phys = existing.isMeshPhysicalMaterial ? existing : new THREE.MeshPhysicalMaterial();
+  if (!existing.isMeshPhysicalMaterial) {
+    phys.copy(mat);
+    phys.name = mat.name;
+    phys.userData = { ...mat.userData };
+    if (Array.isArray(mesh.material)) {
+      const next = mesh.material.slice();
+      next[slot] = phys;
+      mesh.material = next;
+    } else {
+      mesh.material = phys;
+    }
+  }
+  phys.clearcoat = coat;
+  phys.clearcoatRoughness = config.clearcoatRoughness ?? 0.14;
+  return phys;
 }
 
 export function applyCategorySurface(
@@ -354,6 +439,9 @@ export function applyCategoryColor(
   mats.forEach((mat) => {
     mat.color.copy(next);
     mat.vertexColors = false;
+    if (mat.emissive && (mat.emissiveIntensity ?? 0) > 0.01) {
+      mat.emissive.copy(next);
+    }
     mat.needsUpdate = true;
   });
 }

@@ -24,17 +24,17 @@ export interface LookConfig {
 
 export const LOOK_CONFIG: LookConfig = {
   envEnabled: true,
-  envIntensity: 0.75,
-  grain: 0.21,
-  grainSize: 1.7,
-  vignette: 0.5,
-  vignetteStart: 0.46,
-  vignetteSoft: 0.55,
-  bloom: 0.3,
-  bloomRadius: 0.65,
-  gradeShadows: 0,
-  gradeMids: 0.08,
-  gradeHighlights: 0.04
+  envIntensity: 1.05,
+  grain: 0.15,
+  grainSize: 1.4,
+  vignette: 0.4,
+  vignetteStart: 0.5,
+  vignetteSoft: 0.64,
+  bloom: 0.58,
+  bloomRadius: 0.74,
+  gradeShadows: 0.14,
+  gradeMids: 0.05,
+  gradeHighlights: 0.07
 };
 
 let envTexture: THREE.Texture | null = null;
@@ -42,6 +42,10 @@ let pmrem: THREE.PMREMGenerator | null = null;
 
 export function markStoryBloom(object: THREE.Object3D) {
   object.layers.set(STORY_BLOOM_LAYER);
+}
+
+export function enableStoryBloom(object: THREE.Object3D) {
+  object.layers.enable(STORY_BLOOM_LAYER);
 }
 
 function unlit(color: number) {
@@ -65,39 +69,56 @@ function buildStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
   pmrem?.dispose();
   pmrem = new THREE.PMREMGenerator(renderer);
   const envScene = new THREE.Scene();
-  envScene.background = new THREE.Color(0x8b93a3);
+  envScene.background = new THREE.Color(0x0a1018);
 
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(16, 24, 16), unlit(0x6a7180));
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(16, 24, 16), unlit(0x121820));
   const shellMat = shell.material as THREE.MeshBasicMaterial;
   shellMat.side = THREE.BackSide;
   envScene.add(shell);
 
-  const key = new THREE.Mesh(new THREE.PlaneGeometry(10, 6), unlit(0xffffff));
-  key.position.set(0, 3.2, -11);
-  envScene.add(key);
+  const moon = new THREE.Mesh(new THREE.CircleGeometry(2.4, 24), unlit(0xe8f1ff));
+  moon.position.set(-4.5, 7.6, -10.5);
+  envScene.add(moon);
 
-  const fill = new THREE.Mesh(new THREE.PlaneGeometry(6, 7), unlit(0xd5e4ff));
-  fill.position.set(-11, 2.2, 1);
+  const moonWash = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), unlit(0x8aa4c8));
+  moonWash.position.set(-3.2, 6.4, -11);
+  envScene.add(moonWash);
+
+  const cityWarm = new THREE.Mesh(new THREE.PlaneGeometry(14, 2.2), unlit(0xffc090));
+  cityWarm.position.set(0, -1.4, -11);
+  envScene.add(cityWarm);
+
+  const cityWarmLow = new THREE.Mesh(new THREE.PlaneGeometry(12, 1.2), unlit(0xffa45c));
+  cityWarmLow.position.set(2.4, -2.6, -10.4);
+  envScene.add(cityWarmLow);
+
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(5, 8), unlit(0x3d5474));
+  fill.position.set(-11, 2.4, 1);
   fill.rotation.y = Math.PI / 2;
   envScene.add(fill);
 
-  const rim = new THREE.Mesh(new THREE.PlaneGeometry(6, 7), unlit(0xffe2c0));
-  rim.position.set(11, 2.2, 1);
+  const rim = new THREE.Mesh(new THREE.PlaneGeometry(5, 6), unlit(0xffd2a0));
+  rim.position.set(11, 1.6, 1);
   rim.rotation.y = -Math.PI / 2;
   envScene.add(rim);
 
-  const zenith = new THREE.Mesh(new THREE.PlaneGeometry(12, 4), unlit(0xf4f6fb));
+  const neon = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 7), unlit(0x6ea8ff));
+  neon.position.set(10.6, 2.1, -3.4);
+  neon.rotation.y = -Math.PI / 2;
+  envScene.add(neon);
+
+  const zenith = new THREE.Mesh(new THREE.PlaneGeometry(12, 4), unlit(0x1a2433));
   zenith.position.set(0, 8.4, 0);
   zenith.rotation.x = Math.PI / 2;
   envScene.add(zenith);
 
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 32), unlit(0xc8ccd4));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 32), unlit(0x16181e));
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -6.2;
   envScene.add(floor);
 
   hushPmremPrecisionWarning();
-  const texture = pmrem.fromScene(envScene, 0.03).texture;
+  const texture = pmrem.fromScene(envScene, 0.045).texture;
   envScene.traverse((child) => {
     const mesh = child as THREE.Mesh;
     if (!(mesh as THREE.Mesh & { isMesh?: boolean }).isMesh) return;
@@ -106,6 +127,45 @@ function buildStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
     mats.forEach((mat) => mat?.dispose());
   });
   return texture;
+}
+
+const STREET_BULB_IDS = /^(street_|shop_warm)/;
+
+export function attachStreetBulbs(lights: Map<string, THREE.Light>) {
+  const bulbGeo = new THREE.SphereGeometry(0.055, 12, 10);
+  const haloGeo = new THREE.SphereGeometry(0.16, 12, 10);
+
+  for (const [id, light] of lights) {
+    if (!STREET_BULB_IDS.test(id)) continue;
+    if (!(light as THREE.PointLight).isPointLight) continue;
+    if (light.getObjectByName(`${id}_bulb`)) continue;
+
+    const bulb = new THREE.Mesh(
+      bulbGeo,
+      new THREE.MeshBasicMaterial({
+        color: light.color,
+        toneMapped: false,
+      }),
+    );
+    bulb.name = `${id}_bulb`;
+    enableStoryBloom(bulb);
+    light.add(bulb);
+
+    const halo = new THREE.Mesh(
+      haloGeo,
+      new THREE.MeshBasicMaterial({
+        color: light.color,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      }),
+    );
+    halo.name = `${id}_halo`;
+    enableStoryBloom(halo);
+    light.add(halo);
+  }
 }
 
 export function applySceneEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRenderer) {
@@ -361,7 +421,7 @@ export class LookComposer {
 
     this.quad.material = this.compMat;
     this.compMat.uniforms.tDiffuse.value = this.blurB.texture;
-    this.compMat.uniforms.strength.value = strength * 1.35;
+    this.compMat.uniforms.strength.value = strength * 1.55;
     this.renderer.setRenderTarget(null);
     this.renderer.autoClear = false;
     this.renderer.render(this.bloomScene, this.bloomCam);

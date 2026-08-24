@@ -61,6 +61,10 @@ export interface MaterialsConfig {
   groundRoughness?: number;
   groundMetalness?: number;
   groundEnvMapIntensity?: number;
+  windowEmissiveIntensity?: number;
+  logoEmissiveIntensity?: number;
+  clearcoat?: number;
+  clearcoatRoughness?: number;
   overrides?: Record<string, BuildingMaterialOverride>;
 }
 
