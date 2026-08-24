@@ -1232,37 +1232,37 @@ export class SceneStudioGUI {
         });
 
       const camXCtrl = camFolder
-        .add(camParams, 'camX', -100, 100, 0.5)
+        .add(camParams, 'camX', -100, 100, 0.01)
         .name('Cam X')
         .listen()
         .onChange((v: number) => writeStopCamera(0, v));
 
       const camYCtrl = camFolder
-        .add(camParams, 'camY', 0, 100, 0.5)
+        .add(camParams, 'camY', -10, 100, 0.01)
         .name('Cam Y')
         .listen()
         .onChange((v: number) => writeStopCamera(1, v));
 
       const camZCtrl = camFolder
-        .add(camParams, 'camZ', -100, 100, 0.5)
+        .add(camParams, 'camZ', -100, 100, 0.01)
         .name('Cam Z')
         .listen()
         .onChange((v: number) => writeStopCamera(2, v));
 
       const targetXCtrl = camFolder
-        .add(camParams, 'targetX', -100, 100, 0.5)
+        .add(camParams, 'targetX', -100, 100, 0.01)
         .name('Target X')
         .listen()
         .onChange((v: number) => writeStopTarget(0, v));
 
       const targetYCtrl = camFolder
-        .add(camParams, 'targetY', -50, 100, 0.5)
+        .add(camParams, 'targetY', -50, 100, 0.01)
         .name('Target Y')
         .listen()
         .onChange((v: number) => writeStopTarget(1, v));
 
       const targetZCtrl = camFolder
-        .add(camParams, 'targetZ', -100, 100, 0.5)
+        .add(camParams, 'targetZ', -100, 100, 0.01)
         .name('Target Z')
         .listen()
         .onChange((v: number) => writeStopTarget(2, v));
