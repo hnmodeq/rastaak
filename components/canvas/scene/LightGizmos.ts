@@ -57,6 +57,20 @@ function overlayMesh(color: number, opacity: number): THREE.MeshBasicMaterial {
   });
 }
 
+function circlePoints(radius: number, axis: 'xz' | 'xy' | 'zy', segments = 72): THREE.Vector3[] {
+  const pts: THREE.Vector3[] = [];
+  const reach = Math.max(0, radius);
+  for (let i = 0; i <= segments; i += 1) {
+    const a = (i / segments) * Math.PI * 2;
+    const c = Math.cos(a) * reach;
+    const s = Math.sin(a) * reach;
+    if (axis === 'xz') pts.push(new THREE.Vector3(c, 0, s));
+    else if (axis === 'xy') pts.push(new THREE.Vector3(c, s, 0));
+    else pts.push(new THREE.Vector3(0, s, c));
+  }
+  return pts;
+}
+
 function setLinePoints(line: THREE.Line, points: THREE.Vector3[]) {
   const attr = line.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
   if (!attr || attr.count !== points.length) {
@@ -132,6 +146,12 @@ class LightGizmo {
   private readonly aimHandle: THREE.Mesh;
   private readonly arrow: THREE.Mesh;
   private readonly ground: THREE.Mesh;
+  private readonly rangeXZ: THREE.Line;
+  private readonly rangeXY: THREE.Line;
+  private readonly rangeZY: THREE.Line;
+  private readonly groundRing: THREE.Line;
+  private readonly rangeStem: THREE.Line;
+  private readonly groundTick: THREE.Line;
   private lastWidth = -1;
   private lastHeight = -1;
 
@@ -161,6 +181,12 @@ class LightGizmo {
     this.arrow = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 10), this.aimFillMat);
     this.ground = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.42, 28), overlayMesh(LAMP, 0.7));
     this.ground.rotation.x = -Math.PI / 2;
+    this.rangeXZ = new THREE.Line(new THREE.BufferGeometry(), this.wireMat);
+    this.rangeXY = new THREE.Line(new THREE.BufferGeometry(), this.wireMat);
+    this.rangeZY = new THREE.Line(new THREE.BufferGeometry(), this.wireMat);
+    this.groundRing = new THREE.Line(new THREE.BufferGeometry(), this.aimMat);
+    this.rangeStem = new THREE.Line(new THREE.BufferGeometry(), this.dashMat);
+    this.groundTick = new THREE.Line(new THREE.BufferGeometry(), this.aimMat);
 
     markPick(this.fill, id, 'source');
     markPick(this.sourceHandle, id, 'source');
@@ -183,6 +209,12 @@ class LightGizmo {
       this.aimHandle,
       this.arrow,
       this.ground,
+      this.rangeXZ,
+      this.rangeXY,
+      this.rangeZY,
+      this.groundRing,
+      this.rangeStem,
+      this.groundTick,
       this.sourceDummy,
       this.aimDummy,
     );
@@ -196,6 +228,12 @@ class LightGizmo {
     this.aimHandle.visible = area;
     this.aimLine.visible = area;
     this.sourceHandle.visible = !area;
+    this.rangeXZ.visible = false;
+    this.rangeXY.visible = false;
+    this.rangeZY.visible = false;
+    this.groundRing.visible = false;
+    this.rangeStem.visible = false;
+    this.groundTick.visible = false;
   }
 
   setSelected(handle: LightHandle | null) {
@@ -287,6 +325,54 @@ class LightGizmo {
     if (isPointLight(light)) {
       const reach = light.distance > 0 ? light.distance : 0;
       this.sourceHandle.scale.setScalar((selectedHandle === 'source' ? 1.35 : 1) * (reach > 80 ? 1.15 : 1));
+      const showRange = reach > 0.0001;
+      this.rangeXZ.visible = showRange;
+      this.rangeXY.visible = showRange;
+      this.rangeZY.visible = showRange;
+      this.rangeStem.visible = showRange;
+      if (showRange) {
+        const offset = (axis: 'xz' | 'xy' | 'zy') =>
+          circlePoints(reach, axis).map((point) => point.add(origin));
+        setLinePoints(this.rangeXZ, offset('xz'));
+        setLinePoints(this.rangeXY, offset('xy'));
+        setLinePoints(this.rangeZY, offset('zy'));
+        setLinePoints(this.rangeStem, [
+          new THREE.Vector3(origin.x, origin.y - reach, origin.z),
+          new THREE.Vector3(origin.x, origin.y + reach, origin.z),
+        ]);
+        const groundReachSq = reach * reach - origin.y * origin.y;
+        if (groundReachSq > 1e-6) {
+          const groundR = Math.sqrt(groundReachSq);
+          setLinePoints(
+            this.groundRing,
+            circlePoints(groundR, 'xz').map((point) =>
+              point.add(new THREE.Vector3(origin.x, 0.03, origin.z)),
+            ),
+          );
+          this.groundRing.visible = true;
+        } else {
+          this.groundRing.visible = false;
+        }
+        const crossesGround = origin.y - reach <= 0 && origin.y + reach >= 0;
+        this.groundTick.visible = crossesGround;
+        if (crossesGround) {
+          const tick = Math.max(0.35, Math.min(1.6, reach * 0.08));
+          setLinePoints(this.groundTick, [
+            new THREE.Vector3(origin.x - tick, 0.03, origin.z),
+            new THREE.Vector3(origin.x + tick, 0.03, origin.z),
+          ]);
+        }
+      } else {
+        this.groundRing.visible = false;
+        this.groundTick.visible = false;
+      }
+    } else {
+      this.rangeXZ.visible = false;
+      this.rangeXY.visible = false;
+      this.rangeZY.visible = false;
+      this.groundRing.visible = false;
+      this.rangeStem.visible = false;
+      this.groundTick.visible = false;
     }
 
     setLinePoints(this.aimLine, [origin.clone(), aim.clone()]);

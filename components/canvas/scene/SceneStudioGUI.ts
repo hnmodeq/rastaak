@@ -2747,7 +2747,7 @@ export class SceneStudioGUI {
 
       if (isPt || isSpot) {
         sub
-          .add(lightParams, 'distance', 0, 300, 1)
+          .add(lightParams, 'distance', 0, 800, 0.1)
           .name('Distance Falloff')
           .listen()
           .onChange((v: number) => {
@@ -2756,7 +2756,7 @@ export class SceneStudioGUI {
           });
 
         sub
-          .add(lightParams, 'decay', 0, 4.0, 0.1)
+          .add(lightParams, 'decay', 0, 8, 0.05)
           .name('Decay Exponent')
           .listen()
           .onChange((v: number) => {
