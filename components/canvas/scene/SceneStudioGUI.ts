@@ -34,6 +34,7 @@ import {
   type MaterialCategory,
   type SurfaceParams,
 } from './materialKeys';
+import { applyTreeVisibility } from './treeVisibility';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
 import { CameraGizmoSet } from './CameraGizmos';
@@ -836,6 +837,10 @@ export class SceneStudioGUI {
       scroll: { ...SCENE_CONFIG.scroll },
       camera: { ...SCENE_CONFIG.camera },
       materials: this.collectCurrentMaterials(),
+      visibility: {
+        showBigTrees: SCENE_CONFIG.visibility?.showBigTrees !== false,
+        showSmallTrees: SCENE_CONFIG.visibility?.showSmallTrees !== false,
+      },
       story: {
         hub: STORY_CONFIG.hub,
         logo: STORY_CONFIG.logo,
@@ -2911,6 +2916,19 @@ export class SceneStudioGUI {
     matFolder.addColor(this.palette, 'border').name('Ground borders').onChange((hex: string) => paint('border', hex));
     matFolder.addColor(this.palette, 'treeTrunk').name('Tree trunks').onChange((hex: string) => paint('treeTrunk', hex));
     matFolder.addColor(this.palette, 'treeLeaf').name('Tree leaves').onChange((hex: string) => paint('treeLeaf', hex));
+    const treeVis = {
+      showBigTrees: SCENE_CONFIG.visibility?.showBigTrees !== false,
+      showSmallTrees: SCENE_CONFIG.visibility?.showSmallTrees !== false,
+    };
+    const writeTreeVis = () => {
+      SCENE_CONFIG.visibility = {
+        showBigTrees: treeVis.showBigTrees,
+        showSmallTrees: treeVis.showSmallTrees,
+      };
+      applyTreeVisibility(worldGroup, SCENE_CONFIG.visibility);
+    };
+    matFolder.add(treeVis, 'showBigTrees').name('Show big trees').onChange(writeTreeVis);
+    matFolder.add(treeVis, 'showSmallTrees').name('Show small trees').onChange(writeTreeVis);
 
     const paintSurfaceGroup = (
       categories: readonly Exclude<MaterialCategory, 'ignore'>[],

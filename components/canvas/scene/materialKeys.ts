@@ -113,7 +113,7 @@ function isFlatPlateMesh(mesh: THREE.Mesh): boolean {
   return _plateSize.y <= 0.05 && minXZ > 0.4 && maxXZ > 1;
 }
 
-function isTreeNodeName(name: string): boolean {
+export function isTreeNodeName(name: string): boolean {
   return TREE_NODE.test((name || '').trim());
 }
 

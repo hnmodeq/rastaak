@@ -17,6 +17,7 @@ import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
 import { BlenderViewport } from './scene/BlenderViewport';
 import { applyMaterialsConfig } from './scene/materialKeys';
+import { applyTreeVisibility } from './scene/treeVisibility';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { applyLightShadow, applyRendererShadowFilter } from './scene/shadowSetup';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
@@ -406,6 +407,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         });
 
         applyMaterialsConfig(world, SCENE_CONFIG.materials);
+        applyTreeVisibility(world, SCENE_CONFIG.visibility);
         tintWorldShadows(world);
         applySceneShadows(lightsMap.values());
         applySceneEnvironment(scene, renderer);
