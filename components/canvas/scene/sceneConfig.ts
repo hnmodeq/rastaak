@@ -16,7 +16,7 @@ export const SCENE_CONFIG: SceneConfig = {
       progress: 0,
       camera: [21.44, 6.02, -0.41],
       target: [9.7, -0.03, -0.79],
-      fov: 89.995445
+      fov: 47
     },
     {
       id: "stop_2_hyper",
