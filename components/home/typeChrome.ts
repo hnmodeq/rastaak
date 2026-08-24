@@ -61,7 +61,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteLogoGap: 10,
   siteLogoOffsetX: 0,
   siteLogoOffsetY: 0,
-  siteLogoSide: "left",
+  siteLogoSide: "right",
   studioCorner: "top-left",
   heroTitle: {
     size: 119,
