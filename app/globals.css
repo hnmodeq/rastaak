@@ -396,6 +396,28 @@ header,
   font-family: 'Kalameh', sans-serif !important;
 }
 
+.site-brand {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--site-logo-gap, 10px);
+  direction: ltr;
+}
+
+html[data-site-logo-side='right'] .site-brand {
+  flex-direction: row-reverse;
+}
+
+.site-mark {
+  display: var(--site-logo-display, block);
+  width: var(--site-logo-size, 36px) !important;
+  height: var(--site-logo-size, 36px) !important;
+  max-width: var(--site-logo-size, 36px) !important;
+  flex: 0 0 auto;
+  object-fit: contain;
+  transform: translate(var(--site-logo-x, 0px), var(--site-logo-y, 0px));
+}
+
 .site-name,
 header .header__logo .site-name,
 header.header--white .site-name,
@@ -558,23 +580,6 @@ html.rastaak-loading body {
 #loader .loader__subtitle {
   font-size: var(--loader-subtitle-size, 14px) !important;
   font-weight: var(--loader-subtitle-weight, 400) !important;
-  letter-spacing: var(--loader-subtitle-tracking, 0px);
-  color: var(--loader-subtitle-color, var(--color-content-semi-opaque));
-}
-
-#loader .loader__bar {
-  width: min(var(--loader-bar-width, 240px), 72vw);
-  height: var(--loader-bar-height, 3px);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-#loader .loader__bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 160ms linear;
-}
-ht: var(--loader-subtitle-weight, 400) !important;
   letter-spacing: var(--loader-subtitle-tracking, 0px);
   color: var(--loader-subtitle-color, var(--color-content-semi-opaque));
 }
