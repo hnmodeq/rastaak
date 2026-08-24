@@ -25,31 +25,31 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     id: "hyper",
     building: "Hyper Market Building",
     text: "هایپر مارکت",
-    size: 0.08,
+    size: 0.05,
     color: 0xf5f5f2,
     side: "back",
     position: [0, 0, -0.03],
-    extrude: 0.01
+    extrude: 0.005
   },
   {
     id: "b7",
     building: "Building 7",
     text: "سازمان دولتی",
-    size: 0.22,
+    size: 0.05,
     color: 0xf5f5f2,
     side: "front",
-    position: [0, 0, 0],
-    extrude: 0.06
+    position: [0, 0, -0.03],
+    extrude: 0.005
   },
   {
     id: "b30",
     building: "Building 30",
     text: "بانک",
-    size: 0.16,
+    size: 0.1,
     color: 0xf5f5f2,
     side: "front",
-    position: [0, 0, 0],
-    extrude: 0.05
+    position: [0, -0.16, -0.73],
+    extrude: 0.005
   },
   {
     id: "b34",
