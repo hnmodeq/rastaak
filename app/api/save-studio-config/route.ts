@@ -44,6 +44,12 @@ function sanitizeText(value: unknown, fallback: string, max = 240): string {
   return value.replace(/\u0000/g, '').slice(0, max);
 }
 
+function sanitizeSide(value: unknown): 'front' | 'back' | 'left' | 'right' {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (raw === 'back' || raw === 'left' || raw === 'right' || raw === 'front') return raw;
+  return 'front';
+}
+
 function sanitizeOverrideKey(value: string): string | null {
   const trimmed = value.trim().slice(0, 160);
   if (/^[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed;
@@ -902,6 +908,7 @@ export function applyTypeChrome() {
         text: sanitizeText(item?.text, '', 80),
         size: Math.min(2, Math.max(0.06, asFinite(item?.size, 0.28))),
         color: hexLit(asHexNumber(item?.color, 0xf5f5f2)),
+        side: sanitizeSide(item?.side),
         position: asVec3(item?.position, [0, 0, 0]),
         extrude: Math.min(0.4, Math.max(0.008, asFinite(item?.extrude, 0.06))),
       }));
@@ -913,12 +920,17 @@ export function applyTypeChrome() {
 
 export const BUILDING_NAMES_EVENT = 'rastaak-building-names-changed';
 
+export const BUILDING_NAME_SIDES = ['front', 'back', 'left', 'right'] as const;
+
+export type BuildingNameSide = (typeof BUILDING_NAME_SIDES)[number];
+
 export interface BuildingNamePlate {
   id: string;
   building: string;
   text: string;
   size: number;
   color: number;
+  side: BuildingNameSide;
   position: [number, number, number];
   extrude: number;
 }

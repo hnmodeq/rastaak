@@ -896,11 +896,13 @@ export class SceneStudioGUI {
 
       this.currentStopIndex = 0;
       const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
+      const COPY_NONE = '— pick a stop —';
       const viewportLabel = 'Viewport (Blender)';
 
       const camParams = {
         mode: isAdmin ? viewportLabel : 'Scroll Journey',
         selectedStop: getStopNames()[0],
+        copyFrom: COPY_NONE,
         scrollT: SCENE_CONFIG.stops[0]?.progress ?? 0.0,
         camX: SCENE_CONFIG.stops[0]?.camera[0] ?? this.camera.position.x,
         camY: SCENE_CONFIG.stops[0]?.camera[1] ?? this.camera.position.y,
@@ -938,6 +940,9 @@ export class SceneStudioGUI {
 
           stopDropdownController.options(getStopNames());
           stopDropdownController.setValue(`${SCENE_CONFIG.stops.length}. ${newId}`);
+          copyFromCtrl.options([COPY_NONE, ...getStopNames()]);
+          camParams.copyFrom = COPY_NONE;
+          copyFromCtrl.updateDisplay();
           this.notifyTimingChanged();
           alert(`Added new stop point '${newId}'!`);
         },
@@ -1040,6 +1045,44 @@ export class SceneStudioGUI {
 
             if (this.onProgressChange) this.onProgressChange(stop.progress);
           }
+        });
+
+      const copyFromCtrl = camFolder
+        .add(camParams, 'copyFrom', [COPY_NONE, ...getStopNames()])
+        .name('Copy camera from')
+        .onChange((name: string) => {
+          if (!name || name === COPY_NONE) return;
+          const names = getStopNames();
+          const srcIdx = names.indexOf(name);
+          const dest = SCENE_CONFIG.stops[this.currentStopIndex];
+          const src = SCENE_CONFIG.stops[srcIdx];
+          if (!dest || !src) {
+            camParams.copyFrom = COPY_NONE;
+            copyFromCtrl.updateDisplay();
+            return;
+          }
+          dest.camera = [src.camera[0], src.camera[1], src.camera[2]];
+          dest.target = [src.target[0], src.target[1], src.target[2]];
+          dest.fov = src.fov ?? dest.fov ?? 45;
+          camParams.camX = dest.camera[0];
+          camParams.camY = dest.camera[1];
+          camParams.camZ = dest.camera[2];
+          camParams.targetX = dest.target[0];
+          camParams.targetY = dest.target[1];
+          camParams.targetZ = dest.target[2];
+          camParams.fov = dest.fov ?? 45;
+          this.manualCamPos.set(...dest.camera);
+          this.manualLookAt.set(...dest.target);
+          if (!this.isOrbitMode) {
+            this.camera.position.copy(this.manualCamPos);
+            this.camera.lookAt(this.manualLookAt);
+            this.camera.fov = camParams.fov;
+            this.camera.updateProjectionMatrix();
+          }
+          this.cameraGizmos?.bindStop(dest);
+          this.refreshCamDisplay();
+          camParams.copyFrom = COPY_NONE;
+          copyFromCtrl.updateDisplay();
         });
 
       this.pullCamSlidersFromStop = () => {
@@ -2108,6 +2151,7 @@ export class SceneStudioGUI {
   private populateBuildingNames() {
     if (!this.gui) return;
     const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+    const sides = { Front: 'front', Back: 'back', Left: 'left', Right: 'right' };
     const root = this.addTab('Building Names');
     BUILDING_NAMES.forEach((plate, index) => {
       const folder = root.addFolder(`${index + 1}. ${plate.text || plate.building}`);
@@ -2115,6 +2159,7 @@ export class SceneStudioGUI {
         text: plate.text,
         size: plate.size,
         color: hex(plate.color),
+        side: plate.side || 'front',
         posX: plate.position[0],
         posY: plate.position[1],
         posZ: plate.position[2],
@@ -2124,6 +2169,7 @@ export class SceneStudioGUI {
         plate.text = row.text;
         plate.size = row.size;
         plate.color = new THREE.Color(row.color).getHex();
+        plate.side = row.side === 'back' || row.side === 'left' || row.side === 'right' ? row.side : 'front';
         plate.position = [row.posX, row.posY, row.posZ];
         plate.extrude = row.extrude;
         notifyBuildingNamesChanged();
@@ -2131,6 +2177,7 @@ export class SceneStudioGUI {
       folder.add(row, 'text').name('Text').onChange(push);
       folder.add(row, 'size', 0.08, 1.2, 0.01).name('Size').onChange(push);
       folder.addColor(row, 'color').name('Color').onChange(push);
+      folder.add(row, 'side', sides).name('Side').onChange(push);
       folder.add(row, 'posX', -4, 4, 0.02).name('Position X').onChange(push);
       folder.add(row, 'posY', -3, 4, 0.02).name('Position Y').onChange(push);
       folder.add(row, 'posZ', -2, 2, 0.01).name('Position Z').onChange(push);

@@ -254,6 +254,7 @@ export interface StudioSavePayload {
     text: string;
     size: number;
     color: number;
+    side?: 'front' | 'back' | 'left' | 'right';
     position: [number, number, number];
     extrude: number;
   }>;

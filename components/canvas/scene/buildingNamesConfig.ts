@@ -5,12 +5,17 @@
 
 export const BUILDING_NAMES_EVENT = 'rastaak-building-names-changed';
 
+export const BUILDING_NAME_SIDES = ['front', 'back', 'left', 'right'] as const;
+
+export type BuildingNameSide = (typeof BUILDING_NAME_SIDES)[number];
+
 export interface BuildingNamePlate {
   id: string;
   building: string;
   text: string;
   size: number;
   color: number;
+  side: BuildingNameSide;
   position: [number, number, number];
   extrude: number;
 }
@@ -22,6 +27,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     text: 'هایپر مارکت',
     size: 0.13,
     color: 0xf5f5f2,
+    side: 'front',
     position: [0, 0, 0],
     extrude: 0.045,
   },
@@ -31,6 +37,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     text: 'سازمان دولتی',
     size: 0.22,
     color: 0xf5f5f2,
+    side: 'front',
     position: [0, 0, 0],
     extrude: 0.06,
   },
@@ -40,6 +47,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     text: 'بانک',
     size: 0.16,
     color: 0xf5f5f2,
+    side: 'front',
     position: [0, 0, 0],
     extrude: 0.05,
   },
@@ -49,6 +57,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     text: 'شرکت خصوصی',
     size: 0.11,
     color: 0xf5f5f2,
+    side: 'front',
     position: [0, 0, 0],
     extrude: 0.04,
   },

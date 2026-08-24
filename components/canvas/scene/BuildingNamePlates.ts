@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import { BUILDING_NAMES, BUILDING_NAMES_EVENT, type BuildingNamePlate } from './buildingNamesConfig';
+import {
+  BUILDING_NAMES,
+  BUILDING_NAMES_EVENT,
+  type BuildingNamePlate,
+  type BuildingNameSide,
+} from './buildingNamesConfig';
 
 const CITY_CENTER_X = 13.36;
 const CITY_CENTER_Z = -0.7;
@@ -69,32 +74,48 @@ function paintText(text: string, color: number): { texture: THREE.CanvasTexture;
   return { texture, aspect: canvas.width / Math.max(1, canvas.height) };
 }
 
-function headerPose(object: THREE.Object3D): { position: THREE.Vector3; quaternion: THREE.Quaternion } {
-  _box.setFromObject(object);
-  _box.getSize(_size);
-  _box.getCenter(_center);
-  _toward.set(CITY_CENTER_X - _center.x, 0, CITY_CENTER_Z - _center.z);
-  if (_toward.lengthSq() < 0.0001) _toward.set(0, 0, 1);
-  _toward.normalize();
+function plazaFront(sizeX: number, sizeZ: number, towardX: number, towardZ: number): { nx: number; nz: number } {
   const faces: Array<{ nx: number; nz: number; width: number }> = [
-    { nx: 1, nz: 0, width: _size.z },
-    { nx: -1, nz: 0, width: _size.z },
-    { nx: 0, nz: 1, width: _size.x },
-    { nx: 0, nz: -1, width: _size.x },
+    { nx: 1, nz: 0, width: sizeZ },
+    { nx: -1, nz: 0, width: sizeZ },
+    { nx: 0, nz: 1, width: sizeX },
+    { nx: 0, nz: -1, width: sizeX },
   ];
   let best = faces[0];
   let bestScore = -Infinity;
   for (const face of faces) {
-    const facing = face.nx * _toward.x + face.nz * _toward.z;
+    const facing = face.nx * towardX + face.nz * towardZ;
     const score = face.width * Math.max(0, facing);
     if (score > bestScore) {
       bestScore = score;
       best = face;
     }
   }
-  _normal.set(best.nx, 0, best.nz);
-  _center.x += best.nx * (_size.x * 0.5);
-  _center.z += best.nz * (_size.z * 0.5);
+  return best;
+}
+
+function normalForSide(frontNx: number, frontNz: number, side?: BuildingNameSide): { nx: number; nz: number } {
+  if (side === 'back') return { nx: -frontNx, nz: -frontNz };
+  if (side === 'right') return { nx: frontNz, nz: -frontNx };
+  if (side === 'left') return { nx: -frontNz, nz: frontNx };
+  return { nx: frontNx, nz: frontNz };
+}
+
+function headerPose(
+  object: THREE.Object3D,
+  side?: BuildingNameSide,
+): { position: THREE.Vector3; quaternion: THREE.Quaternion } {
+  _box.setFromObject(object);
+  _box.getSize(_size);
+  _box.getCenter(_center);
+  _toward.set(CITY_CENTER_X - _center.x, 0, CITY_CENTER_Z - _center.z);
+  if (_toward.lengthSq() < 0.0001) _toward.set(0, 0, 1);
+  _toward.normalize();
+  const front = plazaFront(_size.x, _size.z, _toward.x, _toward.z);
+  const chosen = normalForSide(front.nx, front.nz, side);
+  _normal.set(chosen.nx, 0, chosen.nz);
+  _center.x += chosen.nx * (_size.x * 0.5);
+  _center.z += chosen.nz * (_size.z * 0.5);
   _center.y = _box.max.y - Math.max(0.08, Math.min(0.16, _size.y * 0.12));
   const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), _normal);
   return { position: _center.clone(), quaternion };
@@ -203,7 +224,7 @@ export class BuildingNamePlateSet {
     const group = new THREE.Group();
     group.name = 'name-plate-' + config.id;
     group.add(mesh);
-    const pose = headerPose(object);
+    const pose = headerPose(object, config.side);
     group.position.copy(pose.position);
     group.quaternion.copy(pose.quaternion);
     _offset.set(config.position[0], config.position[1], config.position[2] + depth * 0.5 + 0.03);
