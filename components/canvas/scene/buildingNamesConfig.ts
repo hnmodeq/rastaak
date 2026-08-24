@@ -17,6 +17,7 @@ export interface BuildingNamePlate {
   color: number;
   side: BuildingNameSide;
   position: [number, number, number];
+  rotation: [number, number, number];
   extrude: number;
 }
 
@@ -29,6 +30,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     color: 0xf5f5f2,
     side: "back",
     position: [0, 0, -0.03],
+    rotation: [0, 0, 0],
     extrude: 0.005
   },
   {
@@ -39,16 +41,18 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     color: 0xf5f5f2,
     side: "front",
     position: [0, 0, -0.03],
+    rotation: [0, 0, 0],
     extrude: 0.005
   },
   {
     id: "b30",
     building: "Building 30",
     text: "بانک",
-    size: 0.1,
+    size: 0.2,
     color: 0xf5f5f2,
     side: "front",
-    position: [0, -0.16, -0.73],
+    position: [0, 0.04, -0.89],
+    rotation: [-72, 0, 0],
     extrude: 0.005
   },
   {
@@ -59,6 +63,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     color: 0xf5f5f2,
     side: "front",
     position: [0, 0.16, -0.44],
+    rotation: [0, 0, 0],
     extrude: 0.005
   }
 ];
