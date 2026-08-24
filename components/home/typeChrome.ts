@@ -64,7 +64,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteLogoSide: "right",
   studioCorner: "top-left",
   heroTitle: {
-    size: 119,
+    size: 47,
     weight: 700,
     lineHeight: 1.15,
     letterSpacing: 0,

@@ -18,14 +18,15 @@ export interface HeroCopyConfig {
 }
 
 export const HERO_COPY: HeroCopyConfig = {
-  titleLine1: "از آنچه برایتان مهم است،",
-  titleLine2: "محافظت کنید.",
+  titleLine1: "از آنچه برایتان مهم است، محافظت کنید.",
+  titleLine2: "",
   titleColor: 0xffffff,
-  titlePaddingTop: 200,
+  titlePaddingTop: 61,
   subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
   subtitleLine2: "",
   subtitleColor: 0xffffff,
   subtitlePaddingTop: 0,
+  stackGap: 48,
   scrollHint: "پیمایش کنید",
   scrollHintColor: 0xf5f5f2
 };

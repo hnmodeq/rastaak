@@ -16,14 +16,14 @@ export const SCENE_CONFIG: SceneConfig = {
       progress: 0,
       camera: [15.036727, 1.036661, -12],
       target: [15, 0.5, 1.5],
-      fov: 45
+      fov: 90
     },
     {
       id: "stop_2_hyper",
       progress: 0.1,
-      camera: [15, 0.720672, -1.5],
-      target: [14, -0.5, 1.5],
-      fov: 45
+      camera: [14.93, 0.3, -1.5],
+      target: [14, 0.5, 1.5],
+      fov: 15
     },
     {
       id: "stop_3_hyper_reply",
@@ -89,7 +89,7 @@ export const SCENE_CONFIG: SceneConfig = {
     fogColor: 0x0b0b0b,
     fogStart: 0,
     fogEnd: 20,
-    fogEnabled: true,
+    fogEnabled: false,
     shadowColor: 0x202020,
     shadowOpacity: 0
   },
@@ -113,9 +113,9 @@ export const SCENE_CONFIG: SceneConfig = {
     roughness: 0.8,
     metalness: 0.25,
     envMapIntensity: 1.55,
-    groundRoughness: 1,
-    groundMetalness: 1,
-    groundEnvMapIntensity: 1.4,
+    groundRoughness: 0.73,
+    groundMetalness: 0,
+    groundEnvMapIntensity: 1.6,
     overrides: {}
   } as MaterialsConfig,
 };
