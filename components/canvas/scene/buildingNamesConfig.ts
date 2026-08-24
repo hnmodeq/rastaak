@@ -22,43 +22,43 @@ export interface BuildingNamePlate {
 
 export const BUILDING_NAMES: BuildingNamePlate[] = [
   {
-    id: 'hyper',
-    building: 'Hyper Market Building',
-    text: 'هایپر مارکت',
-    size: 0.13,
+    id: "hyper",
+    building: "Hyper Market Building",
+    text: "هایپر مارکت",
+    size: 0.08,
     color: 0xf5f5f2,
-    side: 'front',
-    position: [0, 0, 0],
-    extrude: 0.045,
+    side: "back",
+    position: [0, 0, -0.03],
+    extrude: 0.01
   },
   {
-    id: 'b7',
-    building: 'Building 7',
-    text: 'سازمان دولتی',
+    id: "b7",
+    building: "Building 7",
+    text: "سازمان دولتی",
     size: 0.22,
     color: 0xf5f5f2,
-    side: 'front',
+    side: "front",
     position: [0, 0, 0],
-    extrude: 0.06,
+    extrude: 0.06
   },
   {
-    id: 'b30',
-    building: 'Building 30',
-    text: 'بانک',
+    id: "b30",
+    building: "Building 30",
+    text: "بانک",
     size: 0.16,
     color: 0xf5f5f2,
-    side: 'front',
+    side: "front",
     position: [0, 0, 0],
-    extrude: 0.05,
+    extrude: 0.05
   },
   {
-    id: 'b34',
-    building: 'Building 34',
-    text: 'شرکت خصوصی',
+    id: "b34",
+    building: "Building 34",
+    text: "شرکت خصوصی",
     size: 0.11,
     color: 0xf5f5f2,
-    side: 'front',
+    side: "front",
     position: [0, 0, 0],
-    extrude: 0.04,
-  },
+    extrude: 0.04
+  }
 ];

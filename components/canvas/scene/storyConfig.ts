@@ -113,7 +113,8 @@ export const STORY_CONFIG: StoryConfig = {
       resolve: 0.402908,
       needEnd: 0.601313,
       land: [0, 0, 0],
-      needOffset: [0.35, -0.5, 0.2]
+      launch: [0, 0, 0],
+      needOffset: [0.35, -0.25, 0.2]
     },
     {
       id: "b7",
@@ -125,6 +126,7 @@ export const STORY_CONFIG: StoryConfig = {
       arrive: 0.56,
       resolve: 0.56,
       land: [0, 0, 0],
+      launch: [0, 0, 0],
       needOffset: [0, 0, 0]
     },
     {
@@ -137,6 +139,7 @@ export const STORY_CONFIG: StoryConfig = {
       arrive: 0.72,
       resolve: 0.72,
       land: [0, 0, 0],
+      launch: [0, 0, 0],
       needOffset: [0, 0, 0]
     },
     {
@@ -149,6 +152,7 @@ export const STORY_CONFIG: StoryConfig = {
       arrive: 0.86,
       resolve: 0.86,
       land: [0, 0, 0],
+      launch: [0, 0, 0],
       needOffset: [0, 0, 0]
     }
   ],
