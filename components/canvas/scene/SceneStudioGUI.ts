@@ -805,6 +805,7 @@ export class SceneStudioGUI {
       buildingNames: BUILDING_NAMES.map((plate) => ({
         ...plate,
         position: [...plate.position] as [number, number, number],
+        rotation: [...(plate.rotation || [0, 0, 0])] as [number, number, number],
       })),
       typeChrome: {
         siteName: TYPE_CHROME.siteName,
@@ -2163,6 +2164,9 @@ export class SceneStudioGUI {
         posX: plate.position[0],
         posY: plate.position[1],
         posZ: plate.position[2],
+        rotX: plate.rotation?.[0] ?? 0,
+        rotY: plate.rotation?.[1] ?? 0,
+        rotZ: plate.rotation?.[2] ?? 0,
         extrude: plate.extrude,
       };
       const push = () => {
@@ -2171,6 +2175,7 @@ export class SceneStudioGUI {
         plate.color = new THREE.Color(row.color).getHex();
         plate.side = row.side === 'back' || row.side === 'left' || row.side === 'right' ? row.side : 'front';
         plate.position = [row.posX, row.posY, row.posZ];
+        plate.rotation = [row.rotX, row.rotY, row.rotZ];
         plate.extrude = row.extrude;
         notifyBuildingNamesChanged();
       };
@@ -2181,6 +2186,9 @@ export class SceneStudioGUI {
       folder.add(row, 'posX', -4, 4, 0.02).name('Position X').onChange(push);
       folder.add(row, 'posY', -3, 4, 0.02).name('Position Y').onChange(push);
       folder.add(row, 'posZ', -2, 2, 0.01).name('Position Z').onChange(push);
+      folder.add(row, 'rotX', -180, 180, 1).name('Rotation X').onChange(push);
+      folder.add(row, 'rotY', -180, 180, 1).name('Rotation Y').onChange(push);
+      folder.add(row, 'rotZ', -180, 180, 1).name('Rotation Z').onChange(push);
       folder.add(row, 'extrude', 0.002, 0.28, 0.001).name('Extrude').onChange(push);
     });
   }
