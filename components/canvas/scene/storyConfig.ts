@@ -16,6 +16,7 @@ export interface StoryClientConfig {
   resolve?: number;
   needEnd?: number;
   land?: [number, number, number];
+  launch?: [number, number, number];
   needOffset?: [number, number, number];
 }
 

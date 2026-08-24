@@ -328,6 +328,7 @@ export const SCENE_CONFIG: SceneConfig = {
               ? undefined
               : asFinite(client.needEnd, asFinite(client?.arrive, 0.24)),
           land: asVec3(client?.land, [0, 0, 0]),
+          launch: asVec3(client?.launch, [0, 0, 0]),
           needOffset: asVec3(client?.needOffset, [0, 0, 0]),
         })),
         captions: rawCaptions.map((caption, index) => ({
@@ -380,6 +381,7 @@ export interface StoryClientConfig {
   resolve?: number;
   needEnd?: number;
   land?: [number, number, number];
+  launch?: [number, number, number];
   needOffset?: [number, number, number];
 }
 
@@ -893,6 +895,39 @@ export function applyTypeChrome() {
       fs.writeFileSync(typePath, typeCode, 'utf8');
     }
 
+    if (Array.isArray(body.buildingNames)) {
+      const names = body.buildingNames.map((item, index) => ({
+        id: sanitizeId(item?.id, `name_${index + 1}`),
+        building: sanitizeText(item?.building, `Building ${index + 1}`, 80),
+        text: sanitizeText(item?.text, '', 80),
+        size: Math.min(2, Math.max(0.06, asFinite(item?.size, 0.28))),
+        color: hexLit(asHexNumber(item?.color, 0xf5f5f2)),
+        position: asVec3(item?.position, [0, 0, 0]),
+        extrude: Math.min(0.4, Math.max(0.008, asFinite(item?.extrude, 0.06))),
+      }));
+      const namesPath = path.join(rootDir, 'components', 'canvas', 'scene', 'buildingNamesConfig.ts');
+      const namesCode = `/**
+ * 3D building name plaques — source of truth.
+ * Saved automatically from 3D Studio.
+ */
+
+export const BUILDING_NAMES_EVENT = 'rastaak-building-names-changed';
+
+export interface BuildingNamePlate {
+  id: string;
+  building: string;
+  text: string;
+  size: number;
+  color: number;
+  position: [number, number, number];
+  extrude: number;
+}
+
+export const BUILDING_NAMES: BuildingNamePlate[] = ${emit(names, 0)};
+`;
+      fs.writeFileSync(namesPath, namesCode, 'utf8');
+    }
+
     if (body.look) {
       const rawLook = body.look;
       const look = {
@@ -921,7 +956,7 @@ export function applyTypeChrome() {
     return NextResponse.json({
       success: true,
       message:
-        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, and lookConfig.ts',
+        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, and buildingNamesConfig.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

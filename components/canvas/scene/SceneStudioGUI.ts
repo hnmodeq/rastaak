@@ -34,6 +34,8 @@ import { BlenderViewport } from './BlenderViewport';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
 import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
+import { BUILDING_NAMES } from './buildingNamesConfig';
+import { notifyBuildingNamesChanged } from './BuildingNamePlates';
 
 const isPointLight = (l: THREE.Light) =>
   (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
@@ -800,6 +802,10 @@ export class SceneStudioGUI {
       heroCopy: { ...HERO_COPY },
       flowChrome: { ...FLOW_CHROME },
       look: { ...LOOK_CONFIG },
+      buildingNames: BUILDING_NAMES.map((plate) => ({
+        ...plate,
+        position: [...plate.position] as [number, number, number],
+      })),
       typeChrome: {
         siteName: TYPE_CHROME.siteName,
         siteNameColor: TYPE_CHROME.siteNameColor,
@@ -1146,6 +1152,7 @@ export class SceneStudioGUI {
       this.populateMaterials();
       this.populateStoryControls();
       this.populateStoryTiming();
+      this.populateBuildingNames();
       if (!this.timelinePanel) {
         this.timelinePanel = new StoryTimelinePanel((t) => this.seekStory(t), {
           onApply: async () => {
@@ -1912,6 +1919,9 @@ export class SceneStudioGUI {
         landX: client.land?.[0] ?? 0,
         landY: client.land?.[1] ?? 0,
         landZ: client.land?.[2] ?? 0,
+        launchX: client.launch?.[0] ?? 0,
+        launchY: client.launch?.[1] ?? 0,
+        launchZ: client.launch?.[2] ?? 0,
         previewRed: () => this.seekStory(client.appear),
         previewBlue: () => this.seekStory(resolveAt(client)),
         previewLaunch: () => this.seekStory(client.dispatch),
@@ -1928,6 +1938,9 @@ export class SceneStudioGUI {
         row.landX = client.land?.[0] ?? 0;
         row.landY = client.land?.[1] ?? 0;
         row.landZ = client.land?.[2] ?? 0;
+        row.launchX = client.launch?.[0] ?? 0;
+        row.launchY = client.launch?.[1] ?? 0;
+        row.launchZ = client.launch?.[2] ?? 0;
         appearCtrl.updateDisplay();
         resolveCtrl.updateDisplay();
         dispatchCtrl.updateDisplay();
@@ -1936,6 +1949,9 @@ export class SceneStudioGUI {
         landXCtrl.updateDisplay();
         landYCtrl.updateDisplay();
         landZCtrl.updateDisplay();
+        launchXCtrl.updateDisplay();
+        launchYCtrl.updateDisplay();
+        launchZCtrl.updateDisplay();
       };
 
       const appearCtrl = folder
@@ -2011,6 +2027,23 @@ export class SceneStudioGUI {
         .name('Land Z')
         .onChange(writeLand);
 
+      const writeLaunch = () => {
+        client.launch = [row.launchX, row.launchY, row.launchZ];
+        this.seekStory(client.dispatch);
+      };
+      const launchXCtrl = folder
+        .add(row, 'launchX', -12, 12, 0.05)
+        .name('Launch X')
+        .onChange(writeLaunch);
+      const launchYCtrl = folder
+        .add(row, 'launchY', -8, 12, 0.05)
+        .name('Launch Y')
+        .onChange(writeLaunch);
+      const launchZCtrl = folder
+        .add(row, 'launchZ', -12, 12, 0.05)
+        .name('Launch Z')
+        .onChange(writeLaunch);
+
       folder.add(row, 'previewRed').name('Preview — turns red');
       folder.add(row, 'previewBlue').name('Preview — turns blue');
       folder.add(row, 'previewLaunch').name('Preview — logo launches');
@@ -2070,6 +2103,39 @@ export class SceneStudioGUI {
       .onChange((value: number) => {
         STORY_CONFIG.captionFadeIn = clamp01(value);
       });
+  }
+
+  private populateBuildingNames() {
+    if (!this.gui) return;
+    const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+    const root = this.addTab('Building Names');
+    BUILDING_NAMES.forEach((plate, index) => {
+      const folder = root.addFolder(`${index + 1}. ${plate.text || plate.building}`);
+      const row = {
+        text: plate.text,
+        size: plate.size,
+        color: hex(plate.color),
+        posX: plate.position[0],
+        posY: plate.position[1],
+        posZ: plate.position[2],
+        extrude: plate.extrude,
+      };
+      const push = () => {
+        plate.text = row.text;
+        plate.size = row.size;
+        plate.color = new THREE.Color(row.color).getHex();
+        plate.position = [row.posX, row.posY, row.posZ];
+        plate.extrude = row.extrude;
+        notifyBuildingNamesChanged();
+      };
+      folder.add(row, 'text').name('Text').onChange(push);
+      folder.add(row, 'size', 0.08, 1.2, 0.01).name('Size').onChange(push);
+      folder.addColor(row, 'color').name('Color').onChange(push);
+      folder.add(row, 'posX', -4, 4, 0.02).name('Position X').onChange(push);
+      folder.add(row, 'posY', -3, 4, 0.02).name('Position Y').onChange(push);
+      folder.add(row, 'posZ', -2, 2, 0.01).name('Position Z').onChange(push);
+      folder.add(row, 'extrude', 0.01, 0.28, 0.005).name('Extrude').onChange(push);
+    });
   }
 
   public populateLightsAndShadows() {

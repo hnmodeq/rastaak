@@ -142,6 +142,7 @@ export interface StudioStorySave {
     resolve?: number;
     needEnd?: number;
     land?: [number, number, number];
+    launch?: [number, number, number];
     needOffset?: [number, number, number];
   }>;
   captions: Array<{ id: string; text: string; range: [number, number] }>;
@@ -247,4 +248,13 @@ export interface StudioSavePayload {
   flowChrome?: StudioFlowChromeSave;
   typeChrome?: StudioTypeChromeSave;
   look?: LookConfigSave;
+  buildingNames?: Array<{
+    id: string;
+    building: string;
+    text: string;
+    size: number;
+    color: number;
+    position: [number, number, number];
+    extrude: number;
+  }>;
 }
