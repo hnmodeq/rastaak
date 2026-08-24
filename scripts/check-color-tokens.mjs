@@ -22,6 +22,7 @@ const ignored = new Set([
   'components/canvas/scene/lookConfig.ts',
   'components/canvas/scene/buildingNamesConfig.ts',
   'components/canvas/scene/BuildingNamePlates.ts',
+  'components/canvas/scene/studioOverlay.ts',
   'components/home/flowConfig.ts',
   'components/home/heroCopy.ts',
   'components/home/typeChrome.ts',

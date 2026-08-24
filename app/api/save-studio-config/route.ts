@@ -944,6 +944,34 @@ export const BUILDING_NAMES: BuildingNamePlate[] = ${emit(names, 0)};
       fs.writeFileSync(namesPath, namesCode, 'utf8');
     }
 
+    if (body.studioOverlay) {
+      const raw = body.studioOverlay;
+      const overlay = {
+        showCamGizmo: raw.showCamGizmo !== false,
+        showTargetGizmo: raw.showTargetGizmo !== false,
+        showCamPath: raw.showCamPath !== false,
+        showTargetPath: raw.showTargetPath !== false,
+        showLightGizmos: raw.showLightGizmos !== false,
+      };
+      const overlayPath = path.join(rootDir, 'components', 'canvas', 'scene', 'studioOverlay.ts');
+      const overlayCode = `/**
+ * 3D Studio overlay visibility — source of truth.
+ * Saved automatically from 3D Studio.
+ */
+
+export interface StudioOverlayConfig {
+  showCamGizmo: boolean;
+  showTargetGizmo: boolean;
+  showCamPath: boolean;
+  showTargetPath: boolean;
+  showLightGizmos: boolean;
+}
+
+export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};
+`;
+      fs.writeFileSync(overlayPath, overlayCode, 'utf8');
+    }
+
     if (body.look) {
       const rawLook = body.look;
       const look = {
@@ -972,7 +1000,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = ${emit(names, 0)};
     return NextResponse.json({
       success: true,
       message:
-        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, and buildingNamesConfig.ts',
+        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, buildingNamesConfig.ts, and studioOverlay.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

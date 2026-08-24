@@ -36,6 +36,7 @@ import { SITE_CONTENT } from '@/components/home/siteContent';
 import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
 import { BUILDING_NAMES } from './buildingNamesConfig';
 import { notifyBuildingNamesChanged } from './BuildingNamePlates';
+import { STUDIO_OVERLAY } from './studioOverlay';
 
 const isPointLight = (l: THREE.Light) =>
   (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
@@ -111,11 +112,11 @@ export class SceneStudioGUI {
   private timelinePanel: StoryTimelinePanel | null = null;
   private lightGizmos: LightGizmoSet | null = null;
   private cameraGizmos: CameraGizmoSet | null = null;
-  private showLightGizmos = true;
-  private showCamGizmo = true;
-  private showTargetGizmo = true;
-  private showCamPath = true;
-  private showTargetPath = true;
+  private showLightGizmos = STUDIO_OVERLAY.showLightGizmos !== false;
+  private showCamGizmo = STUDIO_OVERLAY.showCamGizmo !== false;
+  private showTargetGizmo = STUDIO_OVERLAY.showTargetGizmo !== false;
+  private showCamPath = STUDIO_OVERLAY.showCamPath !== false;
+  private showTargetPath = STUDIO_OVERLAY.showTargetPath !== false;
   private cameraPathMode: 'Full path' | 'Current segment' = 'Full path';
   private lookAtTarget = true;
   private grabMode = false;
@@ -833,6 +834,13 @@ export class SceneStudioGUI {
       heroCopy: { ...HERO_COPY },
       flowChrome: { ...FLOW_CHROME },
       look: { ...LOOK_CONFIG },
+      studioOverlay: {
+        showCamGizmo: this.showCamGizmo,
+        showTargetGizmo: this.showTargetGizmo,
+        showCamPath: this.showCamPath,
+        showTargetPath: this.showTargetPath,
+        showLightGizmos: this.showLightGizmos,
+      },
       buildingNames: BUILDING_NAMES.map((plate) => ({
         ...plate,
         position: [...plate.position] as [number, number, number],
@@ -877,6 +885,7 @@ export class SceneStudioGUI {
 
     LIGHTS_CONFIG.splice(0, LIGHTS_CONFIG.length, ...payload.lights);
     if (payload.look) Object.assign(LOOK_CONFIG, payload.look);
+    if (payload.studioOverlay) Object.assign(STUDIO_OVERLAY, payload.studioOverlay);
   }
 
   private isAdminHost() {

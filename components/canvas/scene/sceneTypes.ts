@@ -248,6 +248,13 @@ export interface StudioSavePayload {
   flowChrome?: StudioFlowChromeSave;
   typeChrome?: StudioTypeChromeSave;
   look?: LookConfigSave;
+  studioOverlay?: {
+    showCamGizmo: boolean;
+    showTargetGizmo: boolean;
+    showCamPath: boolean;
+    showTargetPath: boolean;
+    showLightGizmos: boolean;
+  };
   buildingNames?: Array<{
     id: string;
     building: string;
