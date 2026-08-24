@@ -273,6 +273,11 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         far: asFinite(body.camera?.far, 1000),
       };
 
+      const visibility = {
+        showBigTrees: body.visibility?.showBigTrees !== false,
+        showSmallTrees: body.visibility?.showSmallTrees !== false,
+      };
+
       const stops = cameraStops ?? [];
 
       const sceneConfigPath = path.join(rootDir, 'components', 'canvas', 'scene', 'sceneConfig.ts');
