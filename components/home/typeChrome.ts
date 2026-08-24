@@ -64,10 +64,10 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteLogoSide: "right",
   studioCorner: "top-left",
   heroTitle: {
-    size: 47,
+    size: 110,
     weight: 700,
-    lineHeight: 1.15,
-    letterSpacing: 0,
+    lineHeight: 0.76,
+    letterSpacing: -0.6,
     shadowColor: 0x000000,
     shadowOpacity: 0.39,
     shadowBlur: 9,
@@ -77,10 +77,10 @@ export const TYPE_CHROME: TypeChromeConfig = {
   heroSubtitle: {
     size: 22,
     weight: 400,
-    lineHeight: 1.15,
+    lineHeight: 0.7,
     letterSpacing: 0,
     shadowColor: 0x000000,
-    shadowOpacity: 0.64,
+    shadowOpacity: 0.66,
     shadowBlur: 4,
     shadowX: 2,
     shadowY: 3.5

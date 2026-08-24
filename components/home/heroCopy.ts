@@ -21,12 +21,12 @@ export const HERO_COPY: HeroCopyConfig = {
   titleLine1: "از آنچه برایتان مهم است، محافظت کنید.",
   titleLine2: "",
   titleColor: 0xffffff,
-  titlePaddingTop: 61,
+  titlePaddingTop: 92,
   subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
   subtitleLine2: "",
   subtitleColor: 0xffffff,
-  subtitlePaddingTop: 0,
-  stackGap: 48,
+  subtitlePaddingTop: 9,
+  stackGap: 25,
   scrollHint: "پیمایش کنید",
   scrollHintColor: 0xf5f5f2
 };
