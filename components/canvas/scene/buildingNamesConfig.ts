@@ -58,7 +58,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     size: 0.11,
     color: 0xf5f5f2,
     side: "front",
-    position: [0, 0, 0],
-    extrude: 0.04
+    position: [0, 0.16, -0.44],
+    extrude: 0.005
   }
 ];
