@@ -18,6 +18,10 @@ export interface LightConfig {
   castShadow?: boolean;
   shadowMapSize?: number;
   shadowBias?: number;
+  shadowNormalBias?: number;
+  shadowNear?: number;
+  shadowFar?: number;
+  shadowIntensity?: number;
   enabled?: boolean;
 }
 
@@ -85,6 +89,7 @@ export interface SceneEnvironmentConfig {
 
 export interface SceneRendererConfig {
   toneMappingExposure: number;
+  shadowMapType?: 'basic' | 'pcf' | 'pcfsoft';
 }
 
 export interface LookConfigSave {

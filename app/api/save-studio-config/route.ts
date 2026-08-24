@@ -122,7 +122,15 @@ function sanitizeLight(raw: unknown, index: number): LightConfig | null {
   if (item.castShadow !== undefined) light.castShadow = Boolean(item.castShadow);
   if (item.enabled !== undefined) light.enabled = Boolean(item.enabled);
   if (item.shadowMapSize !== undefined) light.shadowMapSize = asFinite(item.shadowMapSize, 2048);
-  if (item.shadowBias !== undefined) light.shadowBias = asFinite(item.shadowBias, -0.0001);
+  if (item.shadowBias !== undefined) light.shadowBias = asFinite(item.shadowBias, 0);
+  if (item.shadowNormalBias !== undefined) {
+    light.shadowNormalBias = Math.min(0.2, Math.max(0, asFinite(item.shadowNormalBias, 0.04)));
+  }
+  if (item.shadowNear !== undefined) light.shadowNear = Math.min(8, Math.max(0.05, asFinite(item.shadowNear, 0.5)));
+  if (item.shadowFar !== undefined) light.shadowFar = Math.min(250, Math.max(8, asFinite(item.shadowFar, 80)));
+  if (item.shadowIntensity !== undefined) {
+    light.shadowIntensity = Math.min(2, Math.max(0, asFinite(item.shadowIntensity, 1)));
+  }
 
   return light;
 }
@@ -246,6 +254,10 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 
       const renderer = {
         toneMappingExposure: asFinite(body.renderer?.toneMappingExposure, 1.15),
+        shadowMapType:
+          body.renderer?.shadowMapType === 'basic' || body.renderer?.shadowMapType === 'pcf'
+            ? body.renderer.shadowMapType
+            : 'pcfsoft',
       };
 
       const scroll = {

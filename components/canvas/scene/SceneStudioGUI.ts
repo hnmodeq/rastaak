@@ -2,6 +2,13 @@ import * as THREE from 'three';
 import { SCENE_CONFIG } from './sceneConfig';
 import { LIGHTS_CONFIG } from './lightingConfig';
 import { applySceneShadows } from './shadowTint';
+import {
+  applyLightShadow,
+  applyRendererShadowFilter,
+  filterFromRenderer,
+  resolveShadowFilter,
+  type ShadowFilter,
+} from './shadowSetup';
 import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
 import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, resolveAt, type StoryFrame } from './storyConfig';
 import { sampleSceneJourney } from './journeyMath';
@@ -689,8 +696,17 @@ export class SceneStudioGUI {
       if (shadowObj || light.castShadow) {
         item.castShadow = Boolean(light.castShadow);
         item.shadowMapSize = shadowObj?.mapSize?.width ?? 2048;
-        item.shadowBias = shadowObj?.bias ?? -0.0001;
+        item.shadowBias = shadowObj?.bias ?? 0;
+        item.shadowNormalBias = shadowObj?.normalBias ?? 0;
         item.radius = shadowObj?.radius ?? 1;
+        const cam = shadowObj?.camera as THREE.PerspectiveCamera | undefined;
+        if (cam) {
+          item.shadowNear = cam.near;
+          item.shadowFar = cam.far;
+        }
+        if (shadowObj && 'intensity' in shadowObj) {
+          item.shadowIntensity = (shadowObj as THREE.LightShadow & { intensity: number }).intensity;
+        }
       }
 
       result.push(item);
@@ -813,6 +829,7 @@ export class SceneStudioGUI {
       },
       renderer: {
         toneMappingExposure: this.renderer.toneMappingExposure,
+        shadowMapType: filterFromRenderer(this.renderer),
       },
       scroll: { ...SCENE_CONFIG.scroll },
       camera: { ...SCENE_CONFIG.camera },
@@ -902,6 +919,9 @@ export class SceneStudioGUI {
     SCENE_CONFIG.environment.shadowColor = payload.environment.shadowColor ?? 0x000000;
     SCENE_CONFIG.environment.shadowOpacity = payload.environment.shadowOpacity ?? 1;
     SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
+    if (payload.renderer.shadowMapType) {
+      SCENE_CONFIG.renderer.shadowMapType = payload.renderer.shadowMapType;
+    }
     SCENE_CONFIG.scroll.headerScrollMultiplier = payload.scroll.headerScrollMultiplier;
     SCENE_CONFIG.scroll.cameraDamping = payload.scroll.cameraDamping;
     SCENE_CONFIG.scroll.idleFloatAmount = payload.scroll.idleFloatAmount;
@@ -2509,6 +2529,16 @@ export class SceneStudioGUI {
       .onChange((value: boolean) => {
         this.setGrabMode(value);
       });
+    const filterParams = { filter: filterFromRenderer(this.renderer) };
+    lightFolder
+      .add(filterParams, 'filter', { Soft: 'pcfsoft', PCF: 'pcf', Sharp: 'basic' })
+      .name('Shadow filter')
+      .onChange((value: ShadowFilter) => {
+        const next = resolveShadowFilter(value);
+        SCENE_CONFIG.renderer.shadowMapType = next;
+        applyRendererShadowFilter(this.renderer, next);
+        this.broadcastLive();
+      });
 
     for (const [id, light] of this.lightsMap.entries()) {
       const sub = lightFolder.addFolder(id);
@@ -2562,7 +2592,16 @@ export class SceneStudioGUI {
         if (sh) {
           cfg.radius = sh.radius;
           cfg.shadowBias = sh.bias;
+          cfg.shadowNormalBias = sh.normalBias;
           cfg.shadowMapSize = sh.mapSize?.width;
+          const cam = sh.camera as THREE.PerspectiveCamera | undefined;
+          if (cam) {
+            cfg.shadowNear = cam.near;
+            cfg.shadowFar = cam.far;
+          }
+          if ('intensity' in sh) {
+            cfg.shadowIntensity = (sh as THREE.LightShadow & { intensity: number }).intensity;
+          }
         }
         this.broadcastLive();
       };
@@ -2713,65 +2752,48 @@ export class SceneStudioGUI {
 
       const shadowSub = sub;
       const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
+      const cam = sh?.camera as THREE.PerspectiveCamera | undefined;
+      const ranged = light as THREE.PointLight;
       const shadowParams = {
         castShadow: light.castShadow ?? true,
         radius: sh ? sh.radius ?? 2.27 : 2.27,
-        bias: sh ? sh.bias ?? -0.0001 : -0.0001,
-        mapSize: sh?.mapSize?.width ?? 2048,
+        bias: sh ? sh.bias ?? 0 : 0,
+        normalBias: sh ? sh.normalBias ?? (Math.abs(sh.bias) < 1e-8 ? 0.04 : 0) : 0.04,
+        intensity: sh && 'intensity' in sh ? (sh as THREE.LightShadow & { intensity: number }).intensity : 1,
+        near: cam?.near ?? 0.5,
+        far: cam?.far ?? (ranged.distance > 0 ? ranged.distance : 80),
+        mapSize: sh?.mapSize?.width ?? 1024,
       };
 
-      shadowSub
-        .add(shadowParams, 'castShadow')
-        .name('Enable Shadows')
-        .listen()
-        .onChange((v: boolean) => {
-          light.castShadow = v;
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
+      const writeShadow = () => {
+        light.castShadow = shadowParams.castShadow;
+        applyLightShadow(light, {
+          shadowMapSize: shadowParams.mapSize,
+          shadowBias: shadowParams.bias,
+          shadowNormalBias: shadowParams.normalBias,
+          shadowNear: shadowParams.near,
+          shadowFar: shadowParams.far,
+          shadowIntensity: shadowParams.intensity,
+          radius: shadowParams.radius,
+          distance: ranged.distance,
         });
+        this.renderer.shadowMap.needsUpdate = true;
+        persistLight();
+      };
 
-      shadowSub
-        .add(shadowParams, 'radius', 0, 20, 0.1)
-        .name('Soft Shadow Radius')
-        .listen()
-        .onChange((v: number) => {
-          if (sh) {
-            sh.radius = v;
-            sh.needsUpdate = true;
-          }
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
-        });
-
-      shadowSub
-        .add(shadowParams, 'bias', -0.005, 0.005, 0.0001)
-        .name('Shadow Bias')
-        .listen()
-        .onChange((v: number) => {
-          if (sh) {
-            sh.bias = v;
-            sh.needsUpdate = true;
-          }
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
-        });
-
+      shadowSub.add(shadowParams, 'castShadow').name('Enable Shadows').listen().onChange(writeShadow);
+      shadowSub.add(shadowParams, 'radius', 0, 32, 0.1).name('Soft Shadow Radius').listen().onChange(writeShadow);
+      shadowSub.add(shadowParams, 'bias', -0.02, 0.02, 0.0001).name('Shadow Bias').listen().onChange(writeShadow);
+      shadowSub.add(shadowParams, 'normalBias', 0, 0.2, 0.001).name('Normal bias').listen().onChange(writeShadow);
+      shadowSub.add(shadowParams, 'intensity', 0, 2, 0.02).name('Shadow strength').listen().onChange(writeShadow);
+      shadowSub.add(shadowParams, 'near', 0.05, 8, 0.05).name('Shadow near').listen().onChange(writeShadow);
+      shadowSub.add(shadowParams, 'far', 8, 250, 1).name('Shadow far').listen().onChange(writeShadow);
       shadowSub
         .add(shadowParams, 'mapSize', [512, 1024, 2048, 4096])
         .name('Shadow Resolution')
         .onChange((v: number) => {
-          const size = parseInt(String(v), 10);
-          if (sh?.mapSize) {
-            sh.mapSize.width = size;
-            sh.mapSize.height = size;
-            if (sh.map) {
-              sh.map.dispose();
-              sh.map = null as unknown as THREE.WebGLRenderTarget;
-            }
-            sh.needsUpdate = true;
-          }
-          this.renderer.shadowMap.needsUpdate = true;
-          persistLight();
+          shadowParams.mapSize = parseInt(String(v), 10);
+          writeShadow();
         });
     }
   }

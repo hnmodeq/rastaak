@@ -18,6 +18,7 @@ import { SceneStudioGUI } from './scene/SceneStudioGUI';
 import { BlenderViewport } from './scene/BlenderViewport';
 import { applyMaterialsConfig } from './scene/materialKeys';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
+import { applyLightShadow, applyRendererShadowFilter } from './scene/shadowSetup';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 import { BuildingNamePlateSet } from './scene/BuildingNamePlates';
@@ -85,7 +86,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = SCENE_CONFIG.renderer.toneMappingExposure ?? 1.15;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    applyRendererShadowFilter(renderer, SCENE_CONFIG.renderer.shadowMapType);
     const lookPost = new LookComposer(renderer);
     lookPost.setSize(viewW(), viewH());
 
@@ -147,19 +148,19 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         }
         if (cfg.castShadow) {
           dirLight.castShadow = true;
-          const size = cfg.shadowMapSize ?? 2048;
-          dirLight.shadow.mapSize.width = size;
-          dirLight.shadow.mapSize.height = size;
-          dirLight.shadow.camera.near = 1;
-          dirLight.shadow.camera.far = 180;
           dirLight.shadow.camera.left = -45;
           dirLight.shadow.camera.right = 45;
           dirLight.shadow.camera.top = 45;
           dirLight.shadow.camera.bottom = -45;
-          dirLight.shadow.bias = cfg.shadowBias ?? -0.0005;
-          if (cfg.radius !== undefined) {
-            dirLight.shadow.radius = cfg.radius;
-          }
+          applyLightShadow(dirLight, {
+            shadowMapSize: cfg.shadowMapSize ?? 2048,
+            shadowBias: cfg.shadowBias ?? -0.0005,
+            shadowNormalBias: cfg.shadowNormalBias,
+            shadowNear: cfg.shadowNear ?? 1,
+            shadowFar: cfg.shadowFar ?? 180,
+            shadowIntensity: cfg.shadowIntensity,
+            radius: cfg.radius,
+          });
         }
         light = dirLight;
       } else if (cfg.type === 'point') {
@@ -172,13 +173,16 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         if (cfg.position) ptLight.position.set(...cfg.position);
         if (cfg.castShadow) {
           ptLight.castShadow = true;
-          const size = cfg.shadowMapSize ?? 2048;
-          ptLight.shadow.mapSize.width = size;
-          ptLight.shadow.mapSize.height = size;
-          ptLight.shadow.bias = cfg.shadowBias ?? -0.0001;
-          if (cfg.radius !== undefined) {
-            ptLight.shadow.radius = cfg.radius;
-          }
+          applyLightShadow(ptLight, {
+            shadowMapSize: cfg.shadowMapSize ?? 1024,
+            shadowBias: cfg.shadowBias ?? 0,
+            shadowNormalBias: cfg.shadowNormalBias,
+            shadowNear: cfg.shadowNear,
+            shadowFar: cfg.shadowFar,
+            shadowIntensity: cfg.shadowIntensity,
+            radius: cfg.radius,
+            distance: cfg.distance,
+          });
         }
         light = ptLight;
       } else if (cfg.type === 'spot') {
@@ -197,13 +201,16 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         }
         if (cfg.castShadow) {
           spotLight.castShadow = true;
-          const size = cfg.shadowMapSize ?? 1024;
-          spotLight.shadow.mapSize.width = size;
-          spotLight.shadow.mapSize.height = size;
-          spotLight.shadow.bias = cfg.shadowBias ?? -0.0005;
-          if (cfg.radius !== undefined) {
-            spotLight.shadow.radius = cfg.radius;
-          }
+          applyLightShadow(spotLight, {
+            shadowMapSize: cfg.shadowMapSize ?? 1024,
+            shadowBias: cfg.shadowBias ?? -0.0005,
+            shadowNormalBias: cfg.shadowNormalBias,
+            shadowNear: cfg.shadowNear,
+            shadowFar: cfg.shadowFar,
+            shadowIntensity: cfg.shadowIntensity,
+            radius: cfg.radius,
+            distance: cfg.distance,
+          });
         }
         light = spotLight;
       } else if (cfg.type === 'rectarea') {
