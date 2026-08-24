@@ -497,6 +497,13 @@ export class BuildingNamePlateSet {
     const pose = headerPose(object, config.side);
     group.position.copy(pose.position);
     group.quaternion.copy(pose.quaternion);
+    const rot = config.rotation || [0, 0, 0];
+    mesh.rotation.order = 'XYZ';
+    mesh.rotation.set(
+      THREE.MathUtils.degToRad(rot[0] || 0),
+      THREE.MathUtils.degToRad(rot[1] || 0),
+      THREE.MathUtils.degToRad(rot[2] || 0),
+    );
     _offset.set(config.position[0], config.position[1], config.position[2] + 0.03);
     _offset.applyQuaternion(group.quaternion);
     group.position.add(_offset);

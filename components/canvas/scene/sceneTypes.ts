@@ -256,6 +256,7 @@ export interface StudioSavePayload {
     color: number;
     side?: 'front' | 'back' | 'left' | 'right';
     position: [number, number, number];
+    rotation?: [number, number, number];
     extrude: number;
   }>;
 }

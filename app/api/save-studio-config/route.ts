@@ -910,6 +910,9 @@ export function applyTypeChrome() {
         color: hexLit(asHexNumber(item?.color, 0xf5f5f2)),
         side: sanitizeSide(item?.side),
         position: asVec3(item?.position, [0, 0, 0]),
+        rotation: asVec3(item?.rotation, [0, 0, 0]).map((value) =>
+          Math.min(180, Math.max(-180, value)),
+        ) as [number, number, number],
         extrude: Math.min(0.4, Math.max(0.002, asFinite(item?.extrude, 0.06))),
       }));
       const namesPath = path.join(rootDir, 'components', 'canvas', 'scene', 'buildingNamesConfig.ts');
@@ -932,6 +935,7 @@ export interface BuildingNamePlate {
   color: number;
   side: BuildingNameSide;
   position: [number, number, number];
+  rotation: [number, number, number];
   extrude: number;
 }
 
