@@ -126,4 +126,9 @@ export const SCENE_CONFIG: SceneConfig = {
     groundEnvMapIntensity: 1.6,
     overrides: {}
   } as MaterialsConfig,
+
+  visibility: {
+    showBigTrees: true,
+    showSmallTrees: false
+  },
 };
