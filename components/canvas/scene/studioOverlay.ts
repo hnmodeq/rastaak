@@ -12,9 +12,9 @@ export interface StudioOverlayConfig {
 }
 
 export const STUDIO_OVERLAY: StudioOverlayConfig = {
-  showCamGizmo: true,
-  showTargetGizmo: true,
-  showCamPath: true,
-  showTargetPath: true,
-  showLightGizmos: true,
+  showCamGizmo: false,
+  showTargetGizmo: false,
+  showCamPath: false,
+  showTargetPath: false,
+  showLightGizmos: false
 };
