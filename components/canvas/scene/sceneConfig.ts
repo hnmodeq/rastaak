@@ -14,9 +14,9 @@ export const SCENE_CONFIG: SceneConfig = {
     {
       id: "stop_1_overview",
       progress: 0,
-      camera: [15.036727, 1.036661, -12],
-      target: [15, 0.5, 1.5],
-      fov: 90
+      camera: [21.44, 6.02, -0.41],
+      target: [9.7, -0.03, -0.79],
+      fov: 89.995445
     },
     {
       id: "stop_2_hyper",
@@ -66,6 +66,13 @@ export const SCENE_CONFIG: SceneConfig = {
       camera: [15.35, 5.55, 0.55],
       target: [16.26, 4.1, 2.05],
       fov: 30
+    },
+    {
+      id: "stop_9_custom",
+      progress: 1,
+      camera: [21.44, 6.02, -0.41],
+      target: [9.7, -0.03, -0.79],
+      fov: 89.995445
     }
   ] as CameraStop[],
 
