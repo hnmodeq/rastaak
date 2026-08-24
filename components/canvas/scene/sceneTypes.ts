@@ -92,6 +92,11 @@ export interface SceneRendererConfig {
   shadowMapType?: 'basic' | 'pcf' | 'pcfsoft';
 }
 
+export interface SceneVisibilityConfig {
+  showBigTrees?: boolean;
+  showSmallTrees?: boolean;
+}
+
 export interface LookConfigSave {
   envEnabled: boolean;
   envIntensity: number;
@@ -115,6 +120,7 @@ export interface SceneConfig {
   environment: SceneEnvironmentConfig;
   renderer: SceneRendererConfig;
   materials: MaterialsConfig;
+  visibility?: SceneVisibilityConfig;
 }
 
 export interface StudioStorySave {

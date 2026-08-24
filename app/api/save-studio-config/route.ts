@@ -301,6 +301,8 @@ export const SCENE_CONFIG: SceneConfig = {
   renderer: ${emit(renderer, 1)},
 
   materials: ${emit(materials, 1)} as MaterialsConfig,
+
+  visibility: ${emit(visibility, 1)},
 };
 `;
       fs.writeFileSync(sceneConfigPath, sceneConfigCode, 'utf8');
