@@ -954,8 +954,8 @@ export class SceneStudioGUI {
         cameraPathMode: this.cameraPathMode,
         grabCamera: this.grabCamera,
         lookAtTarget: this.lookAtTarget,
-        yaw: firstHeading.yaw,
-        pitch: firstHeading.pitch,
+        yaw: 0,
+        pitch: 0,
         lookDist: firstHeading.dist,
 
         addNewStop: () => {
@@ -995,6 +995,21 @@ export class SceneStudioGUI {
           }
         },
       };
+
+      const headingBase = { yaw: firstHeading.yaw, pitch: firstHeading.pitch };
+      const captureHeadingBase = () => {
+        const heading = headingFromLook(
+          [camParams.camX, camParams.camY, camParams.camZ],
+          [camParams.targetX, camParams.targetY, camParams.targetZ],
+        );
+        headingBase.yaw = heading.yaw;
+        headingBase.pitch = heading.pitch;
+        camParams.yaw = 0;
+        camParams.pitch = 0;
+        camParams.lookDist = heading.dist;
+      };
+      const aimedLook = (camera: readonly [number, number, number]) =>
+        lookFromHeading(camera, headingBase.yaw + camParams.yaw, headingBase.pitch + camParams.pitch, camParams.lookDist);
 
       if (isAdmin) {
         this.isOrbitMode = true;
@@ -1056,9 +1071,16 @@ export class SceneStudioGUI {
         .name('Look at target')
         .onChange((value: boolean) => {
           this.lookAtTarget = value;
-          this.refreshCamDisplay();
+          if (!value) captureHeadingBase();
+          else {
+            camParams.yaw = 0;
+            camParams.pitch = 0;
+          }
           this.cameraGizmos?.setCarryLook(!value);
           syncAimMode();
+          yawCtrl.updateDisplay();
+          pitchCtrl.updateDisplay();
+          lookDistCtrl.updateDisplay();
         });
 
       const stopDropdownController = camFolder
@@ -1089,6 +1111,11 @@ export class SceneStudioGUI {
               this.camera.updateProjectionMatrix();
             }
             this.cameraGizmos?.bindStop(stop);
+            if (!this.lookAtTarget) captureHeadingBase();
+            else {
+              camParams.yaw = 0;
+              camParams.pitch = 0;
+            }
 
             this.refreshCamDisplay();
 
@@ -1129,6 +1156,11 @@ export class SceneStudioGUI {
             this.camera.updateProjectionMatrix();
           }
           this.cameraGizmos?.bindStop(dest);
+          if (!this.lookAtTarget) captureHeadingBase();
+          else {
+            camParams.yaw = 0;
+            camParams.pitch = 0;
+          }
           this.refreshCamDisplay();
           camParams.copyFrom = COPY_NONE;
           copyFromCtrl.updateDisplay();
@@ -1155,7 +1187,7 @@ export class SceneStudioGUI {
         const stop = SCENE_CONFIG.stops[this.currentStopIndex];
         if (stop) stop.camera[axis] = value;
         if (!this.lookAtTarget && stop) {
-          const next = lookFromHeading(stop.camera, camParams.yaw, camParams.pitch, camParams.lookDist);
+          const next = aimedLook(stop.camera);
           stop.target = next;
           camParams.targetX = next[0];
           camParams.targetY = next[1];
@@ -1243,8 +1275,9 @@ export class SceneStudioGUI {
       const writeHeading = () => {
         const stop = SCENE_CONFIG.stops[this.currentStopIndex];
         if (!stop) return;
+        camParams.yaw = THREE.MathUtils.clamp(camParams.yaw, -180, 180);
         camParams.pitch = THREE.MathUtils.clamp(camParams.pitch, -89, 89);
-        const next = lookFromHeading(stop.camera, camParams.yaw, camParams.pitch, camParams.lookDist);
+        const next = aimedLook(stop.camera);
         stop.target = next;
         camParams.targetX = next[0];
         camParams.targetY = next[1];
@@ -1300,9 +1333,11 @@ export class SceneStudioGUI {
           [camParams.camX, camParams.camY, camParams.camZ],
           [camParams.targetX, camParams.targetY, camParams.targetZ],
         );
-        camParams.yaw = heading.yaw;
-        camParams.pitch = heading.pitch;
         camParams.lookDist = heading.dist;
+        if (this.lookAtTarget) {
+          camParams.yaw = 0;
+          camParams.pitch = 0;
+        }
         scrollCtrl.updateDisplay();
         camXCtrl.updateDisplay();
         camYCtrl.updateDisplay();
