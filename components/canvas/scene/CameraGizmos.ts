@@ -210,6 +210,7 @@ export class CameraGizmoSet {
   private pathT = 0;
   private hasCamPath = false;
   private hasTargetPath = false;
+  private carryLook = false;
   private readonly orientation = new THREE.Quaternion();
   private readonly lookMatrix = new THREE.Matrix4();
   private readonly up = new THREE.Vector3(0, 1, 0);
@@ -231,11 +232,25 @@ export class CameraGizmoSet {
 
   private readonly onSourceTransform = () => {
     if (!this.boundStop) return;
+    const dx = this.sourceDummy.position.x - this.boundStop.camera[0];
+    const dy = this.sourceDummy.position.y - this.boundStop.camera[1];
+    const dz = this.sourceDummy.position.z - this.boundStop.camera[2];
     this.boundStop.camera[0] = this.sourceDummy.position.x;
     this.boundStop.camera[1] = this.sourceDummy.position.y;
     this.boundStop.camera[2] = this.sourceDummy.position.z;
+    if (this.carryLook) {
+      this.boundStop.target[0] += dx;
+      this.boundStop.target[1] += dy;
+      this.boundStop.target[2] += dz;
+      this.aimDummy.position.set(this.boundStop.target[0], this.boundStop.target[1], this.boundStop.target[2]);
+    }
     this.onEdited?.();
   };
+
+  setCarryLook(on: boolean) {
+    this.carryLook = on;
+    this.applyPartVisibility();
+  }
 
   private readonly onAimTransform = () => {
     if (!this.boundStop) return;
@@ -604,7 +619,7 @@ export class CameraGizmoSet {
     if (!this.grab) return;
     if (cam) this.sourceControls?.attach(this.sourceDummy);
     else this.sourceControls?.detach();
-    if (tgt) this.aimControls?.attach(this.aimDummy);
+    if (tgt && !this.carryLook) this.aimControls?.attach(this.aimDummy);
     else this.aimControls?.detach();
   }
 

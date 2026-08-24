@@ -61,6 +61,36 @@ function clampOrdered(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function headingFromLook(
+  camera: readonly [number, number, number],
+  target: readonly [number, number, number],
+): { yaw: number; pitch: number; dist: number } {
+  const dx = target[0] - camera[0];
+  const dy = target[1] - camera[1];
+  const dz = target[2] - camera[2];
+  const dist = Math.max(0.2, Math.hypot(dx, dy, dz));
+  const yaw = THREE.MathUtils.radToDeg(Math.atan2(dx, -dz));
+  const pitch = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(dy / dist, -1, 1)));
+  return { yaw, pitch, dist };
+}
+
+function lookFromHeading(
+  camera: readonly [number, number, number],
+  yaw: number,
+  pitch: number,
+  dist: number,
+): [number, number, number] {
+  const yawRad = THREE.MathUtils.degToRad(yaw);
+  const pitchRad = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(pitch, -89, 89));
+  const reach = Math.max(0.2, dist);
+  const cosPitch = Math.cos(pitchRad);
+  return [
+    camera[0] + Math.sin(yawRad) * cosPitch * reach,
+    camera[1] + Math.sin(pitchRad) * reach,
+    camera[2] - Math.cos(yawRad) * cosPitch * reach,
+  ];
+}
+
 export class SceneStudioGUI {
   private gui: any = null;
   private guis: any[] = [];
@@ -87,6 +117,7 @@ export class SceneStudioGUI {
   private showCamPath = true;
   private showTargetPath = true;
   private cameraPathMode: 'Full path' | 'Current segment' = 'Full path';
+  private lookAtTarget = true;
   private grabMode = false;
   private grabCamera = false;
   private preGrabOrbit = false;
@@ -899,6 +930,10 @@ export class SceneStudioGUI {
       const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
       const COPY_NONE = '— pick a stop —';
       const viewportLabel = 'Viewport (Blender)';
+      const firstHeading = headingFromLook(
+        SCENE_CONFIG.stops[0]?.camera ?? [0, 0, 0],
+        SCENE_CONFIG.stops[0]?.target ?? [0, 0, -1],
+      );
 
       const camParams = {
         mode: isAdmin ? viewportLabel : 'Scroll Journey',
@@ -918,6 +953,10 @@ export class SceneStudioGUI {
         showTargetPath: this.showTargetPath,
         cameraPathMode: this.cameraPathMode,
         grabCamera: this.grabCamera,
+        lookAtTarget: this.lookAtTarget,
+        yaw: firstHeading.yaw,
+        pitch: firstHeading.pitch,
+        lookDist: firstHeading.dist,
 
         addNewStop: () => {
           const look = this.isOrbitMode && this.viewportNav ? this.viewportNav.target : this.manualLookAt;
@@ -1011,6 +1050,15 @@ export class SceneStudioGUI {
         .name('Move camera in scene')
         .onChange((value: boolean) => {
           this.setCameraGrabMode(value);
+        });
+      camFolder
+        .add(camParams, 'lookAtTarget')
+        .name('Look at target')
+        .onChange((value: boolean) => {
+          this.lookAtTarget = value;
+          this.refreshCamDisplay();
+          this.cameraGizmos?.setCarryLook(!value);
+          syncAimMode();
         });
 
       const stopDropdownController = camFolder
@@ -1106,7 +1154,21 @@ export class SceneStudioGUI {
         this.manualCamPos.setComponent(axis, value);
         const stop = SCENE_CONFIG.stops[this.currentStopIndex];
         if (stop) stop.camera[axis] = value;
-        if (!this.isOrbitMode) this.camera.position.setComponent(axis, value);
+        if (!this.lookAtTarget && stop) {
+          const next = lookFromHeading(stop.camera, camParams.yaw, camParams.pitch, camParams.lookDist);
+          stop.target = next;
+          camParams.targetX = next[0];
+          camParams.targetY = next[1];
+          camParams.targetZ = next[2];
+          this.manualLookAt.set(...next);
+          targetXCtrl.updateDisplay();
+          targetYCtrl.updateDisplay();
+          targetZCtrl.updateDisplay();
+        }
+        if (!this.isOrbitMode) {
+          this.camera.position.setComponent(axis, value);
+          if (!this.lookAtTarget) this.camera.lookAt(this.manualLookAt);
+        }
       };
 
       const writeStopTarget = (axis: 0 | 1 | 2, value: number) => {
@@ -1178,10 +1240,69 @@ export class SceneStudioGUI {
           }
         });
 
+      const writeHeading = () => {
+        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        if (!stop) return;
+        camParams.pitch = THREE.MathUtils.clamp(camParams.pitch, -89, 89);
+        const next = lookFromHeading(stop.camera, camParams.yaw, camParams.pitch, camParams.lookDist);
+        stop.target = next;
+        camParams.targetX = next[0];
+        camParams.targetY = next[1];
+        camParams.targetZ = next[2];
+        this.manualLookAt.set(...next);
+        if (!this.isOrbitMode) this.camera.lookAt(this.manualLookAt);
+        this.cameraGizmos?.bindStop(stop);
+        targetXCtrl.updateDisplay();
+        targetYCtrl.updateDisplay();
+        targetZCtrl.updateDisplay();
+      };
+
+      const yawCtrl = camFolder
+        .add(camParams, 'yaw', -180, 180, 0.5)
+        .name('Yaw')
+        .listen()
+        .onChange(writeHeading);
+      const pitchCtrl = camFolder
+        .add(camParams, 'pitch', -89, 89, 0.5)
+        .name('Pitch')
+        .listen()
+        .onChange(writeHeading);
+      const lookDistCtrl = camFolder
+        .add(camParams, 'lookDist', 0.4, 40, 0.1)
+        .name('Look distance')
+        .listen()
+        .onChange(writeHeading);
+
+      const syncAimMode = () => {
+        if (this.lookAtTarget) {
+          targetXCtrl.enable?.();
+          targetYCtrl.enable?.();
+          targetZCtrl.enable?.();
+          yawCtrl.disable?.();
+          pitchCtrl.disable?.();
+          lookDistCtrl.disable?.();
+        } else {
+          targetXCtrl.disable?.();
+          targetYCtrl.disable?.();
+          targetZCtrl.disable?.();
+          yawCtrl.enable?.();
+          pitchCtrl.enable?.();
+          lookDistCtrl.enable?.();
+        }
+      };
+      syncAimMode();
+
       camFolder.add(camParams, 'addNewStop').name('➕ Add Current View as Stop');
       camFolder.add(camParams, 'copyStopsConfig').name('📋 Copy Stops JSON');
 
       this.refreshCamDisplay = () => {
+        const heading = headingFromLook(
+          [camParams.camX, camParams.camY, camParams.camZ],
+          [camParams.targetX, camParams.targetY, camParams.targetZ],
+        );
+        camParams.yaw = heading.yaw;
+        camParams.pitch = heading.pitch;
+        camParams.lookDist = heading.dist;
         scrollCtrl.updateDisplay();
         camXCtrl.updateDisplay();
         camYCtrl.updateDisplay();
@@ -1190,6 +1311,9 @@ export class SceneStudioGUI {
         targetYCtrl.updateDisplay();
         targetZCtrl.updateDisplay();
         fovCtrl.updateDisplay();
+        yawCtrl.updateDisplay();
+        pitchCtrl.updateDisplay();
+        lookDistCtrl.updateDisplay();
       };
 
       this.populateLightsAndShadows();
