@@ -493,13 +493,77 @@ html.rastaak-loading body {
   overflow: hidden !important;
 }
 
+#loader .loader__cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--loader-stack-gap, 22px);
+  padding: 0 24px;
+  max-width: min(720px, calc(100vw - 32px));
+}
+
+#loader .loader__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--loader-row-gap, 14px);
+}
+
+#loader .loader__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--loader-copy-gap, 6px);
+  min-width: 0;
+}
+
+#loader[dir='rtl'] .loader__copy {
+  align-items: flex-end;
+  text-align: right;
+}
+
+#loader[dir='ltr'] .loader__copy {
+  text-align: left;
+}
+
 #loader .loader__mark {
-  width: 88px !important;
-  height: 88px !important;
-  max-width: 88px !important;
+  width: var(--loader-logo-size, 72px) !important;
+  height: var(--loader-logo-size, 72px) !important;
+  max-width: var(--loader-logo-size, 72px) !important;
+  flex: 0 0 auto;
   object-fit: contain;
 }
 
-#loader .loader__title {
+#loader .loader__title,
+#loader .loader__subtitle {
   font-family: 'Kalameh', sans-serif !important;
+  line-height: 1.25;
+}
+
+#loader .loader__title {
+  font-size: var(--loader-title-size, 28px) !important;
+  font-weight: var(--loader-title-weight, 800) !important;
+  letter-spacing: var(--loader-title-tracking, -0.4px);
+  color: var(--loader-title-color, var(--color-text-light));
+}
+
+#loader .loader__subtitle {
+  font-size: var(--loader-subtitle-size, 14px) !important;
+  font-weight: var(--loader-subtitle-weight, 400) !important;
+  letter-spacing: var(--loader-subtitle-tracking, 0px);
+  color: var(--loader-subtitle-color, var(--color-content-semi-opaque));
+}
+
+#loader .loader__bar {
+  width: min(var(--loader-bar-width, 240px), 72vw);
+  height: var(--loader-bar-height, 3px);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+#loader .loader__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 160ms linear;
 }

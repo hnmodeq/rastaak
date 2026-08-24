@@ -37,6 +37,12 @@ import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConf
 import { BUILDING_NAMES } from './buildingNamesConfig';
 import { notifyBuildingNamesChanged } from './BuildingNamePlates';
 import { STUDIO_OVERLAY } from './studioOverlay';
+import {
+  LOADER_CONFIG,
+  applyLoaderChrome,
+  notifyLoaderChanged,
+  previewLoader,
+} from '@/components/home/loaderConfig';
 
 const isPointLight = (l: THREE.Light) =>
   (l as THREE.PointLight).isPointLight || l.type === 'PointLight';
@@ -886,6 +892,10 @@ export class SceneStudioGUI {
     LIGHTS_CONFIG.splice(0, LIGHTS_CONFIG.length, ...payload.lights);
     if (payload.look) Object.assign(LOOK_CONFIG, payload.look);
     if (payload.studioOverlay) Object.assign(STUDIO_OVERLAY, payload.studioOverlay);
+    if (payload.loader) {
+      Object.assign(LOADER_CONFIG, payload.loader);
+      applyLoaderChrome();
+    }
   }
 
   private isAdminHost() {
@@ -1364,6 +1374,7 @@ export class SceneStudioGUI {
       this.populateMaterials();
       this.populateStoryControls();
       this.populateShootingLogo();
+      this.populateLoadingScreen();
       this.populateStoryTiming();
       this.populateBuildingNames();
       if (!this.timelinePanel) {
@@ -2275,6 +2286,106 @@ export class SceneStudioGUI {
       folder.add(row, 'previewEnd').name('Preview — end');
       folder.add(row, 'previewBurst').name('Preview — explosion');
     });
+  }
+
+  private populateLoadingScreen() {
+    if (!this.gui) return;
+    const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+    const root = this.addTab('Loading screen');
+    applyLoaderChrome();
+
+    const cfg = LOADER_CONFIG;
+    const params = {
+      title: cfg.title,
+      subtitle: cfg.subtitle,
+      dir: cfg.dir,
+      showLogo: cfg.showLogo,
+      showTitle: cfg.showTitle,
+      showSubtitle: cfg.showSubtitle,
+      showBar: cfg.showBar,
+      logoSize: cfg.logoSize,
+      rowGap: cfg.rowGap,
+      copyGap: cfg.copyGap,
+      stackGap: cfg.stackGap,
+      titleSize: cfg.titleSize,
+      titleWeight: cfg.titleWeight,
+      titleColor: hex(cfg.titleColor),
+      titleTracking: cfg.titleTracking,
+      subtitleSize: cfg.subtitleSize,
+      subtitleWeight: cfg.subtitleWeight,
+      subtitleColor: hex(cfg.subtitleColor),
+      subtitleTracking: cfg.subtitleTracking,
+      barWidth: cfg.barWidth,
+      barHeight: cfg.barHeight,
+      barColor: hex(cfg.barColor),
+      trackColor: hex(cfg.trackColor),
+      trackOpacity: cfg.trackOpacity,
+      bgColor: hex(cfg.bgColor),
+      preview: () => previewLoader(true),
+      hidePreview: () => previewLoader(false),
+    };
+
+    const push = () => {
+      cfg.title = params.title;
+      cfg.subtitle = params.subtitle;
+      cfg.dir = params.dir === 'ltr' ? 'ltr' : 'rtl';
+      cfg.showLogo = params.showLogo;
+      cfg.showTitle = params.showTitle;
+      cfg.showSubtitle = params.showSubtitle;
+      cfg.showBar = params.showBar;
+      cfg.logoSize = params.logoSize;
+      cfg.rowGap = params.rowGap;
+      cfg.copyGap = params.copyGap;
+      cfg.stackGap = params.stackGap;
+      cfg.titleSize = params.titleSize;
+      cfg.titleWeight = Number(params.titleWeight);
+      cfg.titleColor = new THREE.Color(params.titleColor).getHex();
+      cfg.titleTracking = params.titleTracking;
+      cfg.subtitleSize = params.subtitleSize;
+      cfg.subtitleWeight = Number(params.subtitleWeight);
+      cfg.subtitleColor = new THREE.Color(params.subtitleColor).getHex();
+      cfg.subtitleTracking = params.subtitleTracking;
+      cfg.barWidth = params.barWidth;
+      cfg.barHeight = params.barHeight;
+      cfg.barColor = new THREE.Color(params.barColor).getHex();
+      cfg.trackColor = new THREE.Color(params.trackColor).getHex();
+      cfg.trackOpacity = params.trackOpacity;
+      cfg.bgColor = new THREE.Color(params.bgColor).getHex();
+      notifyLoaderChanged();
+      previewLoader(true);
+    };
+
+    root.add(params, 'preview').name('Preview');
+    root.add(params, 'hidePreview').name('Hide preview');
+    root.addColor(params, 'bgColor').name('Background').onChange(push);
+    root.add(params, 'dir', { RTL: 'rtl', LTR: 'ltr' }).name('Direction').onChange(push);
+
+    const brand = root.addFolder('Logo and name');
+    brand.add(params, 'showLogo').name('Show logo').onChange(push);
+    brand.add(params, 'logoSize', 24, 160, 1).name('Logo size').onChange(push);
+    brand.add(params, 'rowGap', 0, 48, 1).name('Logo gap').onChange(push);
+    brand.add(params, 'showTitle').name('Show title').onChange(push);
+    brand.add(params, 'title').name('Title').onChange(push);
+    brand.add(params, 'titleSize', 10, 72, 1).name('Title size').onChange(push);
+    brand.add(params, 'titleWeight', TYPE_WEIGHTS).name('Title weight').onChange(push);
+    brand.addColor(params, 'titleColor').name('Title color').onChange(push);
+    brand.add(params, 'titleTracking', -8, 8, 0.1).name('Title spacing').onChange(push);
+    brand.add(params, 'showSubtitle').name('Show subtitle').onChange(push);
+    brand.add(params, 'subtitle').name('Subtitle').onChange(push);
+    brand.add(params, 'subtitleSize', 8, 40, 1).name('Subtitle size').onChange(push);
+    brand.add(params, 'subtitleWeight', TYPE_WEIGHTS).name('Subtitle weight').onChange(push);
+    brand.addColor(params, 'subtitleColor').name('Subtitle color').onChange(push);
+    brand.add(params, 'subtitleTracking', -4, 8, 0.1).name('Subtitle spacing').onChange(push);
+    brand.add(params, 'copyGap', 0, 24, 1).name('Title / subtitle gap').onChange(push);
+
+    const bar = root.addFolder('Progress bar');
+    bar.add(params, 'showBar').name('Show bar').onChange(push);
+    bar.add(params, 'barWidth', 80, 480, 4).name('Bar width').onChange(push);
+    bar.add(params, 'barHeight', 1, 12, 1).name('Bar height').onChange(push);
+    bar.addColor(params, 'barColor').name('Bar color').onChange(push);
+    bar.addColor(params, 'trackColor').name('Track color').onChange(push);
+    bar.add(params, 'trackOpacity', 0, 1, 0.01).name('Track opacity').onChange(push);
+    bar.add(params, 'stackGap', 4, 48, 1).name('Bar gap').onChange(push);
   }
 
   private populateBuildingNames() {

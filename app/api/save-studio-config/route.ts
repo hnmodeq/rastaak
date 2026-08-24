@@ -972,6 +972,134 @@ export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};
       fs.writeFileSync(overlayPath, overlayCode, 'utf8');
     }
 
+    if (body.loader) {
+      const raw = body.loader;
+      const snappedWeight = (value: unknown, fallback: number) => {
+        const next = asFinite(value, fallback);
+        return Math.min(900, Math.max(100, Math.round(next / 100) * 100));
+      };
+      const loader = {
+        title: sanitizeText(raw.title, 'هونامیک ارتباط رستاک', 80),
+        subtitle: sanitizeText(raw.subtitle, 'ارائه دهنده تجهیزات ذخیره‌سازی داده', 200),
+        dir: raw.dir === 'ltr' ? 'ltr' : 'rtl',
+        showLogo: raw.showLogo !== false,
+        showTitle: raw.showTitle !== false,
+        showSubtitle: raw.showSubtitle !== false,
+        showBar: raw.showBar !== false,
+        logoSize: Math.min(160, Math.max(24, asFinite(raw.logoSize, 72))),
+        rowGap: Math.min(48, Math.max(0, asFinite(raw.rowGap, 14))),
+        copyGap: Math.min(24, Math.max(0, asFinite(raw.copyGap, 6))),
+        stackGap: Math.min(48, Math.max(4, asFinite(raw.stackGap, 22))),
+        titleSize: Math.min(72, Math.max(10, asFinite(raw.titleSize, 28))),
+        titleWeight: snappedWeight(raw.titleWeight, 800),
+        titleColor: hexLit(asHexNumber(raw.titleColor, 0xffffff)),
+        titleTracking: Math.min(8, Math.max(-8, asFinite(raw.titleTracking, -0.4))),
+        subtitleSize: Math.min(40, Math.max(8, asFinite(raw.subtitleSize, 14))),
+        subtitleWeight: snappedWeight(raw.subtitleWeight, 400),
+        subtitleColor: hexLit(asHexNumber(raw.subtitleColor, 0xb4b8c0)),
+        subtitleTracking: Math.min(8, Math.max(-4, asFinite(raw.subtitleTracking, 0))),
+        barWidth: Math.min(480, Math.max(80, asFinite(raw.barWidth, 240))),
+        barHeight: Math.min(12, Math.max(1, asFinite(raw.barHeight, 3))),
+        barColor: hexLit(asHexNumber(raw.barColor, 0x57cdff)),
+        trackColor: hexLit(asHexNumber(raw.trackColor, 0xffffff)),
+        trackOpacity: Math.min(1, Math.max(0, asFinite(raw.trackOpacity, 0.15))),
+        bgColor: hexLit(asHexNumber(raw.bgColor, 0x1c1d22)),
+      };
+      const loaderPath = path.join(rootDir, 'components', 'home', 'loaderConfig.ts');
+      const loaderCode = `/**
+ * Homepage loading screen — source of truth.
+ * Saved automatically from 3D Studio.
+ */
+
+export const LOADER_CHANGED_EVENT = 'rastaak-loader-changed';
+export const LOADER_PREVIEW_EVENT = 'rastaak-loader-preview';
+
+export interface LoaderScreenConfig {
+  title: string;
+  subtitle: string;
+  dir: 'rtl' | 'ltr';
+  showLogo: boolean;
+  showTitle: boolean;
+  showSubtitle: boolean;
+  showBar: boolean;
+  logoSize: number;
+  rowGap: number;
+  copyGap: number;
+  stackGap: number;
+  titleSize: number;
+  titleWeight: number;
+  titleColor: number;
+  titleTracking: number;
+  subtitleSize: number;
+  subtitleWeight: number;
+  subtitleColor: number;
+  subtitleTracking: number;
+  barWidth: number;
+  barHeight: number;
+  barColor: number;
+  trackColor: number;
+  trackOpacity: number;
+  bgColor: number;
+}
+
+export const LOADER_CONFIG: LoaderScreenConfig = ${emit(loader, 0)};
+
+export function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
+
+export function hexToRgba(value: number, alpha: number): string {
+  const hex = value >>> 0;
+  const r = (hex >> 16) & 255;
+  const g = (hex >> 8) & 255;
+  const b = hex & 255;
+  const a = Math.max(0, Math.min(1, Number.isFinite(alpha) ? alpha : 1));
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+}
+
+export function applyLoaderChrome(root: HTMLElement | null = typeof document === 'undefined' ? null : document.getElementById('loader')) {
+  const host = root ?? (typeof document === 'undefined' ? null : document.documentElement);
+  if (!host) return;
+  const cfg = LOADER_CONFIG;
+  host.style.setProperty('--loader-bg', hexCss(cfg.bgColor));
+  host.style.setProperty('--loader-logo-size', cfg.logoSize + 'px');
+  host.style.setProperty('--loader-row-gap', cfg.rowGap + 'px');
+  host.style.setProperty('--loader-copy-gap', cfg.copyGap + 'px');
+  host.style.setProperty('--loader-stack-gap', cfg.stackGap + 'px');
+  host.style.setProperty('--loader-title-size', cfg.titleSize + 'px');
+  host.style.setProperty('--loader-title-weight', String(cfg.titleWeight));
+  host.style.setProperty('--loader-title-color', hexCss(cfg.titleColor));
+  host.style.setProperty('--loader-title-tracking', cfg.titleTracking + 'px');
+  host.style.setProperty('--loader-subtitle-size', cfg.subtitleSize + 'px');
+  host.style.setProperty('--loader-subtitle-weight', String(cfg.subtitleWeight));
+  host.style.setProperty('--loader-subtitle-color', hexCss(cfg.subtitleColor));
+  host.style.setProperty('--loader-subtitle-tracking', cfg.subtitleTracking + 'px');
+  host.style.setProperty('--loader-bar-width', cfg.barWidth + 'px');
+  host.style.setProperty('--loader-bar-height', cfg.barHeight + 'px');
+  host.style.setProperty('--loader-bar-color', hexCss(cfg.barColor));
+  host.style.setProperty('--loader-track-color', hexToRgba(cfg.trackColor, cfg.trackOpacity));
+  host.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
+
+  const title = host.querySelector<HTMLElement>('.loader__title');
+  if (title && title.textContent !== cfg.title) title.textContent = cfg.title;
+  const subtitle = host.querySelector<HTMLElement>('.loader__subtitle');
+  if (subtitle && subtitle.textContent !== cfg.subtitle) subtitle.textContent = cfg.subtitle;
+}
+
+export function notifyLoaderChanged() {
+  applyLoaderChrome();
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(LOADER_CHANGED_EVENT));
+}
+
+export function previewLoader(open: boolean) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(LOADER_PREVIEW_EVENT, { detail: { open } }));
+}
+`;
+      fs.writeFileSync(loaderPath, loaderCode, 'utf8');
+    }
+
     if (body.look) {
       const rawLook = body.look;
       const look = {
@@ -1000,7 +1128,7 @@ export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};
     return NextResponse.json({
       success: true,
       message:
-        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, buildingNamesConfig.ts, and studioOverlay.ts',
+        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, buildingNamesConfig.ts, studioOverlay.ts, and loaderConfig.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

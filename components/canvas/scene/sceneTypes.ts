@@ -255,6 +255,33 @@ export interface StudioSavePayload {
     showTargetPath: boolean;
     showLightGizmos: boolean;
   };
+  loader?: {
+    title: string;
+    subtitle: string;
+    dir: 'rtl' | 'ltr';
+    showLogo: boolean;
+    showTitle: boolean;
+    showSubtitle: boolean;
+    showBar: boolean;
+    logoSize: number;
+    rowGap: number;
+    copyGap: number;
+    stackGap: number;
+    titleSize: number;
+    titleWeight: number;
+    titleColor: number;
+    titleTracking: number;
+    subtitleSize: number;
+    subtitleWeight: number;
+    subtitleColor: number;
+    subtitleTracking: number;
+    barWidth: number;
+    barHeight: number;
+    barColor: number;
+    trackColor: number;
+    trackOpacity: number;
+    bgColor: number;
+  };
   buildingNames?: Array<{
     id: string;
     building: string;

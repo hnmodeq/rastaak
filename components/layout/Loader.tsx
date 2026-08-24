@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { tokens } from '@/tokens/design-tokens';
-import { TYPE_CHROME } from '@/components/home/typeChrome';
+import {
+  LOADER_CHANGED_EVENT,
+  LOADER_CONFIG,
+  LOADER_PREVIEW_EVENT,
+  applyLoaderChrome,
+  hexCss,
+  hexToRgba,
+} from '@/components/home/loaderConfig';
 
 const HOME_SAFETY_MS = 28000;
 const INNER_PAGE_MS = 420;
@@ -15,6 +21,39 @@ export const Loader: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [isFading, setIsFading] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [rev, setRev] = useState(0);
+  const previewRef = useRef(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    applyLoaderChrome(rootRef.current);
+  }, [rev, isDone, previewing]);
+
+  useEffect(() => {
+    const onChanged = () => setRev((value) => value + 1);
+    const onPreview = (event: Event) => {
+      const open = (event as CustomEvent<{ open?: boolean }>).detail?.open !== false;
+      previewRef.current = open;
+      setPreviewing(open);
+      if (open) {
+        setIsDone(false);
+        setIsFading(false);
+        setProgress((prev) => (prev > 8 ? prev : 64));
+      } else if (document.documentElement.dataset.sceneReady === 'true') {
+        setIsFading(true);
+        window.setTimeout(() => {
+          if (!previewRef.current) setIsDone(true);
+        }, FADE_MS);
+      }
+    };
+    window.addEventListener(LOADER_CHANGED_EVENT, onChanged);
+    window.addEventListener(LOADER_PREVIEW_EVENT, onPreview);
+    return () => {
+      window.removeEventListener(LOADER_CHANGED_EVENT, onChanged);
+      window.removeEventListener(LOADER_PREVIEW_EVENT, onPreview);
+    };
+  }, []);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -67,11 +106,12 @@ export const Loader: React.FC = () => {
     const safety = window.setTimeout(markReady, home ? HOME_SAFETY_MS : INNER_PAGE_MS);
 
     const dismiss = () => {
-      if (dismissed) return;
+      if (dismissed || previewRef.current) return;
       dismissed = true;
       setProgress(100);
       setIsFading(true);
       window.setTimeout(() => {
+        if (previewRef.current) return;
         html.classList.remove('rastaak-loading');
         html.dataset.sceneReady = 'true';
         document.body.style.overflow = '';
@@ -103,15 +143,19 @@ export const Loader: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  if (isDone) return null;
+  if (isDone && !previewing) return null;
+
+  const cfg = LOADER_CONFIG;
 
   return (
     <div
       id="loader"
+      ref={rootRef}
       role="status"
       aria-live="polite"
-      aria-busy="true"
+      aria-busy={!previewing}
       aria-label="Loading"
+      dir={cfg.dir === 'ltr' ? 'ltr' : 'rtl'}
       style={{
         position: 'fixed',
         inset: 0,
@@ -119,64 +163,45 @@ export const Loader: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        pointerEvents: 'auto',
-        backgroundColor: tokens.colors.bgHero,
-        opacity: isFading ? 0 : 1,
+        pointerEvents: previewing ? 'none' : 'auto',
+        backgroundColor: hexCss(cfg.bgColor),
+        opacity: isFading && !previewing ? 0 : 1,
         transition: `opacity ${FADE_MS}ms ease`,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 22,
-          padding: '0 24px',
-          maxWidth: 520,
-          textAlign: 'center',
-        }}
-      >
-        <img
-          className="loader__mark"
-          src="/icons/icon-192x192.png"
-          alt=""
-          width={88}
-          height={88}
-          decoding="async"
-        />
-        <div
-          className="loader__title"
-          dir="rtl"
-          style={{
-            fontFamily: "'Kalameh', sans-serif",
-            fontWeight: 800,
-            fontSize: 'clamp(22px, 5vw, 34px)',
-            lineHeight: 1.25,
-            letterSpacing: '-0.02em',
-            color: tokens.colors.textLight,
-          }}
-        >
-          {TYPE_CHROME.siteName}
+      <div className="loader__cluster">
+        <div className="loader__row">
+          {cfg.showLogo ? (
+            <img
+              className="loader__mark"
+              src="/icons/icon-192x192.png"
+              alt=""
+              width={cfg.logoSize}
+              height={cfg.logoSize}
+              decoding="async"
+            />
+          ) : null}
+          <div className="loader__copy">
+            {cfg.showTitle ? <div className="loader__title">{cfg.title}</div> : null}
+            {cfg.showSubtitle ? <div className="loader__subtitle">{cfg.subtitle}</div> : null}
+          </div>
         </div>
-        <div
-          style={{
-            width: 'min(220px, 62vw)',
-            height: 3,
-            borderRadius: 999,
-            overflow: 'hidden',
-            backgroundColor: tokens.colors.overlayGlass15,
-          }}
-        >
+        {cfg.showBar ? (
           <div
+            className="loader__bar"
             style={{
-              width: `${progress}%`,
-              height: '100%',
-              borderRadius: 999,
-              backgroundColor: tokens.colors.primaryLight,
-              transition: 'width 160ms linear',
+              backgroundColor: hexToRgba(cfg.trackColor, cfg.trackOpacity),
             }}
-          />
-        </div>
+          >
+            <div
+              className="loader__bar-fill"
+              style={{
+                width: `${progress}%`,
+                backgroundColor: hexCss(cfg.barColor),
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   );

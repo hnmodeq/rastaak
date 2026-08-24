@@ -26,6 +26,7 @@ const ignored = new Set([
   'components/home/flowConfig.ts',
   'components/home/heroCopy.ts',
   'components/home/typeChrome.ts',
+  'components/home/loaderConfig.ts',
   'components/home/siteContent.ts',
   'components/admin/admin.css',
   'components/admin/AdminApp.tsx',
