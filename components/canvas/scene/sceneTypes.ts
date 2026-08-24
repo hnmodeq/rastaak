@@ -186,6 +186,7 @@ export interface StudioHeroCopySave {
   subtitleLine2: string;
   subtitleColor: number;
   subtitlePaddingTop?: number;
+  stackGap?: number;
   scrollHint: string;
   scrollHintColor: number;
 }

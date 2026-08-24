@@ -540,7 +540,7 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
         titleLine1: sanitizeText(rawHero.titleLine1, 'The New Standard', 160),
         titleLine2: sanitizeText(rawHero.titleLine2, 'in Staffing', 160),
         titleColor: hexLit(asHexNumber(rawHero.titleColor, 0xf5f5f2)),
-        titlePaddingTop: Math.min(200, Math.max(0, asFinite(rawHero.titlePaddingTop, 0))),
+        titlePaddingTop: Math.min(480, Math.max(-200, asFinite(rawHero.titlePaddingTop, 0))),
         subtitleLine1: sanitizeText(rawHero.subtitleLine1, 'AI driven speed. Expert curation.', 240),
         subtitleLine2: sanitizeText(
           rawHero.subtitleLine2,
@@ -548,7 +548,8 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
           400,
         ),
         subtitleColor: hexLit(asHexNumber(rawHero.subtitleColor, 0xe8e8e4)),
-        subtitlePaddingTop: Math.min(200, Math.max(0, asFinite(rawHero.subtitlePaddingTop, 0))),
+        subtitlePaddingTop: Math.min(400, Math.max(-200, asFinite(rawHero.subtitlePaddingTop, 0))),
+        stackGap: Math.min(160, Math.max(0, asFinite(rawHero.stackGap, 48))),
         scrollHint: sanitizeText(rawHero.scrollHint, 'scroll to discover our process', 160),
         scrollHintColor: hexLit(asHexNumber(rawHero.scrollHintColor, 0xf5f5f2)),
       };
@@ -568,6 +569,7 @@ export interface HeroCopyConfig {
   subtitleLine2: string;
   subtitleColor: number;
   subtitlePaddingTop?: number;
+  stackGap?: number;
   scrollHint: string;
   scrollHintColor: number;
 }
@@ -586,6 +588,7 @@ export function applyHeroCopy() {
   root.style.setProperty('--hero-scroll-color', hexCss(HERO_COPY.scrollHintColor));
   root.style.setProperty('--hero-title-padding-top', (HERO_COPY.titlePaddingTop ?? 0) + 'px');
   root.style.setProperty('--hero-subtitle-padding-top', (HERO_COPY.subtitlePaddingTop ?? 0) + 'px');
+  root.style.setProperty('--hero-stack-gap', Math.max(0, HERO_COPY.stackGap ?? 48) + 'px');
 
   const title = document.querySelector<HTMLElement>('.hero__title');
   if (title) {
@@ -766,12 +769,12 @@ export function syncFlowDom() {
         siteName: sanitizeText(raw.siteName, 'رستاک', 40),
         siteNameColor: hexLit(asHexNumber(raw.siteNameColor, 0x1a1b22)),
         siteNameLayoutColor: hexLit(asHexNumber(raw.siteNameLayoutColor, 0x1a1b22)),
-        siteNamePaddingTop: Math.min(120, Math.max(0, asFinite(raw.siteNamePaddingTop, 0))),
+        siteNamePaddingTop: Math.min(400, Math.max(-200, asFinite(raw.siteNamePaddingTop, 0))),
         showSiteLogo: raw.showSiteLogo !== false,
-        siteLogoSize: Math.min(96, Math.max(12, asFinite(raw.siteLogoSize, 36))),
-        siteLogoGap: Math.min(48, Math.max(0, asFinite(raw.siteLogoGap, 10))),
-        siteLogoOffsetX: Math.min(40, Math.max(-40, asFinite(raw.siteLogoOffsetX, 0))),
-        siteLogoOffsetY: Math.min(40, Math.max(-40, asFinite(raw.siteLogoOffsetY, 0))),
+        siteLogoSize: Math.min(160, Math.max(8, asFinite(raw.siteLogoSize, 36))),
+        siteLogoGap: Math.min(120, Math.max(0, asFinite(raw.siteLogoGap, 10))),
+        siteLogoOffsetX: Math.min(120, Math.max(-120, asFinite(raw.siteLogoOffsetX, 0))),
+        siteLogoOffsetY: Math.min(120, Math.max(-120, asFinite(raw.siteLogoOffsetY, 0))),
         siteLogoSide: raw.siteLogoSide === 'right' ? 'right' : 'left',
         studioCorner: corners.has(String(raw.studioCorner)) ? raw.studioCorner : 'bottom-right',
         heroTitle: face(raw.heroTitle, 96, 500),
@@ -898,7 +901,7 @@ export function applyTypeChrome() {
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
   root.style.setProperty('--site-name-padding-top', (TYPE_CHROME.siteNamePaddingTop ?? 0) + 'px');
-  root.style.setProperty('--site-logo-size', Math.max(12, TYPE_CHROME.siteLogoSize ?? 36) + 'px');
+  root.style.setProperty('--site-logo-size', Math.max(8, TYPE_CHROME.siteLogoSize ?? 36) + 'px');
   root.style.setProperty('--site-logo-gap', Math.max(0, TYPE_CHROME.siteLogoGap ?? 10) + 'px');
   root.style.setProperty('--site-logo-x', (TYPE_CHROME.siteLogoOffsetX ?? 0) + 'px');
   root.style.setProperty('--site-logo-y', (TYPE_CHROME.siteLogoOffsetY ?? 0) + 'px');

@@ -1590,11 +1590,11 @@ export class SceneStudioGUI {
       face.weight = Number(value);
       sync();
     });
-    folder.add(params, 'lineHeight', 0.7, 2.4, 0.02).name(named('Line spacing')).onChange((value: number) => {
+    folder.add(params, 'lineHeight', 0.5, 3.2, 0.02).name(named('Line spacing')).onChange((value: number) => {
       face.lineHeight = value;
       sync();
     });
-    folder.add(params, 'letterSpacing', -12, 12, 0.1).name(named('Letter spacing')).onChange((value: number) => {
+    folder.add(params, 'letterSpacing', -20, 20, 0.1).name(named('Letter spacing')).onChange((value: number) => {
       face.letterSpacing = value;
       sync();
     });
@@ -1649,7 +1649,7 @@ export class SceneStudioGUI {
       applyTypeChrome();
     });
     heroFolder
-      .add(brandParams, 'paddingTop', 0, 120, 1)
+      .add(brandParams, 'paddingTop', -200, 400, 1)
       .name('Name top padding')
       .onChange((value: number) => {
         TYPE_CHROME.siteNamePaddingTop = value;
@@ -1675,10 +1675,10 @@ export class SceneStudioGUI {
     };
     heroFolder.add(logoParams, 'showSiteLogo').name('Show logo').onChange(pushHeroLogo);
     heroFolder.add(logoParams, 'siteLogoSide', { Left: 'left', Right: 'right' }).name('Logo side').onChange(pushHeroLogo);
-    heroFolder.add(logoParams, 'siteLogoSize', 12, 96, 1).name('Logo size').onChange(pushHeroLogo);
-    heroFolder.add(logoParams, 'siteLogoGap', 0, 48, 1).name('Logo gap').onChange(pushHeroLogo);
-    heroFolder.add(logoParams, 'siteLogoOffsetX', -40, 40, 1).name('Logo offset X').onChange(pushHeroLogo);
-    heroFolder.add(logoParams, 'siteLogoOffsetY', -40, 40, 1).name('Logo offset Y').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoSize', 8, 160, 1).name('Logo size').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoGap', 0, 120, 1).name('Logo gap').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoOffsetX', -120, 120, 1).name('Logo offset X').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoOffsetY', -120, 120, 1).name('Logo offset Y').onChange(pushHeroLogo);
     const heroParams = {
       titleLine1: HERO_COPY.titleLine1,
       titleLine2: HERO_COPY.titleLine2,
@@ -1688,6 +1688,7 @@ export class SceneStudioGUI {
       subtitleLine2: HERO_COPY.subtitleLine2,
       subtitleColor: hex(HERO_COPY.subtitleColor),
       subtitlePaddingTop: HERO_COPY.subtitlePaddingTop ?? 0,
+      stackGap: HERO_COPY.stackGap ?? 48,
       scrollHint: HERO_COPY.scrollHint,
       scrollHintColor: hex(HERO_COPY.scrollHintColor),
     };
@@ -1702,7 +1703,7 @@ export class SceneStudioGUI {
       .name('Title color')
       .onChange((value: string) => applyHeroField('titleColor', new THREE.Color(value).getHex()));
     heroFolder
-      .add(heroParams, 'titlePaddingTop', 0, 200, 1)
+      .add(heroParams, 'titlePaddingTop', -200, 480, 1)
       .name('Title top padding')
       .onChange((value: number) => applyHeroField('titlePaddingTop', value));
     heroFolder.add(heroParams, 'subtitleLine1').name('Description line 1').onChange((value: string) => applyHeroField('subtitleLine1', value));
@@ -1712,9 +1713,13 @@ export class SceneStudioGUI {
       .name('Description color')
       .onChange((value: string) => applyHeroField('subtitleColor', new THREE.Color(value).getHex()));
     heroFolder
-      .add(heroParams, 'subtitlePaddingTop', 0, 200, 1)
+      .add(heroParams, 'subtitlePaddingTop', -200, 400, 1)
       .name('Description top padding')
       .onChange((value: number) => applyHeroField('subtitlePaddingTop', value));
+    heroFolder
+      .add(heroParams, 'stackGap', 0, 160, 1)
+      .name('Title / description gap')
+      .onChange((value: number) => applyHeroField('stackGap', value));
     heroFolder.add(heroParams, 'scrollHint').name('Scroll hint').onChange((value: string) => applyHeroField('scrollHint', value));
     heroFolder
       .addColor(heroParams, 'scrollHintColor')

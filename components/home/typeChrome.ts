@@ -212,7 +212,7 @@ export function applyTypeChrome() {
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
   root.style.setProperty('--site-name-padding-top', (TYPE_CHROME.siteNamePaddingTop ?? 0) + 'px');
-  root.style.setProperty('--site-logo-size', Math.max(12, TYPE_CHROME.siteLogoSize ?? 36) + 'px');
+  root.style.setProperty('--site-logo-size', Math.max(8, TYPE_CHROME.siteLogoSize ?? 36) + 'px');
   root.style.setProperty('--site-logo-gap', Math.max(0, TYPE_CHROME.siteLogoGap ?? 10) + 'px');
   root.style.setProperty('--site-logo-x', (TYPE_CHROME.siteLogoOffsetX ?? 0) + 'px');
   root.style.setProperty('--site-logo-y', (TYPE_CHROME.siteLogoOffsetY ?? 0) + 'px');

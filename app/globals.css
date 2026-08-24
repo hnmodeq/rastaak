@@ -132,6 +132,10 @@ main[data-taxi],
   direction: rtl;
 }
 
+.hero .hero__content {
+  gap: var(--hero-stack-gap, var(--space-2xl)) !important;
+}
+
 .hero .hero__scroll-btn,
 .hero .hsbtn-in {
   color: var(--hero-scroll-color, inherit);
