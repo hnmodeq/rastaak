@@ -985,6 +985,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = ${emit(names, 0)};
         showCamPath: raw.showCamPath !== false,
         showTargetPath: raw.showTargetPath !== false,
         showLightGizmos: raw.showLightGizmos !== false,
+        showHero: raw.showHero !== false,
       };
       const overlayPath = path.join(rootDir, 'components', 'canvas', 'scene', 'studioOverlay.ts');
       const overlayCode = `/**
@@ -998,6 +999,7 @@ export interface StudioOverlayConfig {
   showCamPath: boolean;
   showTargetPath: boolean;
   showLightGizmos: boolean;
+  showHero?: boolean;
 }
 
 export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};

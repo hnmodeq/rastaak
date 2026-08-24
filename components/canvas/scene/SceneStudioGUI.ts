@@ -130,6 +130,7 @@ export class SceneStudioGUI {
   private showTargetGizmo = STUDIO_OVERLAY.showTargetGizmo !== false;
   private showCamPath = STUDIO_OVERLAY.showCamPath !== false;
   private showTargetPath = STUDIO_OVERLAY.showTargetPath !== false;
+  private showHero = STUDIO_OVERLAY.showHero !== false;
   private cameraPathMode: 'Full path' | 'Current segment' = 'Full path';
   private lookAtTarget = true;
   private grabMode = false;
@@ -268,6 +269,7 @@ export class SceneStudioGUI {
     window.addEventListener('rastaak-studio-timing-changed', this.onStudioTiming);
     this.initGUI();
     this.initRaycaster();
+    this.syncHeroVisibility();
   }
 
   private hydrateGlobalsFromConfig() {
@@ -879,6 +881,7 @@ export class SceneStudioGUI {
         showCamPath: this.showCamPath,
         showTargetPath: this.showTargetPath,
         showLightGizmos: this.showLightGizmos,
+        showHero: this.showHero,
       },
       buildingNames: BUILDING_NAMES.map((plate) => ({
         ...plate,
@@ -1650,6 +1653,15 @@ export class SceneStudioGUI {
     const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
 
     const heroFolder = this.addTab('Hero');
+    const heroVis = { showHero: this.showHero };
+    heroFolder
+      .add(heroVis, 'showHero')
+      .name('Show hero')
+      .onChange((value: boolean) => {
+        this.showHero = value;
+        STUDIO_OVERLAY.showHero = value;
+        this.syncHeroVisibility();
+      });
     const brandParams = {
       siteName: TYPE_CHROME.siteName,
       siteNameColor: hex(TYPE_CHROME.siteNameColor),
@@ -2994,6 +3006,11 @@ export class SceneStudioGUI {
     return this.showCamGizmo || this.showTargetGizmo || this.showCamPath || this.showTargetPath;
   }
 
+  private syncHeroVisibility() {
+    if (typeof document === 'undefined') return;
+    document.documentElement.dataset.studioHero = this.showHero ? 'on' : 'off';
+  }
+
   private syncGizmoVisibility() {
     this.lightGizmos?.setVisible(this.isOpen && this.showLightGizmos);
     this.cameraGizmos?.setVisible(this.isOpen && this.anyCameraOverlay());
@@ -3092,5 +3109,6 @@ export class SceneStudioGUI {
     this.lightUi.clear();
     this.timelinePanel?.destroy();
     this.timelinePanel = null;
+    delete document.documentElement.dataset.studioHero;
   }
 }

@@ -9,6 +9,7 @@ export interface StudioOverlayConfig {
   showCamPath: boolean;
   showTargetPath: boolean;
   showLightGizmos: boolean;
+  showHero?: boolean;
 }
 
 export const STUDIO_OVERLAY: StudioOverlayConfig = {

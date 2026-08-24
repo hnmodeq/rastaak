@@ -266,6 +266,7 @@ export interface StudioSavePayload {
     showCamPath: boolean;
     showTargetPath: boolean;
     showLightGizmos: boolean;
+    showHero?: boolean;
   };
   loader?: {
     title: string;

@@ -496,6 +496,11 @@ html[data-viewport='true'] body {
   direction: ltr !important;
   unicode-bidi: isolate;
 }
+html[data-studio='true'][data-studio-hero='off'] .hero {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 html[data-sec-scene='off'] .hero,
 html[data-sec-scene='off'] .hero-spacer,
 html[data-sec-scene='off'] .flow,
