@@ -362,6 +362,8 @@ export class SceneStudioGUI {
         transform: translateX(0);
         opacity: 1;
         transition: transform 0.28s ease, opacity 0.22s ease;
+        direction: ltr !important;
+        unicode-bidi: isolate;
       }
       #rastaak-studio-dock[data-collapsed='true'] #rastaak-studio-panel {
         transform: translateX(calc(-100% - 18px));
@@ -446,6 +448,7 @@ export class SceneStudioGUI {
     if (!dock) {
       dock = document.createElement('div');
       dock.id = 'rastaak-studio-dock';
+      dock.dir = 'ltr';
       dock.dataset.collapsed = 'true';
       const edge = document.createElement('button');
       edge.type = 'button';
@@ -458,6 +461,7 @@ export class SceneStudioGUI {
       });
       const host = document.createElement('div');
       host.id = 'rastaak-studio-panel';
+      host.dir = 'ltr';
       const toolbar = document.createElement('div');
       toolbar.id = 'rastaak-studio-toolbar';
       const fold = document.createElement('button');
@@ -511,6 +515,8 @@ export class SceneStudioGUI {
     });
     const guiEl = gui.domElement as HTMLElement;
     guiEl.classList.add('rastaak-studio-gui');
+    guiEl.dir = 'ltr';
+    guiEl.style.direction = 'ltr';
     guiEl.style.position = 'relative';
     guiEl.style.top = 'auto';
     guiEl.style.right = 'auto';
@@ -1559,9 +1565,10 @@ export class SceneStudioGUI {
     }
   }
 
-  private addTypeControls(folder: any, face: TypeFace, hex: (value: number) => string) {
+  private addTypeControls(folder: any, face: TypeFace, hex: (value: number) => string, label = '') {
     if (face.lineHeight === undefined) face.lineHeight = 1.15;
     if (face.letterSpacing === undefined) face.letterSpacing = 0;
+    const named = (name: string) => (label ? `${label} ${name[0].toLowerCase()}${name.slice(1)}` : name);
     const params = {
       size: face.size,
       weight: face.weight,
@@ -1574,39 +1581,39 @@ export class SceneStudioGUI {
       shadowY: face.shadowY,
     };
     const sync = () => applyTypeChrome();
-    folder.add(params, 'size', 8, 160, 1).name('Size').onChange((value: number) => {
+    folder.add(params, 'size', 8, 160, 1).name(named('Size')).onChange((value: number) => {
       face.size = value;
       sync();
     });
-    folder.add(params, 'weight', TYPE_WEIGHTS).name('Weight').onChange((value: number) => {
+    folder.add(params, 'weight', TYPE_WEIGHTS).name(named('Weight')).onChange((value: number) => {
       face.weight = Number(value);
       sync();
     });
-    folder.add(params, 'lineHeight', 0.7, 2.4, 0.02).name('Line spacing').onChange((value: number) => {
+    folder.add(params, 'lineHeight', 0.7, 2.4, 0.02).name(named('Line spacing')).onChange((value: number) => {
       face.lineHeight = value;
       sync();
     });
-    folder.add(params, 'letterSpacing', -12, 12, 0.1).name('Letter spacing').onChange((value: number) => {
+    folder.add(params, 'letterSpacing', -12, 12, 0.1).name(named('Letter spacing')).onChange((value: number) => {
       face.letterSpacing = value;
       sync();
     });
-    folder.addColor(params, 'shadowColor').name('Shadow color').onChange((value: string) => {
+    folder.addColor(params, 'shadowColor').name(named('Shadow color')).onChange((value: string) => {
       face.shadowColor = new THREE.Color(value).getHex();
       sync();
     });
-    folder.add(params, 'shadowOpacity', 0, 1, 0.01).name('Shadow opacity').onChange((value: number) => {
+    folder.add(params, 'shadowOpacity', 0, 1, 0.01).name(named('Shadow opacity')).onChange((value: number) => {
       face.shadowOpacity = value;
       sync();
     });
-    folder.add(params, 'shadowBlur', 0, 40, 0.5).name('Shadow blur').onChange((value: number) => {
+    folder.add(params, 'shadowBlur', 0, 40, 0.5).name(named('Shadow blur')).onChange((value: number) => {
       face.shadowBlur = value;
       sync();
     });
-    folder.add(params, 'shadowX', -20, 20, 0.5).name('Shadow X').onChange((value: number) => {
+    folder.add(params, 'shadowX', -20, 20, 0.5).name(named('Shadow X')).onChange((value: number) => {
       face.shadowX = value;
       sync();
     });
-    folder.add(params, 'shadowY', -20, 20, 0.5).name('Shadow Y').onChange((value: number) => {
+    folder.add(params, 'shadowY', -20, 20, 0.5).name(named('Shadow Y')).onChange((value: number) => {
       face.shadowY = value;
       sync();
     });
@@ -1647,7 +1654,7 @@ export class SceneStudioGUI {
         TYPE_CHROME.siteNamePaddingTop = value;
         applyTypeChrome();
       });
-    this.addTypeControls(heroFolder.addFolder('Site name type'), TYPE_CHROME.siteNameType, hex);
+    this.addTypeControls(heroFolder, TYPE_CHROME.siteNameType, hex, 'Name');
     const logoParams = {
       showSiteLogo: TYPE_CHROME.showSiteLogo !== false,
       siteLogoSize: TYPE_CHROME.siteLogoSize ?? 36,
@@ -1665,13 +1672,12 @@ export class SceneStudioGUI {
       TYPE_CHROME.siteLogoSide = logoParams.siteLogoSide === 'right' ? 'right' : 'left';
       applyTypeChrome();
     };
-    const logoFolder = heroFolder.addFolder('Header logo');
-    logoFolder.add(logoParams, 'showSiteLogo').name('Show logo').onChange(pushHeroLogo);
-    logoFolder.add(logoParams, 'siteLogoSide', { Left: 'left', Right: 'right' }).name('Logo side').onChange(pushHeroLogo);
-    logoFolder.add(logoParams, 'siteLogoSize', 12, 96, 1).name('Logo size').onChange(pushHeroLogo);
-    logoFolder.add(logoParams, 'siteLogoGap', 0, 48, 1).name('Logo gap').onChange(pushHeroLogo);
-    logoFolder.add(logoParams, 'siteLogoOffsetX', -40, 40, 1).name('Logo offset X').onChange(pushHeroLogo);
-    logoFolder.add(logoParams, 'siteLogoOffsetY', -40, 40, 1).name('Logo offset Y').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'showSiteLogo').name('Show logo').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoSide', { Left: 'left', Right: 'right' }).name('Logo side').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoSize', 12, 96, 1).name('Logo size').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoGap', 0, 48, 1).name('Logo gap').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoOffsetX', -40, 40, 1).name('Logo offset X').onChange(pushHeroLogo);
+    heroFolder.add(logoParams, 'siteLogoOffsetY', -40, 40, 1).name('Logo offset Y').onChange(pushHeroLogo);
     const heroParams = {
       titleLine1: HERO_COPY.titleLine1,
       titleLine2: HERO_COPY.titleLine2,
@@ -1713,9 +1719,9 @@ export class SceneStudioGUI {
       .addColor(heroParams, 'scrollHintColor')
       .name('Scroll hint color')
       .onChange((value: string) => applyHeroField('scrollHintColor', new THREE.Color(value).getHex()));
-    this.addTypeControls(heroFolder.addFolder('Title type'), TYPE_CHROME.heroTitle, hex);
-    this.addTypeControls(heroFolder.addFolder('Description type'), TYPE_CHROME.heroSubtitle, hex);
-    this.addTypeControls(heroFolder.addFolder('Scroll hint type'), TYPE_CHROME.scrollHint, hex);
+    this.addTypeControls(heroFolder, TYPE_CHROME.heroTitle, hex, 'Title');
+    this.addTypeControls(heroFolder, TYPE_CHROME.heroSubtitle, hex, 'Description');
+    this.addTypeControls(heroFolder, TYPE_CHROME.scrollHint, hex, 'Scroll hint');
 
     const storyFolder = this.addTab('Story colors');
 
@@ -1809,7 +1815,7 @@ export class SceneStudioGUI {
         STORY_CONFIG.chipMaxWidth = value;
         applyStoryTheme();
       });
-    this.addTypeControls(needsFolder.addFolder('Type'), TYPE_CHROME.chipText, hex);
+    this.addTypeControls(needsFolder, TYPE_CHROME.chipText, hex, 'Need');
 
     const needTimeRows: Array<{
       client: (typeof STORY_CONFIG.clients)[number];
@@ -1942,11 +1948,11 @@ export class SceneStudioGUI {
       FLOW_CHROME.descriptionBgOpacity = value;
       applyFlowChrome();
     });
-    this.addTypeControls(chapterFolder.addFolder('Title type'), TYPE_CHROME.flowTitle, hex);
-    this.addTypeControls(chapterFolder.addFolder('Description type'), TYPE_CHROME.flowDescription, hex);
-    this.addTypeControls(chapterFolder.addFolder('Number type'), TYPE_CHROME.flowNumber, hex);
+    this.addTypeControls(chapterFolder, TYPE_CHROME.flowTitle, hex, 'Title');
+    this.addTypeControls(chapterFolder, TYPE_CHROME.flowDescription, hex, 'Description');
+    this.addTypeControls(chapterFolder, TYPE_CHROME.flowNumber, hex, 'Number');
 
-    const titlesFolder = chapterFolder.addFolder('Chapter titles');
+    const titlesFolder = chapterFolder;
     FLOW_CONFIG.forEach((step, index) => {
       const folder = titlesFolder.addFolder(`${step.num} ${step.title}`);
       const params = {
@@ -1995,7 +2001,7 @@ export class SceneStudioGUI {
         this.seekStory(value);
       });
 
-    const cameraFolder = root.addFolder('Camera moves');
+    const cameraFolder = root;
     SCENE_CONFIG.stops.forEach((stop, index) => {
       const row = { progress: stop.progress };
       const ctrl = cameraFolder
@@ -2014,7 +2020,7 @@ export class SceneStudioGUI {
         });
     });
 
-    const timelineFolder = root.addFolder('Chapter ranges');
+    const timelineFolder = root;
     const stepCtrls: Array<{ refresh: () => void }> = [];
     const refreshTimelineSteps = () => {
       stepCtrls.forEach((item) => item.refresh());
@@ -2064,7 +2070,7 @@ export class SceneStudioGUI {
       });
     });
 
-    const beatsFolder = root.addFolder('Story beats');
+    const beatsFolder = root;
 
     STORY_CONFIG.clients.forEach((client) => {
       const folder = beatsFolder.addFolder(client.building);
@@ -2157,7 +2163,7 @@ export class SceneStudioGUI {
       folder.add(row, 'previewBurst').name('Preview — explosion');
     });
 
-    const captionFolder = root.addFolder('Captions');
+    const captionFolder = root;
     STORY_CONFIG.captions.forEach((caption) => {
       const folder = captionFolder.addFolder(caption.text || caption.id);
       const row = {
@@ -2261,7 +2267,7 @@ export class SceneStudioGUI {
       STORY_CONFIG.packetTrail = value;
     });
 
-    const burstFolder = root.addFolder('Arrival explosion');
+    const burstFolder = root;
     const burstParams = {
       burstDelay: STORY_CONFIG.burstDelay ?? 0.045,
       burstSpan: STORY_CONFIG.burstSpan ?? 0.06,
@@ -2401,7 +2407,7 @@ export class SceneStudioGUI {
     root.addColor(params, 'bgColor').name('Background').onChange(push);
     root.add(params, 'dir', { RTL: 'rtl', LTR: 'ltr' }).name('Direction').onChange(push);
 
-    const brand = root.addFolder('Logo and name');
+    const brand = root;
     brand.add(params, 'showLogo').name('Show logo').onChange(push);
     brand.add(params, 'logoSide', { Left: 'left', Right: 'right' }).name('Logo side').onChange(push);
     brand.add(params, 'logoSize', 24, 160, 1).name('Logo size').onChange(push);
@@ -2420,7 +2426,7 @@ export class SceneStudioGUI {
     brand.add(params, 'subtitleTracking', -4, 8, 0.1).name('Subtitle spacing').onChange(push);
     brand.add(params, 'copyGap', 0, 24, 1).name('Title / subtitle gap').onChange(push);
 
-    const bar = root.addFolder('Progress bar');
+    const bar = root;
     bar.add(params, 'showBar').name('Show bar').onChange(push);
     bar.add(params, 'barWidth', 80, 480, 4).name('Bar width').onChange(push);
     bar.add(params, 'barHeight', 1, 12, 1).name('Bar height').onChange(push);
@@ -2699,7 +2705,7 @@ export class SceneStudioGUI {
 
       if (isArea) continue;
 
-      const shadowSub = sub.addFolder('Shadows Settings');
+      const shadowSub = sub;
       const sh = (light as THREE.Light & { shadow?: THREE.LightShadow }).shadow;
       const shadowParams = {
         castShadow: light.castShadow ?? true,

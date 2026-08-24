@@ -402,6 +402,7 @@ header,
   align-items: center;
   gap: var(--site-logo-gap, 10px);
   direction: ltr;
+  padding-top: var(--site-name-padding-top, 0px);
 }
 
 html[data-site-logo-side='right'] .site-brand {
@@ -435,7 +436,6 @@ header.header--white .site-name,
   letter-spacing: var(--site-name-tracking, -0.02em) !important;
   color: var(--site-name-layout-color, var(--site-name-color, var(--color-text))) !important;
   text-shadow: var(--site-name-shadow, none);
-  padding-top: var(--site-name-padding-top, 0px);
   transition: color 0.7s ease;
 }
 
@@ -482,6 +482,15 @@ html[data-viewport='true'] body {
   right: auto !important;
   bottom: auto !important;
   left: auto !important;
+}
+
+#rastaak-studio-dock,
+#rastaak-studio-panel,
+#rastaak-studio-panel .lil-gui,
+#rastaak-studio-toolbar,
+#rastaak-story-timeline {
+  direction: ltr !important;
+  unicode-bidi: isolate;
 }
 html[data-sec-scene='off'] .hero,
 html[data-sec-scene='off'] .hero-spacer,

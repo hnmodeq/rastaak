@@ -23,11 +23,46 @@ export function HeroScrollMotion() {
     const poseOf = (ease: number, y: number) =>
       `perspective(1000px) translate3d(${222.2 * ease}px, ${y * ease}px, 0) rotateY(${-60 * ease}deg) rotateX(${-35 * ease}deg)`;
 
-    const set = (el: HTMLElement, opacity: string, transform: string) => {
+    const enterPose =
+      'perspective(1000px) translate3d(-72px, 32px, 0) rotateY(24deg) rotateX(14deg)';
+    const restPose = poseOf(0, 0);
+    const easeCss = 'cubic-bezier(0.16, 1, 0.3, 1)';
+
+    const setHard = (el: HTMLElement, opacity: string, transform: string) => {
       kill(el);
-      if (el.style.transition !== 'none') el.style.setProperty('transition', 'none', 'important');
-      if (el.style.opacity !== opacity) el.style.setProperty('opacity', opacity, 'important');
-      if (el.style.transform !== transform) el.style.setProperty('transform', transform, 'important');
+      el.style.setProperty('transition', 'none', 'important');
+      el.style.setProperty('opacity', opacity, 'important');
+      el.style.setProperty('transform', transform, 'important');
+    };
+
+    let introDone = false;
+    let introTimer = 0;
+
+    const startIntro = () => {
+      if (introDone || introTimer) return;
+      setHard(title, '0', enterPose);
+      setHard(subtitle, '0', enterPose);
+      void title.offsetWidth;
+      void subtitle.offsetWidth;
+      title.style.setProperty(
+        'transition',
+        `opacity 1.15s ${easeCss}, transform 1.15s ${easeCss}`,
+        'important',
+      );
+      subtitle.style.setProperty(
+        'transition',
+        `opacity 1.25s ${easeCss} 0.28s, transform 1.25s ${easeCss} 0.28s`,
+        'important',
+      );
+      title.style.setProperty('opacity', '1', 'important');
+      title.style.setProperty('transform', restPose, 'important');
+      subtitle.style.setProperty('opacity', '1', 'important');
+      subtitle.style.setProperty('transform', restPose, 'important');
+      introTimer = window.setTimeout(() => {
+        introDone = true;
+        introTimer = 0;
+        apply();
+      }, 1680);
     };
 
     const apply = () => {
@@ -40,12 +75,28 @@ export function HeroScrollMotion() {
         window.matchMedia('(max-width: 820px)').matches ? window.scrollY > 0 : t > 0.15,
       );
       if (!shown) {
-        set(title, '0', poseOf(0, -88));
-        set(subtitle, '0', poseOf(0, -200));
+        if (introTimer) {
+          window.clearTimeout(introTimer);
+          introTimer = 0;
+        }
+        introDone = false;
+        setHard(title, '0', enterPose);
+        setHard(subtitle, '0', enterPose);
         return;
       }
-      set(title, String(1 - ease), poseOf(ease, -88));
-      set(subtitle, String(1 - ease), poseOf(ease, -200));
+      if (t > 0.04) {
+        if (introTimer) {
+          window.clearTimeout(introTimer);
+          introTimer = 0;
+        }
+        introDone = true;
+      }
+      if (!introDone) {
+        startIntro();
+        return;
+      }
+      setHard(title, String(1 - ease), poseOf(ease, -88));
+      setHard(subtitle, String(1 - ease), poseOf(ease, -200));
     };
 
     let frame = 0;
@@ -67,6 +118,7 @@ export function HeroScrollMotion() {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', apply);
       if (frame) window.cancelAnimationFrame(frame);
+      if (introTimer) window.clearTimeout(introTimer);
     };
   }, []);
 

@@ -78,7 +78,9 @@ export function hexToRgba(value: number, alpha: number): string {
 }
 
 export function applyLoaderChrome(root: HTMLElement | null = typeof document === 'undefined' ? null : document.getElementById('loader')) {
-  const host = root ?? (typeof document === 'undefined' ? null : document.documentElement);
+  if (typeof document === 'undefined') return;
+  const loader = root ?? document.getElementById('loader');
+  const host = loader ?? document.documentElement;
   if (!host) return;
   const cfg = LOADER_CONFIG;
   host.style.setProperty('--loader-bg', hexCss(cfg.bgColor));
@@ -98,13 +100,14 @@ export function applyLoaderChrome(root: HTMLElement | null = typeof document ===
   host.style.setProperty('--loader-bar-height', cfg.barHeight + 'px');
   host.style.setProperty('--loader-bar-color', hexCss(cfg.barColor));
   host.style.setProperty('--loader-track-color', hexToRgba(cfg.trackColor, cfg.trackOpacity));
-  host.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
-  const row = host.querySelector<HTMLElement>('.loader__row');
+  if (!loader) return;
+  loader.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
+  const row = loader.querySelector<HTMLElement>('.loader__row');
   if (row) row.dataset.logoSide = cfg.logoSide === 'right' ? 'right' : 'left';
 
-  const title = host.querySelector<HTMLElement>('.loader__title');
+  const title = loader.querySelector<HTMLElement>('.loader__title');
   if (title && title.textContent !== cfg.title) title.textContent = cfg.title;
-  const subtitle = host.querySelector<HTMLElement>('.loader__subtitle');
+  const subtitle = loader.querySelector<HTMLElement>('.loader__subtitle');
   if (subtitle && subtitle.textContent !== cfg.subtitle) subtitle.textContent = cfg.subtitle;
 }
 
