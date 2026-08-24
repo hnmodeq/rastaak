@@ -239,49 +239,6 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
               ),
             }
           : {}),
-        ...(body.materials?.globalWindowRoughness !== undefined
-          ? {
-              globalWindowRoughness: Math.min(
-                1,
-                Math.max(0, asFinite(body.materials.globalWindowRoughness, 0.22)),
-              ),
-            }
-          : {}),
-        ...(body.materials?.globalWindowMetalness !== undefined
-          ? {
-              globalWindowMetalness: Math.min(
-                1,
-                Math.max(0, asFinite(body.materials.globalWindowMetalness, 0.06)),
-              ),
-            }
-          : {}),
-        ...(body.materials?.windowEmissiveIntensity !== undefined
-          ? {
-              windowEmissiveIntensity: Math.min(
-                6,
-                Math.max(0, asFinite(body.materials.windowEmissiveIntensity, 0)),
-              ),
-            }
-          : {}),
-        ...(body.materials?.logoEmissiveIntensity !== undefined
-          ? {
-              logoEmissiveIntensity: Math.min(
-                4,
-                Math.max(0, asFinite(body.materials.logoEmissiveIntensity, 0)),
-              ),
-            }
-          : {}),
-        ...(body.materials?.clearcoat !== undefined
-          ? { clearcoat: Math.min(1, Math.max(0, asFinite(body.materials.clearcoat, 0))) }
-          : {}),
-        ...(body.materials?.clearcoatRoughness !== undefined
-          ? {
-              clearcoatRoughness: Math.min(
-                1,
-                Math.max(0, asFinite(body.materials.clearcoatRoughness, 0.14)),
-              ),
-            }
-          : {}),
         overrides: {},
       };
 

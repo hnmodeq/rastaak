@@ -746,7 +746,7 @@ export class SceneStudioGUI {
       : undefined;
     const collected = collectMaterialsConfig(palette, objectSurface, groundSurface);
     SCENE_CONFIG.materials = { ...SCENE_CONFIG.materials, ...palette, ...collected, overrides: {} };
-    return SCENE_CONFIG.materials;
+    return collected;
   }
 
   private notifyTimingChanged() {

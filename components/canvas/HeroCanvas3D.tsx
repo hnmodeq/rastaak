@@ -31,7 +31,6 @@ import {
   STORY_BLOOM_LAYER,
   applyLookOverlay,
   applySceneEnvironment,
-  attachStreetBulbs,
   disposeSceneEnvironment,
   ensureLookOverlay,
   tickLookOverlay,
@@ -150,10 +149,10 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         }
         if (cfg.castShadow) {
           dirLight.castShadow = true;
-          dirLight.shadow.camera.left = -18;
-          dirLight.shadow.camera.right = 18;
-          dirLight.shadow.camera.top = 18;
-          dirLight.shadow.camera.bottom = -18;
+          dirLight.shadow.camera.left = -45;
+          dirLight.shadow.camera.right = 45;
+          dirLight.shadow.camera.top = 45;
+          dirLight.shadow.camera.bottom = -45;
           applyLightShadow(dirLight, {
             shadowMapSize: cfg.shadowMapSize ?? 2048,
             shadowBias: cfg.shadowBias ?? -0.0005,
@@ -236,7 +235,6 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       }
     }
     applySceneShadows(lightsMap.values());
-    attachStreetBulbs(lightsMap);
     applySceneEnvironment(scene, renderer);
     ensureLookOverlay(host);
     applyLookOverlay();
@@ -392,6 +390,8 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
                 cloned.userData.gltfName = m.name || '';
                 cloned.userData.nodeName = mesh.name || mesh.parent?.name || '';
                 cloned.name = m.name || `${mesh.name || 'Building'}_Mat_${idx}`;
+                if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.28);
+                if ('roughness' in cloned) cloned.roughness = Math.max(Math.min(cloned.roughness ?? 0.45, 1), 0.22);
                 return cloned;
               });
             } else {
@@ -399,6 +399,8 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
               cloned.userData.gltfName = mesh.material.name || '';
               cloned.userData.nodeName = mesh.name || mesh.parent?.name || '';
               cloned.name = mesh.material.name || `${mesh.name || 'Building'}_Mat_0`;
+              if ('metalness' in cloned) cloned.metalness = Math.min(cloned.metalness ?? 0, 0.28);
+              if ('roughness' in cloned) cloned.roughness = Math.max(Math.min(cloned.roughness ?? 0.45, 1), 0.22);
               mesh.material = cloned;
             }
           }
