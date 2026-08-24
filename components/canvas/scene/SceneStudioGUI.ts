@@ -1363,6 +1363,7 @@ export class SceneStudioGUI {
       this.populateLightsAndShadows();
       this.populateMaterials();
       this.populateStoryControls();
+      this.populateShootingLogo();
       this.populateStoryTiming();
       this.populateBuildingNames();
       if (!this.timelinePanel) {
@@ -1689,111 +1690,6 @@ export class SceneStudioGUI {
       STORY_CONFIG.colors[key] = new THREE.Color(value).getHex();
       applyStoryTheme();
     };
-
-    storyFolder.addColor(colorParams, 'packet').name('Shooting light trail').onChange((v: string) => applyColor('packet', v));
-    storyFolder.addColor(colorParams, 'packetCore').name('Shooting light core').onChange((v: string) => applyColor('packetCore', v));
-    storyFolder.addColor(colorParams, 'packetInner').name('Shooting logo inner glow').onChange((v: string) => applyColor('packetInner', v));
-    storyFolder.addColor(colorParams, 'packetOuter').name('Shooting logo outer glow').onChange((v: string) => applyColor('packetOuter', v));
-    storyFolder.addColor(colorParams, 'packetSpark').name('Shooting light sparks').onChange((v: string) => applyColor('packetSpark', v));
-    storyFolder.addColor(colorParams, 'packetBounce').name('Shooting light reflection color').onChange((v: string) => applyColor('packetBounce', v));
-
-    const bounceParams = {
-      packetIntensity: STORY_CONFIG.packetIntensity ?? 260,
-      packetDistance: STORY_CONFIG.packetDistance ?? 9,
-      packetGlow: STORY_CONFIG.packetGlow ?? 1,
-      packetGlowSize: STORY_CONFIG.packetGlowSize ?? 0.22,
-      packetCoreSize: STORY_CONFIG.packetCoreSize ?? 0.07,
-      packetTrail: STORY_CONFIG.packetTrail ?? 0.7,
-    };
-    storyFolder
-      .add(bounceParams, 'packetIntensity', 0, 800, 5)
-      .name('Shooting light reflection')
-      .onChange((value: number) => {
-        STORY_CONFIG.packetIntensity = value;
-      });
-    storyFolder
-      .add(bounceParams, 'packetDistance', 0.5, 20, 0.1)
-      .name('Shooting light reach')
-      .onChange((value: number) => {
-        STORY_CONFIG.packetDistance = value;
-      });
-    storyFolder
-      .add(bounceParams, 'packetGlow', 0, 2, 0.05)
-      .name('Shooting light glow')
-      .onChange((value: number) => {
-        STORY_CONFIG.packetGlow = value;
-      });
-    storyFolder
-      .add(bounceParams, 'packetGlowSize', 0.04, 0.8, 0.01)
-      .name('Shooting light glow size')
-      .onChange((value: number) => {
-        STORY_CONFIG.packetGlowSize = value;
-      });
-    storyFolder
-      .add(bounceParams, 'packetCoreSize', 0.02, 0.8, 0.005)
-      .name('Shooting logo size')
-      .onChange((value: number) => {
-        STORY_CONFIG.packetCoreSize = value;
-      });
-    storyFolder
-      .add(bounceParams, 'packetTrail', 0, 1, 0.02)
-      .name('Shooting light trail')
-      .onChange((value: number) => {
-        STORY_CONFIG.packetTrail = value;
-      });
-
-    const burstFolder = storyFolder.addFolder('Arrival explosion');
-    const burstParams = {
-      burstDelay: STORY_CONFIG.burstDelay ?? 0.045,
-      burstSpan: STORY_CONFIG.burstSpan ?? 0.06,
-      burstLight: STORY_CONFIG.burstLight ?? 3.2,
-      burstLightRadius: STORY_CONFIG.burstLightRadius ?? 10,
-      burstSize: STORY_CONFIG.burstSize ?? 1,
-      burstExposure: STORY_CONFIG.burstExposure ?? 1,
-      burstSparks: STORY_CONFIG.burstSparks ?? 1,
-    };
-    burstFolder
-      .add(burstParams, 'burstDelay', 0, 0.16, 0.005)
-      .name('Delay after hit')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstDelay = value;
-      });
-    burstFolder
-      .add(burstParams, 'burstSpan', 0.015, 0.16, 0.005)
-      .name('Explosion duration')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstSpan = value;
-      });
-    burstFolder
-      .add(burstParams, 'burstLight', 0, 8, 0.05)
-      .name('Explosion light amount')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstLight = value;
-      });
-    burstFolder
-      .add(burstParams, 'burstLightRadius', 0.5, 30, 0.1)
-      .name('Explosion reflection reach')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstLightRadius = value;
-      });
-    burstFolder
-      .add(burstParams, 'burstSize', 0.2, 3, 0.05)
-      .name('Explosion flare size')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstSize = value;
-      });
-    burstFolder
-      .add(burstParams, 'burstExposure', 0, 3, 0.05)
-      .name('Explosion exposure')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstExposure = value;
-      });
-    burstFolder
-      .add(burstParams, 'burstSparks', 0, 2, 0.05)
-      .name('Explosion sparks')
-      .onChange((value: number) => {
-        STORY_CONFIG.burstSparks = value;
-      });
 
     storyFolder.addColor(colorParams, 'hubPulse').name('Rastaak building').onChange((v: string) => applyColor('hubPulse', v));
     storyFolder.addColor(colorParams, 'hubPulseWindow').name('Rastaak window').onChange((v: string) => applyColor('hubPulseWindow', v));
@@ -2128,12 +2024,6 @@ export class SceneStudioGUI {
         dispatch: client.dispatch,
         arrive: client.arrive,
         flight: Math.max(MIN_FLIGHT, client.arrive - client.dispatch),
-        landX: client.land?.[0] ?? 0,
-        landY: client.land?.[1] ?? 0,
-        landZ: client.land?.[2] ?? 0,
-        launchX: client.launch?.[0] ?? 0,
-        launchY: client.launch?.[1] ?? 0,
-        launchZ: client.launch?.[2] ?? 0,
         previewRed: () => this.seekStory(client.appear),
         previewBlue: () => this.seekStory(resolveAt(client)),
         previewLaunch: () => this.seekStory(client.dispatch),
@@ -2147,23 +2037,11 @@ export class SceneStudioGUI {
         row.dispatch = client.dispatch;
         row.arrive = client.arrive;
         row.flight = Math.max(MIN_FLIGHT, client.arrive - client.dispatch);
-        row.landX = client.land?.[0] ?? 0;
-        row.landY = client.land?.[1] ?? 0;
-        row.landZ = client.land?.[2] ?? 0;
-        row.launchX = client.launch?.[0] ?? 0;
-        row.launchY = client.launch?.[1] ?? 0;
-        row.launchZ = client.launch?.[2] ?? 0;
         appearCtrl.updateDisplay();
         resolveCtrl.updateDisplay();
         dispatchCtrl.updateDisplay();
         arriveCtrl.updateDisplay();
         flightCtrl.updateDisplay();
-        landXCtrl.updateDisplay();
-        landYCtrl.updateDisplay();
-        landZCtrl.updateDisplay();
-        launchXCtrl.updateDisplay();
-        launchYCtrl.updateDisplay();
-        launchZCtrl.updateDisplay();
       };
 
       const appearCtrl = folder
@@ -2221,40 +2099,6 @@ export class SceneStudioGUI {
           this.seekStory(client.arrive);
           this.notifyTimingChanged();
         });
-
-      const writeLand = () => {
-        client.land = [row.landX, row.landY, row.landZ];
-        this.seekStory(client.arrive);
-      };
-      const landXCtrl = folder
-        .add(row, 'landX', -8, 8, 0.05)
-        .name('Land X')
-        .onChange(writeLand);
-      const landYCtrl = folder
-        .add(row, 'landY', -6, 8, 0.05)
-        .name('Land Y')
-        .onChange(writeLand);
-      const landZCtrl = folder
-        .add(row, 'landZ', -8, 8, 0.05)
-        .name('Land Z')
-        .onChange(writeLand);
-
-      const writeLaunch = () => {
-        client.launch = [row.launchX, row.launchY, row.launchZ];
-        this.seekStory(client.dispatch);
-      };
-      const launchXCtrl = folder
-        .add(row, 'launchX', -12, 12, 0.05)
-        .name('Launch X')
-        .onChange(writeLaunch);
-      const launchYCtrl = folder
-        .add(row, 'launchY', -8, 12, 0.05)
-        .name('Launch Y')
-        .onChange(writeLaunch);
-      const launchZCtrl = folder
-        .add(row, 'launchZ', -12, 12, 0.05)
-        .name('Launch Z')
-        .onChange(writeLaunch);
 
       folder.add(row, 'previewRed').name('Preview — turns red');
       folder.add(row, 'previewBlue').name('Preview — turns blue');
@@ -2315,6 +2159,124 @@ export class SceneStudioGUI {
       .onChange((value: number) => {
         STORY_CONFIG.captionFadeIn = clamp01(value);
       });
+  }
+
+  private populateShootingLogo() {
+    if (!this.gui) return;
+    const hex = (value: number) => '#' + new THREE.Color(value).getHexString();
+    const root = this.addTab('Shooting logo');
+
+    const colorParams = {
+      packet: hex(STORY_CONFIG.colors.packet),
+      packetBounce: hex(STORY_CONFIG.colors.packetBounce ?? STORY_CONFIG.colors.packet),
+      packetCore: hex(STORY_CONFIG.colors.packetCore ?? STORY_CONFIG.colors.packet),
+      packetInner: hex(STORY_CONFIG.colors.packetInner ?? STORY_CONFIG.colors.packet),
+      packetOuter: hex(STORY_CONFIG.colors.packetOuter ?? STORY_CONFIG.colors.packet),
+      packetSpark: hex(STORY_CONFIG.colors.packetSpark ?? STORY_CONFIG.colors.packet),
+    };
+    const applyColor = (key: keyof typeof colorParams, value: string) => {
+      STORY_CONFIG.colors[key] = new THREE.Color(value).getHex();
+    };
+    root.addColor(colorParams, 'packet').name('Trail color').onChange((v: string) => applyColor('packet', v));
+    root.addColor(colorParams, 'packetCore').name('Core color').onChange((v: string) => applyColor('packetCore', v));
+    root.addColor(colorParams, 'packetInner').name('Inner glow').onChange((v: string) => applyColor('packetInner', v));
+    root.addColor(colorParams, 'packetOuter').name('Outer glow').onChange((v: string) => applyColor('packetOuter', v));
+    root.addColor(colorParams, 'packetSpark').name('Spark color').onChange((v: string) => applyColor('packetSpark', v));
+    root.addColor(colorParams, 'packetBounce').name('Reflection color').onChange((v: string) => applyColor('packetBounce', v));
+
+    const lookParams = {
+      packetIntensity: STORY_CONFIG.packetIntensity ?? 260,
+      packetDistance: STORY_CONFIG.packetDistance ?? 9,
+      packetGlow: STORY_CONFIG.packetGlow ?? 1,
+      packetGlowSize: STORY_CONFIG.packetGlowSize ?? 0.22,
+      packetCoreSize: STORY_CONFIG.packetCoreSize ?? 0.07,
+      packetTrail: STORY_CONFIG.packetTrail ?? 0.7,
+    };
+    root.add(lookParams, 'packetIntensity', 0, 800, 5).name('Reflection').onChange((value: number) => {
+      STORY_CONFIG.packetIntensity = value;
+    });
+    root.add(lookParams, 'packetDistance', 0.5, 20, 0.1).name('Reach').onChange((value: number) => {
+      STORY_CONFIG.packetDistance = value;
+    });
+    root.add(lookParams, 'packetGlow', 0, 2, 0.05).name('Glow').onChange((value: number) => {
+      STORY_CONFIG.packetGlow = value;
+    });
+    root.add(lookParams, 'packetGlowSize', 0.04, 0.8, 0.01).name('Glow size').onChange((value: number) => {
+      STORY_CONFIG.packetGlowSize = value;
+    });
+    root.add(lookParams, 'packetCoreSize', 0.02, 0.8, 0.005).name('Logo size').onChange((value: number) => {
+      STORY_CONFIG.packetCoreSize = value;
+    });
+    root.add(lookParams, 'packetTrail', 0, 1, 0.02).name('Trail').onChange((value: number) => {
+      STORY_CONFIG.packetTrail = value;
+    });
+
+    const burstFolder = root.addFolder('Arrival explosion');
+    const burstParams = {
+      burstDelay: STORY_CONFIG.burstDelay ?? 0.045,
+      burstSpan: STORY_CONFIG.burstSpan ?? 0.06,
+      burstLight: STORY_CONFIG.burstLight ?? 3.2,
+      burstLightRadius: STORY_CONFIG.burstLightRadius ?? 10,
+      burstSize: STORY_CONFIG.burstSize ?? 1,
+      burstExposure: STORY_CONFIG.burstExposure ?? 1,
+      burstSparks: STORY_CONFIG.burstSparks ?? 1,
+    };
+    burstFolder.add(burstParams, 'burstDelay', 0, 0.16, 0.005).name('Delay after hit').onChange((value: number) => {
+      STORY_CONFIG.burstDelay = value;
+    });
+    burstFolder.add(burstParams, 'burstSpan', 0.015, 0.16, 0.005).name('Explosion duration').onChange((value: number) => {
+      STORY_CONFIG.burstSpan = value;
+    });
+    burstFolder.add(burstParams, 'burstLight', 0, 8, 0.05).name('Explosion light amount').onChange((value: number) => {
+      STORY_CONFIG.burstLight = value;
+    });
+    burstFolder
+      .add(burstParams, 'burstLightRadius', 0.5, 30, 0.1)
+      .name('Explosion reflection reach')
+      .onChange((value: number) => {
+        STORY_CONFIG.burstLightRadius = value;
+      });
+    burstFolder.add(burstParams, 'burstSize', 0.2, 3, 0.05).name('Explosion flare size').onChange((value: number) => {
+      STORY_CONFIG.burstSize = value;
+    });
+    burstFolder.add(burstParams, 'burstExposure', 0, 3, 0.05).name('Explosion exposure').onChange((value: number) => {
+      STORY_CONFIG.burstExposure = value;
+    });
+    burstFolder.add(burstParams, 'burstSparks', 0, 2, 0.05).name('Explosion sparks').onChange((value: number) => {
+      STORY_CONFIG.burstSparks = value;
+    });
+
+    STORY_CONFIG.clients.forEach((client) => {
+      const folder = root.addFolder(client.building);
+      const row = {
+        startX: client.launch?.[0] ?? 0,
+        startY: client.launch?.[1] ?? 0,
+        startZ: client.launch?.[2] ?? 0,
+        endX: client.land?.[0] ?? 0,
+        endY: client.land?.[1] ?? 0,
+        endZ: client.land?.[2] ?? 0,
+        previewStart: () => this.seekStory(client.dispatch),
+        previewEnd: () => this.seekStory(client.arrive),
+        previewBurst: () => this.seekStory(client.arrive + (STORY_CONFIG.burstDelay ?? 0.045)),
+      };
+      const writeStart = () => {
+        client.launch = [row.startX, row.startY, row.startZ];
+        this.seekStory(client.dispatch);
+      };
+      const writeEnd = () => {
+        client.land = [row.endX, row.endY, row.endZ];
+        this.seekStory(client.arrive);
+      };
+      folder.add(row, 'startX', -12, 12, 0.01).name('Start X').onChange(writeStart);
+      folder.add(row, 'startY', -8, 12, 0.01).name('Start Y').onChange(writeStart);
+      folder.add(row, 'startZ', -12, 12, 0.01).name('Start Z').onChange(writeStart);
+      folder.add(row, 'endX', -12, 12, 0.01).name('End X').onChange(writeEnd);
+      folder.add(row, 'endY', -8, 12, 0.01).name('End Y').onChange(writeEnd);
+      folder.add(row, 'endZ', -12, 12, 0.01).name('End Z').onChange(writeEnd);
+      folder.add(row, 'previewStart').name('Preview — start');
+      folder.add(row, 'previewEnd').name('Preview — end');
+      folder.add(row, 'previewBurst').name('Preview — explosion');
+    });
   }
 
   private populateBuildingNames() {
