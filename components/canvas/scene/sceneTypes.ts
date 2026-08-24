@@ -223,6 +223,12 @@ export interface StudioTypeChromeSave {
   siteNameColor: number;
   siteNameLayoutColor?: number;
   siteNamePaddingTop?: number;
+  showSiteLogo?: boolean;
+  siteLogoSize?: number;
+  siteLogoGap?: number;
+  siteLogoOffsetX?: number;
+  siteLogoOffsetY?: number;
+  siteLogoSide?: 'left' | 'right';
   studioCorner: 'top-right' | 'top-left' | 'bottom-left' | 'bottom-right';
   heroTitle: StudioTypeFaceSave;
   heroSubtitle: StudioTypeFaceSave;
@@ -259,6 +265,7 @@ export interface StudioSavePayload {
     title: string;
     subtitle: string;
     dir: 'rtl' | 'ltr';
+    logoSide?: 'left' | 'right';
     showLogo: boolean;
     showTitle: boolean;
     showSubtitle: boolean;

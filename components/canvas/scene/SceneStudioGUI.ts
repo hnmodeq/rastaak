@@ -754,6 +754,8 @@ export class SceneStudioGUI {
   }
 
   private async applyAndSave() {
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement) focused.blur();
     window.dispatchEvent(new CustomEvent('rastaak-studio-before-save'));
     const payload = this.buildSavePayload();
     this.writePayloadIntoMemory(payload);
@@ -766,6 +768,12 @@ export class SceneStudioGUI {
 
     const data = await res.json();
     if (res.ok) {
+      applyTypeChrome();
+      applyHeroCopy();
+      applyFlowChrome();
+      applyStoryTheme();
+      applyLoaderChrome();
+      notifyBuildingNamesChanged();
       window.dispatchEvent(new CustomEvent('rastaak-studio-after-save'));
       return;
     }
@@ -840,6 +848,7 @@ export class SceneStudioGUI {
       heroCopy: { ...HERO_COPY },
       flowChrome: { ...FLOW_CHROME },
       look: { ...LOOK_CONFIG },
+      loader: { ...LOADER_CONFIG },
       studioOverlay: {
         showCamGizmo: this.showCamGizmo,
         showTargetGizmo: this.showTargetGizmo,
@@ -857,6 +866,12 @@ export class SceneStudioGUI {
         siteNameColor: TYPE_CHROME.siteNameColor,
         siteNameLayoutColor: TYPE_CHROME.siteNameLayoutColor,
         siteNamePaddingTop: TYPE_CHROME.siteNamePaddingTop,
+        showSiteLogo: TYPE_CHROME.showSiteLogo !== false,
+        siteLogoSize: TYPE_CHROME.siteLogoSize ?? 36,
+        siteLogoGap: TYPE_CHROME.siteLogoGap ?? 10,
+        siteLogoOffsetX: TYPE_CHROME.siteLogoOffsetX ?? 0,
+        siteLogoOffsetY: TYPE_CHROME.siteLogoOffsetY ?? 0,
+        siteLogoSide: TYPE_CHROME.siteLogoSide === 'right' ? 'right' : 'left',
         studioCorner: TYPE_CHROME.studioCorner,
         heroTitle: { ...TYPE_CHROME.heroTitle },
         heroSubtitle: { ...TYPE_CHROME.heroSubtitle },
@@ -1633,6 +1648,30 @@ export class SceneStudioGUI {
         applyTypeChrome();
       });
     this.addTypeControls(heroFolder.addFolder('Site name type'), TYPE_CHROME.siteNameType, hex);
+    const logoParams = {
+      showSiteLogo: TYPE_CHROME.showSiteLogo !== false,
+      siteLogoSize: TYPE_CHROME.siteLogoSize ?? 36,
+      siteLogoGap: TYPE_CHROME.siteLogoGap ?? 10,
+      siteLogoOffsetX: TYPE_CHROME.siteLogoOffsetX ?? 0,
+      siteLogoOffsetY: TYPE_CHROME.siteLogoOffsetY ?? 0,
+      siteLogoSide: TYPE_CHROME.siteLogoSide === 'right' ? 'right' : 'left',
+    };
+    const pushHeroLogo = () => {
+      TYPE_CHROME.showSiteLogo = logoParams.showSiteLogo;
+      TYPE_CHROME.siteLogoSize = logoParams.siteLogoSize;
+      TYPE_CHROME.siteLogoGap = logoParams.siteLogoGap;
+      TYPE_CHROME.siteLogoOffsetX = logoParams.siteLogoOffsetX;
+      TYPE_CHROME.siteLogoOffsetY = logoParams.siteLogoOffsetY;
+      TYPE_CHROME.siteLogoSide = logoParams.siteLogoSide === 'right' ? 'right' : 'left';
+      applyTypeChrome();
+    };
+    const logoFolder = heroFolder.addFolder('Header logo');
+    logoFolder.add(logoParams, 'showSiteLogo').name('Show logo').onChange(pushHeroLogo);
+    logoFolder.add(logoParams, 'siteLogoSide', { Left: 'left', Right: 'right' }).name('Logo side').onChange(pushHeroLogo);
+    logoFolder.add(logoParams, 'siteLogoSize', 12, 96, 1).name('Logo size').onChange(pushHeroLogo);
+    logoFolder.add(logoParams, 'siteLogoGap', 0, 48, 1).name('Logo gap').onChange(pushHeroLogo);
+    logoFolder.add(logoParams, 'siteLogoOffsetX', -40, 40, 1).name('Logo offset X').onChange(pushHeroLogo);
+    logoFolder.add(logoParams, 'siteLogoOffsetY', -40, 40, 1).name('Logo offset Y').onChange(pushHeroLogo);
     const heroParams = {
       titleLine1: HERO_COPY.titleLine1,
       titleLine2: HERO_COPY.titleLine2,
@@ -2299,6 +2338,7 @@ export class SceneStudioGUI {
       title: cfg.title,
       subtitle: cfg.subtitle,
       dir: cfg.dir,
+      logoSide: cfg.logoSide === 'right' ? 'right' : 'left',
       showLogo: cfg.showLogo,
       showTitle: cfg.showTitle,
       showSubtitle: cfg.showSubtitle,
@@ -2329,6 +2369,7 @@ export class SceneStudioGUI {
       cfg.title = params.title;
       cfg.subtitle = params.subtitle;
       cfg.dir = params.dir === 'ltr' ? 'ltr' : 'rtl';
+      cfg.logoSide = params.logoSide === 'right' ? 'right' : 'left';
       cfg.showLogo = params.showLogo;
       cfg.showTitle = params.showTitle;
       cfg.showSubtitle = params.showSubtitle;
@@ -2362,6 +2403,7 @@ export class SceneStudioGUI {
 
     const brand = root.addFolder('Logo and name');
     brand.add(params, 'showLogo').name('Show logo').onChange(push);
+    brand.add(params, 'logoSide', { Left: 'left', Right: 'right' }).name('Logo side').onChange(push);
     brand.add(params, 'logoSize', 24, 160, 1).name('Logo size').onChange(push);
     brand.add(params, 'rowGap', 0, 48, 1).name('Logo gap').onChange(push);
     brand.add(params, 'showTitle').name('Show title').onChange(push);

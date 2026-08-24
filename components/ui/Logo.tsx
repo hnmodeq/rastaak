@@ -15,14 +15,21 @@ export const Logo: React.FC<LogoProps> = ({
   style = {},
 }) => {
   return (
-    <span
-      className={`site-name inline-block select-none ${fontSize} ${className}`.trim()}
-      style={{
-        fontFamily: "'Kalameh', sans-serif",
-        ...style,
-      }}
-    >
-      {TYPE_CHROME.siteName}
+    <span className={`site-brand ${className}`.trim()} style={style}>
+      <img
+        className="site-mark"
+        src="/icons/icon-192x192.png"
+        alt=""
+        width={TYPE_CHROME.siteLogoSize ?? 36}
+        height={TYPE_CHROME.siteLogoSize ?? 36}
+        decoding="async"
+      />
+      <span
+        className={`site-name inline-block select-none ${fontSize}`.trim()}
+        style={{ fontFamily: "'Kalameh', sans-serif" }}
+      >
+        {TYPE_CHROME.siteName}
+      </span>
     </span>
   );
 };

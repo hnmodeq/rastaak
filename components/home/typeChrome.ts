@@ -22,6 +22,12 @@ export interface TypeChromeConfig {
   siteNameColor: number;
   siteNameLayoutColor: number;
   siteNamePaddingTop?: number;
+  showSiteLogo?: boolean;
+  siteLogoSize?: number;
+  siteLogoGap?: number;
+  siteLogoOffsetX?: number;
+  siteLogoOffsetY?: number;
+  siteLogoSide?: 'left' | 'right';
   studioCorner: StudioCorner;
   heroTitle: TypeFace;
   heroSubtitle: TypeFace;
@@ -50,6 +56,12 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteNameColor: 0xffffff,
   siteNameLayoutColor: 0x1a1b22,
   siteNamePaddingTop: 0,
+  showSiteLogo: true,
+  siteLogoSize: 36,
+  siteLogoGap: 10,
+  siteLogoOffsetX: 0,
+  siteLogoOffsetY: 0,
+  siteLogoSide: "left",
   studioCorner: "top-left",
   heroTitle: {
     size: 119,
@@ -200,6 +212,12 @@ export function applyTypeChrome() {
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
   root.style.setProperty('--site-name-padding-top', (TYPE_CHROME.siteNamePaddingTop ?? 0) + 'px');
+  root.style.setProperty('--site-logo-size', Math.max(12, TYPE_CHROME.siteLogoSize ?? 36) + 'px');
+  root.style.setProperty('--site-logo-gap', Math.max(0, TYPE_CHROME.siteLogoGap ?? 10) + 'px');
+  root.style.setProperty('--site-logo-x', (TYPE_CHROME.siteLogoOffsetX ?? 0) + 'px');
+  root.style.setProperty('--site-logo-y', (TYPE_CHROME.siteLogoOffsetY ?? 0) + 'px');
+  root.style.setProperty('--site-logo-display', TYPE_CHROME.showSiteLogo === false ? 'none' : 'block');
+  root.dataset.siteLogoSide = TYPE_CHROME.siteLogoSide === 'right' ? 'right' : 'left';
   const sceneColor = hexCss(TYPE_CHROME.siteNameColor);
   const layoutColor = hexCss(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22);
   root.style.setProperty('--site-name-color', sceneColor);

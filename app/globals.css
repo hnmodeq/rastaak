@@ -404,6 +404,8 @@ header .header__logo .site-name,
 header.header--white .site-name,
 .mobile-nav .site-name,
 .footer .site-name {
+  direction: rtl;
+  unicode-bidi: plaintext;
   font-family: 'Kalameh', sans-serif !important;
   font-size: var(--site-name-size, 50px) !important;
   font-weight: var(--site-name-weight, 800) !important;
@@ -508,6 +510,11 @@ html.rastaak-loading body {
   align-items: center;
   justify-content: center;
   gap: var(--loader-row-gap, 14px);
+  direction: ltr;
+}
+
+#loader .loader__row[data-logo-side='right'] {
+  flex-direction: row-reverse;
 }
 
 #loader .loader__copy {
@@ -551,6 +558,23 @@ html.rastaak-loading body {
 #loader .loader__subtitle {
   font-size: var(--loader-subtitle-size, 14px) !important;
   font-weight: var(--loader-subtitle-weight, 400) !important;
+  letter-spacing: var(--loader-subtitle-tracking, 0px);
+  color: var(--loader-subtitle-color, var(--color-content-semi-opaque));
+}
+
+#loader .loader__bar {
+  width: min(var(--loader-bar-width, 240px), 72vw);
+  height: var(--loader-bar-height, 3px);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+#loader .loader__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 160ms linear;
+}
+ht: var(--loader-subtitle-weight, 400) !important;
   letter-spacing: var(--loader-subtitle-tracking, 0px);
   color: var(--loader-subtitle-color, var(--color-content-semi-opaque));
 }

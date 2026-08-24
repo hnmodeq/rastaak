@@ -170,7 +170,7 @@ export const Loader: React.FC = () => {
       }}
     >
       <div className="loader__cluster">
-        <div className="loader__row">
+        <div className="loader__row" data-logo-side={cfg.logoSide === 'right' ? 'right' : 'left'}>
           {cfg.showLogo ? (
             <img
               className="loader__mark"

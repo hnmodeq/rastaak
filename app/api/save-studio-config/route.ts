@@ -767,6 +767,12 @@ export function syncFlowDom() {
         siteNameColor: hexLit(asHexNumber(raw.siteNameColor, 0x1a1b22)),
         siteNameLayoutColor: hexLit(asHexNumber(raw.siteNameLayoutColor, 0x1a1b22)),
         siteNamePaddingTop: Math.min(120, Math.max(0, asFinite(raw.siteNamePaddingTop, 0))),
+        showSiteLogo: raw.showSiteLogo !== false,
+        siteLogoSize: Math.min(96, Math.max(12, asFinite(raw.siteLogoSize, 36))),
+        siteLogoGap: Math.min(48, Math.max(0, asFinite(raw.siteLogoGap, 10))),
+        siteLogoOffsetX: Math.min(40, Math.max(-40, asFinite(raw.siteLogoOffsetX, 0))),
+        siteLogoOffsetY: Math.min(40, Math.max(-40, asFinite(raw.siteLogoOffsetY, 0))),
+        siteLogoSide: raw.siteLogoSide === 'right' ? 'right' : 'left',
         studioCorner: corners.has(String(raw.studioCorner)) ? raw.studioCorner : 'bottom-right',
         heroTitle: face(raw.heroTitle, 96, 500),
         heroSubtitle: face(raw.heroSubtitle, 24, 400),
@@ -802,6 +808,12 @@ export interface TypeChromeConfig {
   siteNameColor: number;
   siteNameLayoutColor: number;
   siteNamePaddingTop?: number;
+  showSiteLogo?: boolean;
+  siteLogoSize?: number;
+  siteLogoGap?: number;
+  siteLogoOffsetX?: number;
+  siteLogoOffsetY?: number;
+  siteLogoSide?: 'left' | 'right';
   studioCorner: StudioCorner;
   heroTitle: TypeFace;
   heroSubtitle: TypeFace;
@@ -886,6 +898,12 @@ export function applyTypeChrome() {
   applyFace('chip-text', TYPE_CHROME.chipText, root);
   applyFace('site-name', TYPE_CHROME.siteNameType, root);
   root.style.setProperty('--site-name-padding-top', (TYPE_CHROME.siteNamePaddingTop ?? 0) + 'px');
+  root.style.setProperty('--site-logo-size', Math.max(12, TYPE_CHROME.siteLogoSize ?? 36) + 'px');
+  root.style.setProperty('--site-logo-gap', Math.max(0, TYPE_CHROME.siteLogoGap ?? 10) + 'px');
+  root.style.setProperty('--site-logo-x', (TYPE_CHROME.siteLogoOffsetX ?? 0) + 'px');
+  root.style.setProperty('--site-logo-y', (TYPE_CHROME.siteLogoOffsetY ?? 0) + 'px');
+  root.style.setProperty('--site-logo-display', TYPE_CHROME.showSiteLogo === false ? 'none' : 'block');
+  root.dataset.siteLogoSide = TYPE_CHROME.siteLogoSide === 'right' ? 'right' : 'left';
   const sceneColor = hexCss(TYPE_CHROME.siteNameColor);
   const layoutColor = hexCss(TYPE_CHROME.siteNameLayoutColor ?? 0x1a1b22);
   root.style.setProperty('--site-name-color', sceneColor);
@@ -982,6 +1000,7 @@ export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};
         title: sanitizeText(raw.title, 'هونامیک ارتباط رستاک', 80),
         subtitle: sanitizeText(raw.subtitle, 'ارائه دهنده تجهیزات ذخیره‌سازی داده', 200),
         dir: raw.dir === 'ltr' ? 'ltr' : 'rtl',
+        logoSide: raw.logoSide === 'right' ? 'right' : 'left',
         showLogo: raw.showLogo !== false,
         showTitle: raw.showTitle !== false,
         showSubtitle: raw.showSubtitle !== false,
@@ -1018,6 +1037,7 @@ export interface LoaderScreenConfig {
   title: string;
   subtitle: string;
   dir: 'rtl' | 'ltr';
+  logoSide: 'left' | 'right';
   showLogo: boolean;
   showTitle: boolean;
   showSubtitle: boolean;

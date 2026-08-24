@@ -10,6 +10,7 @@ export interface LoaderScreenConfig {
   title: string;
   subtitle: string;
   dir: 'rtl' | 'ltr';
+  logoSide: 'left' | 'right';
   showLogo: boolean;
   showTitle: boolean;
   showSubtitle: boolean;
@@ -38,6 +39,7 @@ export const LOADER_CONFIG: LoaderScreenConfig = {
   title: 'هونامیک ارتباط رستاک',
   subtitle: 'ارائه دهنده تجهیزات ذخیره‌سازی داده',
   dir: 'rtl',
+  logoSide: 'left',
   showLogo: true,
   showTitle: true,
   showSubtitle: true,
@@ -97,6 +99,8 @@ export function applyLoaderChrome(root: HTMLElement | null = typeof document ===
   host.style.setProperty('--loader-bar-color', hexCss(cfg.barColor));
   host.style.setProperty('--loader-track-color', hexToRgba(cfg.trackColor, cfg.trackOpacity));
   host.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
+  const row = host.querySelector<HTMLElement>('.loader__row');
+  if (row) row.dataset.logoSide = cfg.logoSide === 'right' ? 'right' : 'left';
 
   const title = host.querySelector<HTMLElement>('.loader__title');
   if (title && title.textContent !== cfg.title) title.textContent = cfg.title;
