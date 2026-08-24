@@ -2261,11 +2261,9 @@ export class SceneStudioGUI {
       };
       const writeStart = () => {
         client.launch = [row.startX, row.startY, row.startZ];
-        this.seekStory(client.dispatch);
       };
       const writeEnd = () => {
         client.land = [row.endX, row.endY, row.endZ];
-        this.seekStory(client.arrive);
       };
       folder.add(row, 'startX', -12, 12, 0.01).name('Start X').onChange(writeStart);
       folder.add(row, 'startY', -8, 12, 0.01).name('Start Y').onChange(writeStart);
