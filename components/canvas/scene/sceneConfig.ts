@@ -102,7 +102,8 @@ export const SCENE_CONFIG: SceneConfig = {
   },
 
   renderer: {
-    toneMappingExposure: 0.7
+    toneMappingExposure: 0.7,
+    shadowMapType: "pcf"
   },
 
   materials: {

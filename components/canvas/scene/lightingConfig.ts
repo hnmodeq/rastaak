@@ -16,11 +16,15 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     position: [13.5, 5, -0.5],
     distance: 72,
     decay: 0.8,
-    radius: 9,
+    radius: 0,
     castShadow: true,
     enabled: true,
-    shadowMapSize: 512,
-    shadowBias: 0
+    shadowMapSize: 2048,
+    shadowBias: -0.0003,
+    shadowNormalBias: 0.026,
+    shadowNear: 1.65,
+    shadowFar: 72,
+    shadowIntensity: 1
   },
   {
     id: "area_soft_key",
