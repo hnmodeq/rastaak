@@ -8,9 +8,12 @@ import {
 
 const CITY_CENTER_X = 13.36;
 const CITY_CENTER_Z = -0.7;
-const FONT_PX = 140;
-const TRACE_THRESHOLD = 96;
-const MIN_LOOP_AREA = 10;
+const FONT_PX = 240;
+const TRACE_THRESHOLD = 88;
+const MIN_LOOP_AREA = 8;
+const SIMPLIFY_EPS = 0.38;
+const RESAMPLE_SPACING = 1.05;
+const MAX_LOOP_POINTS = 420;
 
 const _box = new THREE.Box3();
 const _size = new THREE.Vector3();
@@ -99,7 +102,7 @@ function paintMask(text: string): { data: Uint8ClampedArray; width: number; heig
   const measured = Math.max(24, ctx.measureText(text || ' ').width);
   const padX = Math.round(FONT_PX * 0.35);
   const padY = Math.round(FONT_PX * 0.32);
-  canvas.width = Math.min(1800, Math.ceil(measured + padX * 2));
+  canvas.width = Math.min(2600, Math.ceil(measured + padX * 2));
   canvas.height = Math.ceil(FONT_PX * 1.2 + padY * 2);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.font = font;
@@ -270,6 +273,35 @@ function simplifyLoop(loop: Pt[], eps: number): Pt[] {
   return next.length >= 3 ? next : loop;
 }
 
+function chaikin(loop: Pt[], rounds: number): Pt[] {
+  let pts = loop;
+  for (let round = 0; round < rounds; round++) {
+    const next: Pt[] = [];
+    const count = pts.length;
+    for (let i = 0; i < count; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % count];
+      next.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 });
+      next.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 });
+    }
+    pts = next;
+  }
+  return pts;
+}
+
+function resampleClosed(points: THREE.Vector2[], spacing: number): THREE.Vector2[] {
+  if (points.length < 4) return points;
+  const curve = new THREE.CatmullRomCurve3(
+    points.map((p) => new THREE.Vector3(p.x, p.y, 0)),
+    true,
+    'catmullrom',
+    0.12,
+  );
+  const length = Math.max(spacing, curve.getLength());
+  const count = Math.max(24, Math.min(MAX_LOOP_POINTS, Math.ceil(length / spacing)));
+  return curve.getSpacedPoints(count).map((p) => new THREE.Vector2(p.x, p.y));
+}
+
 function pointInLoop(x: number, y: number, loop: Pt[]): boolean {
   let inside = false;
   for (let i = 0, j = loop.length - 1; i < loop.length; j = i++) {
@@ -307,8 +339,10 @@ function maskToShapes(text: string): THREE.Shape[] {
   const mask = paintMask(text);
   if (!mask) return [];
   const loops = extractLoops(mask.data, mask.width, mask.height)
-    .map((loop) => simplifyLoop(loop, 1.15))
+    .map((loop) => simplifyLoop(loop, SIMPLIFY_EPS))
+    .map((loop) => chaikin(loop, 2))
     .map((loop) => toVec2(loop, mask.height))
+    .map((loop) => resampleClosed(loop, RESAMPLE_SPACING))
     .filter((loop) => Math.abs(THREE.ShapeUtils.area(loop)) >= MIN_LOOP_AREA);
   if (!loops.length) return [];
 
@@ -354,11 +388,11 @@ function buildTextGeometry(text: string, height: number, depth: number): THREE.B
     depth: 1,
     steps: 1,
     bevelEnabled: true,
-    bevelThickness: 1.4,
-    bevelSize: 0.9,
+    bevelThickness: 0.7,
+    bevelSize: 0.55,
     bevelOffset: 0,
-    bevelSegments: 1,
-    curveSegments: 1,
+    bevelSegments: 4,
+    curveSegments: 8,
   });
   geometry.computeBoundingBox();
   const box = geometry.boundingBox;
@@ -446,8 +480,8 @@ export class BuildingNamePlateSet {
   }
 
   private makePlate(config: BuildingNamePlate, object: THREE.Object3D): PlateActor {
-    const height = Math.max(0.06, config.size);
-    const depth = Math.max(0.008, config.extrude);
+    const height = Math.max(0.02, config.size);
+    const depth = Math.max(0.002, config.extrude);
     const geometry = buildTextGeometry(config.text, height, depth);
     const material = new THREE.MeshStandardMaterial({
       color: config.color,

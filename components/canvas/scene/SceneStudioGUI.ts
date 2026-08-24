@@ -2175,13 +2175,13 @@ export class SceneStudioGUI {
         notifyBuildingNamesChanged();
       };
       folder.add(row, 'text').name('Text').onChange(push);
-      folder.add(row, 'size', 0.08, 1.2, 0.01).name('Size').onChange(push);
+      folder.add(row, 'size', 0.02, 1.2, 0.005).name('Size').onChange(push);
       folder.addColor(row, 'color').name('Color').onChange(push);
       folder.add(row, 'side', sides).name('Side').onChange(push);
       folder.add(row, 'posX', -4, 4, 0.02).name('Position X').onChange(push);
       folder.add(row, 'posY', -3, 4, 0.02).name('Position Y').onChange(push);
       folder.add(row, 'posZ', -2, 2, 0.01).name('Position Z').onChange(push);
-      folder.add(row, 'extrude', 0.01, 0.28, 0.005).name('Extrude').onChange(push);
+      folder.add(row, 'extrude', 0.002, 0.28, 0.001).name('Extrude').onChange(push);
     });
   }
 

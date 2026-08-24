@@ -906,11 +906,11 @@ export function applyTypeChrome() {
         id: sanitizeId(item?.id, `name_${index + 1}`),
         building: sanitizeText(item?.building, `Building ${index + 1}`, 80),
         text: sanitizeText(item?.text, '', 80),
-        size: Math.min(2, Math.max(0.06, asFinite(item?.size, 0.28))),
+        size: Math.min(2, Math.max(0.02, asFinite(item?.size, 0.28))),
         color: hexLit(asHexNumber(item?.color, 0xf5f5f2)),
         side: sanitizeSide(item?.side),
         position: asVec3(item?.position, [0, 0, 0]),
-        extrude: Math.min(0.4, Math.max(0.008, asFinite(item?.extrude, 0.06))),
+        extrude: Math.min(0.4, Math.max(0.002, asFinite(item?.extrude, 0.06))),
       }));
       const namesPath = path.join(rootDir, 'components', 'canvas', 'scene', 'buildingNamesConfig.ts');
       const namesCode = `/**
