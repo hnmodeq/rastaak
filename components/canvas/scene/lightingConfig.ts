@@ -13,8 +13,8 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     type: "point",
     color: 0xffffff,
     intensity: 2100,
-    position: [14, 5.5, 0],
-    distance: 10,
+    position: [13, 9.5, -0.5],
+    distance: 0,
     decay: 2.7,
     radius: 5.6,
     castShadow: true,
@@ -23,7 +23,7 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     shadowBias: 0.0012,
     shadowNormalBias: 0.035,
     shadowNear: 1.4,
-    shadowFar: 10,
+    shadowFar: 8,
     shadowIntensity: 1
   },
   {
@@ -35,6 +35,6 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     target: [13.5, 0, -0.5],
     width: 68.1,
     height: 38.3,
-    enabled: true
+    enabled: false
   }
 ];
