@@ -9,6 +9,7 @@ import {
   applyLoaderChrome,
   hexCss,
   hexToRgba,
+  loaderChromeVars,
 } from '@/components/home/loaderConfig';
 
 const HOME_SAFETY_MS = 28000;
@@ -146,6 +147,7 @@ export const Loader: React.FC = () => {
   if (isDone && !previewing) return null;
 
   const cfg = LOADER_CONFIG;
+  const chrome = loaderChromeVars(cfg);
 
   return (
     <div
@@ -167,7 +169,8 @@ export const Loader: React.FC = () => {
         backgroundColor: hexCss(cfg.bgColor),
         opacity: isFading && !previewing ? 0 : 1,
         transition: `opacity ${FADE_MS}ms ease`,
-      }}
+        ...chrome,
+      } as React.CSSProperties}
     >
       <div className="loader__cluster">
         <div className="loader__row" data-logo-side={cfg.logoSide === 'right' ? 'right' : 'left'}>
@@ -182,8 +185,32 @@ export const Loader: React.FC = () => {
             />
           ) : null}
           <div className="loader__copy">
-            {cfg.showTitle ? <div className="loader__title">{cfg.title}</div> : null}
-            {cfg.showSubtitle ? <div className="loader__subtitle">{cfg.subtitle}</div> : null}
+            {cfg.showTitle ? (
+              <div
+                className="loader__title"
+                style={{
+                  fontSize: cfg.titleSize + 'px',
+                  fontWeight: cfg.titleWeight,
+                  letterSpacing: cfg.titleTracking + 'px',
+                  color: hexCss(cfg.titleColor),
+                }}
+              >
+                {cfg.title}
+              </div>
+            ) : null}
+            {cfg.showSubtitle ? (
+              <div
+                className="loader__subtitle"
+                style={{
+                  fontSize: cfg.subtitleSize + 'px',
+                  fontWeight: cfg.subtitleWeight,
+                  letterSpacing: cfg.subtitleTracking + 'px',
+                  color: hexCss(cfg.subtitleColor),
+                }}
+              >
+                {cfg.subtitle}
+              </div>
+            ) : null}
           </div>
         </div>
         {cfg.showBar ? (

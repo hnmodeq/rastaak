@@ -1092,38 +1092,68 @@ export function hexToRgba(value: number, alpha: number): string {
   return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
 }
 
+export function loaderChromeVars(cfg: LoaderScreenConfig = LOADER_CONFIG): Record<string, string> {
+  return {
+    '--loader-bg': hexCss(cfg.bgColor),
+    '--loader-logo-size': cfg.logoSize + 'px',
+    '--loader-row-gap': cfg.rowGap + 'px',
+    '--loader-copy-gap': cfg.copyGap + 'px',
+    '--loader-stack-gap': cfg.stackGap + 'px',
+    '--loader-title-size': cfg.titleSize + 'px',
+    '--loader-title-weight': String(cfg.titleWeight),
+    '--loader-title-color': hexCss(cfg.titleColor),
+    '--loader-title-tracking': cfg.titleTracking + 'px',
+    '--loader-subtitle-size': cfg.subtitleSize + 'px',
+    '--loader-subtitle-weight': String(cfg.subtitleWeight),
+    '--loader-subtitle-color': hexCss(cfg.subtitleColor),
+    '--loader-subtitle-tracking': cfg.subtitleTracking + 'px',
+    '--loader-bar-width': cfg.barWidth + 'px',
+    '--loader-bar-height': cfg.barHeight + 'px',
+    '--loader-bar-color': hexCss(cfg.barColor),
+    '--loader-track-color': hexToRgba(cfg.trackColor, cfg.trackOpacity),
+  };
+}
+
+export function loaderChromeCssText(cfg: LoaderScreenConfig = LOADER_CONFIG): string {
+  const body = Object.entries(loaderChromeVars(cfg))
+    .map(([key, value]) => key + ':' + value)
+    .join(';');
+  return ':root,#loader{' + body + '}';
+}
+
 export function applyLoaderChrome(root: HTMLElement | null = typeof document === 'undefined' ? null : document.getElementById('loader')) {
   if (typeof document === 'undefined') return;
   const loader = root ?? document.getElementById('loader');
   const host = loader ?? document.documentElement;
   if (!host) return;
   const cfg = LOADER_CONFIG;
-  host.style.setProperty('--loader-bg', hexCss(cfg.bgColor));
-  host.style.setProperty('--loader-logo-size', cfg.logoSize + 'px');
-  host.style.setProperty('--loader-row-gap', cfg.rowGap + 'px');
-  host.style.setProperty('--loader-copy-gap', cfg.copyGap + 'px');
-  host.style.setProperty('--loader-stack-gap', cfg.stackGap + 'px');
-  host.style.setProperty('--loader-title-size', cfg.titleSize + 'px');
-  host.style.setProperty('--loader-title-weight', String(cfg.titleWeight));
-  host.style.setProperty('--loader-title-color', hexCss(cfg.titleColor));
-  host.style.setProperty('--loader-title-tracking', cfg.titleTracking + 'px');
-  host.style.setProperty('--loader-subtitle-size', cfg.subtitleSize + 'px');
-  host.style.setProperty('--loader-subtitle-weight', String(cfg.subtitleWeight));
-  host.style.setProperty('--loader-subtitle-color', hexCss(cfg.subtitleColor));
-  host.style.setProperty('--loader-subtitle-tracking', cfg.subtitleTracking + 'px');
-  host.style.setProperty('--loader-bar-width', cfg.barWidth + 'px');
-  host.style.setProperty('--loader-bar-height', cfg.barHeight + 'px');
-  host.style.setProperty('--loader-bar-color', hexCss(cfg.barColor));
-  host.style.setProperty('--loader-track-color', hexToRgba(cfg.trackColor, cfg.trackOpacity));
+  const vars = loaderChromeVars(cfg);
+  for (const [key, value] of Object.entries(vars)) {
+    host.style.setProperty(key, value);
+  }
+  const boot = document.getElementById('rastaak-loader-boot');
+  if (boot) boot.textContent = loaderChromeCssText(cfg);
   if (!loader) return;
   loader.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
   const row = loader.querySelector<HTMLElement>('.loader__row');
   if (row) row.dataset.logoSide = cfg.logoSide === 'right' ? 'right' : 'left';
 
   const title = loader.querySelector<HTMLElement>('.loader__title');
-  if (title && title.textContent !== cfg.title) title.textContent = cfg.title;
+  if (title) {
+    if (title.textContent !== cfg.title) title.textContent = cfg.title;
+    title.style.fontSize = cfg.titleSize + 'px';
+    title.style.fontWeight = String(cfg.titleWeight);
+    title.style.letterSpacing = cfg.titleTracking + 'px';
+    title.style.color = hexCss(cfg.titleColor);
+  }
   const subtitle = loader.querySelector<HTMLElement>('.loader__subtitle');
-  if (subtitle && subtitle.textContent !== cfg.subtitle) subtitle.textContent = cfg.subtitle;
+  if (subtitle) {
+    if (subtitle.textContent !== cfg.subtitle) subtitle.textContent = cfg.subtitle;
+    subtitle.style.fontSize = cfg.subtitleSize + 'px';
+    subtitle.style.fontWeight = String(cfg.subtitleWeight);
+    subtitle.style.letterSpacing = cfg.subtitleTracking + 'px';
+    subtitle.style.color = hexCss(cfg.subtitleColor);
+  }
 }
 
 export function notifyLoaderChanged() {

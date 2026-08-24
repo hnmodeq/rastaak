@@ -6,6 +6,7 @@ import { Loader } from '@/components/layout/Loader';
 import { ClientScripts } from '@/components/layout/ClientScripts';
 import { Providers } from '@/components/layout/Providers';
 import { tokens } from '@/tokens/design-tokens';
+import { loaderChromeCssText } from '@/components/home/loaderConfig';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://rastaak.com'),
@@ -45,6 +46,17 @@ export default function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
+        <link
+          rel="preload"
+          href="/fonts/KalamehWebFaNum-Regular.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <style
+          id="rastaak-loader-boot"
+          dangerouslySetInnerHTML={{ __html: loaderChromeCssText() }}
+        />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
@@ -60,6 +72,7 @@ export default function RootLayout({
       </head>
       <body style={{ backgroundColor: tokens.colors.bgHero }}>
         <Providers>
+          <Loader />
           <div className="transition-pages" />
           <div className="mobile-nav__overlay" />
 
@@ -71,9 +84,6 @@ export default function RootLayout({
 
           {/* Site Footer */}
           <Footer />
-
-          {/* Introductory SVG Loader */}
-          <Loader />
 
           {/* Client Initialization Scripts (3D Three.js, Draco, Shaders, SPA Taxi routing) */}
           <ClientScripts />
