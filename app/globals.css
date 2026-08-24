@@ -487,3 +487,19 @@ html[data-sec-footer='off'] .footer {
   opacity: 1;
   transform: none;
 }
+
+html.rastaak-loading,
+html.rastaak-loading body {
+  overflow: hidden !important;
+}
+
+#loader .loader__mark {
+  width: 88px !important;
+  height: 88px !important;
+  max-width: 88px !important;
+  object-fit: contain;
+}
+
+#loader .loader__title {
+  font-family: 'Kalameh', sans-serif !important;
+}

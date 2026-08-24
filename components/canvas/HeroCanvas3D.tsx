@@ -36,6 +36,16 @@ import {
 
 type HeroCanvasMode = 'public' | 'admin';
 
+function reportHeroLoad(progress: number) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('rastaak-load-progress', { detail: { progress } }));
+}
+
+function reportSceneReady() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('rastaak-scene-ready'));
+}
+
 export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'public' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -222,6 +232,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     applyLookOverlay();
 
     let world: THREE.Group | null = null;
+    let announcedReady = false;
     let studioGUI: SceneStudioGUI | null = null;
     const story = new StoryRuntime();
     const namePlates = new BuildingNamePlateSet();
@@ -350,6 +361,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
 
     const gltfLoader = new GLTFLoader();
     gltfLoader.setDRACOLoader(dracoLoader);
+    reportHeroLoad(10);
 
     gltfLoader.load(
       '/glb/Rastaak-3D-Scene-Ver-V.glb',
@@ -399,25 +411,17 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         story.attach(world, scene);
         namePlates.attach(world, scene);
         studioGUI?.populateMaterials();
-
-        window.dispatchEvent(
-          new CustomEvent('rastaak-load-progress', { detail: { progress: 100 } }),
-        );
-        setIsLoaded(true);
+        reportHeroLoad(94);
       },
       (xhr: ProgressEvent) => {
-        if (xhr.total > 0) {
-          const percent = Math.round((xhr.loaded / xhr.total) * 100);
-          window.dispatchEvent(
-            new CustomEvent('rastaak-load-progress', { detail: { progress: percent } }),
-          );
-        }
+        const total = xhr.total > 0 ? xhr.total : 11 * 1024 * 1024;
+        const percent = 10 + Math.round((xhr.loaded / total) * 80);
+        reportHeroLoad(Math.min(90, percent));
       },
       (error: unknown) => {
         console.error('[HeroCanvas3D] failed to load world model', error);
-        window.dispatchEvent(
-          new CustomEvent('rastaak-load-progress', { detail: { progress: 100 } }),
-        );
+        reportHeroLoad(100);
+        reportSceneReady();
         setIsLoaded(true);
       },
     );
@@ -544,6 +548,12 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       tickLookOverlay(elapsed);
       renderer.render(scene, camera);
       lookPost.composite(scene, camera);
+      if (world && !announcedReady) {
+        announcedReady = true;
+        reportHeroLoad(100);
+        reportSceneReady();
+        setIsLoaded(true);
+      }
       animationFrameId = requestAnimationFrame(animate);
     };
 

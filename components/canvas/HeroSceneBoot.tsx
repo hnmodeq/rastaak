@@ -55,13 +55,12 @@ export const HeroSceneBoot: React.FC = () => {
 
       root
         .querySelectorAll(
-          '.sub-hero, .sub-hero-image, .request-crew, .apply-section, .hero, ' +
+          '.sub-hero, .sub-hero-image, .request-crew, .apply-section, ' +
             '.privacy-layout, .sub-section, .accordion-drawer, ' +
             '.stat-carousel-section, .industries-title, .industry-section',
         )
         .forEach((el) => el.classList.add('show'));
 
-      document.querySelector('header')?.classList.add('show');
       html.classList.remove('lenis-stopped');
     };
 

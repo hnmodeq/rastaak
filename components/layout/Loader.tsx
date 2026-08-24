@@ -1,111 +1,179 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { tokens } from '@/tokens/design-tokens';
+import { TYPE_CHROME } from '@/components/home/typeChrome';
+
+const HOME_SAFETY_MS = 28000;
+const INNER_PAGE_MS = 420;
+const MIN_SHOW_MS = 640;
+const FADE_MS = 520;
 
 export const Loader: React.FC = () => {
+  const pathname = usePathname();
   const [progress, setProgress] = useState(0);
+  const [isFading, setIsFading] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
-    let animId: number;
-    let targetProgress = 0;
+    const html = document.documentElement;
+    const home = pathname === '/';
+    const skip =
+      Boolean(pathname?.startsWith('/admin')) || Boolean(pathname?.startsWith('/token-studio'));
 
-    const handleProgress = (e: Event) => {
-      const customEvent = e as CustomEvent<{ progress: number }>;
-      if (typeof customEvent.detail?.progress === 'number') {
-        targetProgress = Math.min(100, Math.max(targetProgress, customEvent.detail.progress));
-      }
+    if (skip) {
+      html.classList.remove('rastaak-loading');
+      setIsDone(true);
+      setIsFading(false);
+      return;
+    }
+
+    if (!home && isDone) return;
+
+    let target = home ? 4 : 30;
+    let displayed = 0;
+    let ready = !home;
+    let dismissed = false;
+    let raf = 0;
+    const startedAt = performance.now();
+
+    html.classList.add('rastaak-loading');
+    html.removeAttribute('data-scene-ready');
+    setIsDone(false);
+    setIsFading(false);
+    setProgress(0);
+
+    const markReady = () => {
+      ready = true;
+      target = 100;
+    };
+
+    const handleProgress = (event: Event) => {
+      const value = (event as CustomEvent<{ progress?: number }>).detail?.progress;
+      if (typeof value !== 'number' || !Number.isFinite(value)) return;
+      target = Math.max(target, Math.min(ready ? 100 : 94, value));
+      if (value >= 100) markReady();
     };
 
     window.addEventListener('rastaak-load-progress', handleProgress);
+    window.addEventListener('rastaak-scene-ready', markReady);
 
-    const tick = () => {
-      setProgress((prev) => {
-        if (prev < targetProgress) {
-          const step = Math.max(1, Math.ceil((targetProgress - prev) * 0.12));
-          const next = Math.min(100, prev + step);
-          if (next >= 100) {
-            setTimeout(() => setIsDone(true), 500);
-          }
-          return next;
-        }
-        return prev;
-      });
-      animId = requestAnimationFrame(tick);
+    const creep = window.setInterval(() => {
+      if (ready) return;
+      target = Math.min(home ? 62 : 90, target + (home ? 0.7 : 10));
+    }, 140);
+
+    const safety = window.setTimeout(markReady, home ? HOME_SAFETY_MS : INNER_PAGE_MS);
+
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      setProgress(100);
+      setIsFading(true);
+      window.setTimeout(() => {
+        html.classList.remove('rastaak-loading');
+        html.dataset.sceneReady = 'true';
+        document.body.style.overflow = '';
+        window.dispatchEvent(new CustomEvent('rastaak-loader-done'));
+        setIsDone(true);
+      }, FADE_MS);
     };
 
-    animId = requestAnimationFrame(tick);
-
-    const timer1 = setTimeout(() => { targetProgress = Math.max(targetProgress, 40); }, 300);
-    const timer2 = setTimeout(() => { targetProgress = Math.max(targetProgress, 85); }, 800);
-    const timer3 = setTimeout(() => { targetProgress = 100; }, 1400);
+    const tick = () => {
+      displayed =
+        displayed < target ? Math.min(100, displayed + Math.max(0.45, (target - displayed) * 0.13)) : displayed;
+      setProgress(Math.round(displayed));
+      if (ready && displayed >= 99.2 && performance.now() - startedAt >= MIN_SHOW_MS) {
+        dismiss();
+        return;
+      }
+      raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
 
     return () => {
       window.removeEventListener('rastaak-load-progress', handleProgress);
-      cancelAnimationFrame(animId);
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
+      window.removeEventListener('rastaak-scene-ready', markReady);
+      window.clearInterval(creep);
+      window.clearTimeout(safety);
+      window.cancelAnimationFrame(raf);
     };
-  }, []);
+    // isDone is read only to keep inner-page visits from flashing the loader again
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  if (isDone) return null;
 
   return (
     <div
       id="loader"
-      className={`fixed inset-0 z-[100000] flex flex-col items-center justify-center transition-opacity duration-800 pointer-events-none ${
-        isDone ? 'opacity-0' : 'opacity-100'
-      }`}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading"
       style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'auto',
         backgroundColor: tokens.colors.bgHero,
-        display: isDone ? 'none' : 'flex',
+        opacity: isFading ? 0 : 1,
+        transition: `opacity ${FADE_MS}ms ease`,
       }}
     >
-      <div className="flex flex-col items-center justify-center text-center px-6">
-        {/* Brand Sub-header */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 22,
+          padding: '0 24px',
+          maxWidth: 520,
+          textAlign: 'center',
+        }}
+      >
+        <img
+          className="loader__mark"
+          src="/icons/icon-192x192.png"
+          alt=""
+          width={88}
+          height={88}
+          decoding="async"
+        />
         <div
-          className="text-xs font-mono tracking-[0.35em] uppercase mb-2"
-          style={{ color: tokens.colors.textSubtle }}
-        >
-          RASTAAK 3D ENGINE
-        </div>
-
-        {/* Big percentage counter */}
-        <div
-          className="text-7xl sm:text-9xl font-extrabold tracking-tighter font-mono my-3"
-          style={{ color: tokens.colors.textLight }}
-        >
-          {progress}
-          <span
-            className="text-4xl sm:text-6xl font-light ml-1"
-            style={{ color: tokens.colors.primaryLight }}
-          >
-            %
-          </span>
-        </div>
-
-        {/* Farsi subtitle */}
-        <div
-          className="text-sm font-medium tracking-wide mt-2"
-          style={{ color: tokens.colors.textSemiOpaque }}
+          className="loader__title"
           dir="rtl"
-        >
-          در حال بارگذاری صحنه ۳ بعدی راستاک...
-        </div>
-
-        {/* Minimal Glowing Progress Bar */}
-        <div
-          className="w-48 sm:w-64 h-1.5 rounded-full mt-6 overflow-hidden relative border"
           style={{
-            backgroundColor: tokens.colors.bgDark,
-            borderColor: tokens.colors.borderDarkSubtle,
+            fontFamily: "'Kalameh', sans-serif",
+            fontWeight: 800,
+            fontSize: 'clamp(22px, 5vw, 34px)',
+            lineHeight: 1.25,
+            letterSpacing: '-0.02em',
+            color: tokens.colors.textLight,
+          }}
+        >
+          {TYPE_CHROME.siteName}
+        </div>
+        <div
+          style={{
+            width: 'min(220px, 62vw)',
+            height: 3,
+            borderRadius: 999,
+            overflow: 'hidden',
+            backgroundColor: tokens.colors.overlayGlass15,
           }}
         >
           <div
-            className="h-full transition-all duration-300 rounded-full"
             style={{
               width: `${progress}%`,
+              height: '100%',
+              borderRadius: 999,
               backgroundColor: tokens.colors.primaryLight,
+              transition: 'width 160ms linear',
             }}
           />
         </div>

@@ -12,12 +12,18 @@ export function HomeInteractions() {
   useEffect(() => {
     const html = document.documentElement;
     html.classList.remove('preload', 'lenis-stopped');
-    document.body.style.overflow = '';
-    document.getElementById('loader')?.setAttribute('hidden', '');
-    document.querySelector('header')?.classList.add('show');
 
     const root = document.querySelector('main[data-taxi] [data-taxi-view]') ?? document;
-    root.querySelectorAll('.hero').forEach((el) => el.classList.add('show'));
+    const revealHero = () => {
+      document.querySelector('header')?.classList.add('show');
+      root.querySelectorAll('.hero').forEach((el) => el.classList.add('show'));
+    };
+    if (html.dataset.sceneReady === 'true') {
+      revealHero();
+    } else {
+      window.addEventListener('rastaak-loader-done', revealHero, { once: true });
+    }
+    const revealFallback = window.setTimeout(revealHero, 28000);
 
     const faqHeaders = Array.from(document.querySelectorAll<HTMLElement>('.faq-item__header'));
     const onFaqClick = (event: Event) => {
@@ -160,6 +166,8 @@ export function HomeInteractions() {
     if (footerBottom && footerObserver) footerObserver.observe(footerBottom);
 
     return () => {
+      window.removeEventListener('rastaak-loader-done', revealHero);
+      window.clearTimeout(revealFallback);
       faqHeaders.forEach((header) => header.removeEventListener('click', onFaqClick));
       window.removeEventListener('scroll', updateScrollUi);
       window.removeEventListener('resize', updateScrollUi);

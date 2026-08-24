@@ -12,6 +12,7 @@ export const HeroCanvasWrapper: React.FC = () => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    window.dispatchEvent(new CustomEvent('rastaak-load-progress', { detail: { progress: 8 } }));
     setMounted(true);
   }, []);
 

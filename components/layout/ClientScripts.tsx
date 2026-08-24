@@ -14,11 +14,11 @@ export const ClientScripts: React.FC = () => {
   useEffect(() => {
     document.documentElement.classList.remove('preload');
 
-    if (isTokenStudio || isHome || isAdmin) {
+    if (isTokenStudio || isAdmin) {
       document.body.style.overflow = isAdmin ? 'hidden' : '';
       document.getElementById('loader')?.setAttribute('hidden', '');
     }
-  }, [isTokenStudio, isHome, isAdmin]);
+  }, [isTokenStudio, isAdmin]);
 
   if (isTokenStudio || isHome || isAdmin) return null;
 
