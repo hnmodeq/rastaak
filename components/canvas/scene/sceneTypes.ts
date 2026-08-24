@@ -260,6 +260,7 @@ export interface StudioSavePayload {
   scroll: SceneScrollConfig;
   camera: SceneCameraConfig;
   materials: MaterialsConfig;
+  visibility?: SceneVisibilityConfig;
   story?: StudioStorySave;
   flowSteps?: StudioFlowStepSave[];
   heroCopy?: StudioHeroCopySave;
