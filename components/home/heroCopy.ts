@@ -20,7 +20,7 @@ export const HERO_COPY: HeroCopyConfig = {
   titleLine1: "از آنچه برایتان مهم است،",
   titleLine2: "محافظت کنید.",
   titleColor: 0xffffff,
-  titlePaddingTop: 136,
+  titlePaddingTop: 200,
   subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
   subtitleLine2: "",
   subtitleColor: 0xffffff,
