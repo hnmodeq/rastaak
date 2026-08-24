@@ -61,17 +61,17 @@ export const FLOW_CONFIG: FlowStepConfig[] = [
 export const FLOW_CHROME: FlowChromeConfig = {
   align: "right",
   dir: "rtl",
-  titleColor: 0x535353,
+  titleColor: 0xffffff,
   titleBg: 0x0c0d12,
   titleBgOpacity: 0,
-  numberColor: 0x1f1f1f,
-  numberActiveColor: 0xffffff,
-  numberBg: 0x585858,
-  descriptionColor: 0xffffff,
+  numberColor: 0xffffff,
+  numberActiveColor: 0x3b3b3b,
+  numberBg: 0xffffff,
+  descriptionColor: 0x648eff,
   descriptionBg: 0x0c0d12,
   descriptionBgOpacity: 0,
   trackColor: 0xcecece,
-  trackFillColor: 0x585858
+  trackFillColor: 0x353aff
 };
 
 function hexCss(value: number): string {

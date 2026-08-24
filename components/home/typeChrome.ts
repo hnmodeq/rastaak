@@ -97,9 +97,9 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0
   },
   flowTitle: {
-    size: 24,
+    size: 20,
     weight: 500,
-    lineHeight: 1.15,
+    lineHeight: 0.96,
     letterSpacing: 0,
     shadowColor: 0x000000,
     shadowOpacity: 0,
@@ -119,7 +119,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0
   },
   flowDescription: {
-    size: 18,
+    size: 13,
     weight: 400,
     lineHeight: 1.15,
     letterSpacing: 0,
