@@ -527,6 +527,7 @@ export class SceneStudioGUI {
     guiEl.style.pointerEvents = 'auto';
     this.guis.push(gui);
     this.gui = gui;
+    gui.close?.();
     return gui;
   }
 
@@ -2906,6 +2907,7 @@ export class SceneStudioGUI {
       .onChange(applyGroundSurface);
 
     persistPalette();
+    if (!this.foldersExpanded) matFolder.close?.();
   }
 
   private refreshCamDisplay = () => {};
