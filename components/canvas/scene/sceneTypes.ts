@@ -25,6 +25,8 @@ export interface LightConfig {
   enabled?: boolean;
 }
 
+export type CameraMethod = 'stops' | 'progress';
+
 export interface CameraStop {
   id: string;
   progress: number;
@@ -32,6 +34,9 @@ export interface CameraStop {
   target: [number, number, number];
   fov?: number;
 }
+
+/** A camera pose placed on the continuous 0–100% progress timeline. */
+export type CameraKeyframe = CameraStop;
 
 export interface BuildingMaterialOverride {
   color?: number;
@@ -113,7 +118,11 @@ export interface LookConfigSave {
 }
 
 export interface SceneConfig {
+  /** Which camera authoring system drives the public scene. */
+  cameraMethod: CameraMethod;
   stops: CameraStop[];
+  /** Kept separately so switching methods never destroys stop-point work. */
+  progressKeyframes: CameraKeyframe[];
   scroll: SceneScrollConfig;
   camera: SceneCameraConfig;
   lights: LightConfig[];
@@ -253,7 +262,9 @@ export interface StudioTypeChromeSave {
 }
 
 export interface StudioSavePayload {
+  cameraMethod: CameraMethod;
   cameraStops: CameraStop[];
+  progressKeyframes: CameraKeyframe[];
   lights: LightConfig[];
   environment: SceneEnvironmentConfig;
   renderer: SceneRendererConfig;

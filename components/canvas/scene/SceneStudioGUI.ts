@@ -9,7 +9,7 @@ import {
   resolveShadowFilter,
   type ShadowFilter,
 } from './shadowSetup';
-import type { CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
+import type { CameraKeyframe, CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
 import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, resolveAt, type StoryFrame } from './storyConfig';
 import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
@@ -143,6 +143,7 @@ export class SceneStudioGUI {
   private refreshNeedTimes = () => {};
   private onStudioTiming = () => {
     this.refreshNeedTimes();
+    this.broadcastLive();
   };
   private readonly journeySample = {
     camera: [0, 0, 0] as [number, number, number],
@@ -211,6 +212,7 @@ export class SceneStudioGUI {
     private onProgressChange?: (t: number) => void,
     private onOrbitModeToggle?: (enabled: boolean) => void,
     private viewportNav?: BlenderViewport | null,
+    private currentViewTarget?: () => THREE.Vector3 | null,
   ) {
     if (typeof window === 'undefined') return;
     this.hydrateGlobalsFromConfig();
@@ -268,9 +270,51 @@ export class SceneStudioGUI {
     window.addEventListener('resize', this.onChromeLayout);
     window.addEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
     window.addEventListener('rastaak-studio-timing-changed', this.onStudioTiming);
+    window.addEventListener('rastaak-camera-point-selected', this.onCameraPointSelected);
     this.initGUI();
     this.initRaycaster();
     this.syncHeroVisibility();
+  }
+
+  private activeCameraPoints(): CameraStop[] {
+    if (SCENE_CONFIG.cameraMethod === 'progress' && SCENE_CONFIG.progressKeyframes.length) {
+      return SCENE_CONFIG.progressKeyframes;
+    }
+    return SCENE_CONFIG.stops;
+  }
+
+  private ensureProgressKeyframes() {
+    if (SCENE_CONFIG.progressKeyframes.length || !SCENE_CONFIG.stops.length) return;
+    const seen = new Map<number, CameraKeyframe>();
+    for (const stop of SCENE_CONFIG.stops) {
+      // Progress keyframes need unique times. If a legacy stop config has two
+      // points at the same time, the later point is the useful one to keep.
+      seen.set(Number(stop.progress.toFixed(6)), {
+        id: `keyframe_${seen.size + 1}_${stop.id}`,
+        progress: stop.progress,
+        camera: [...stop.camera],
+        target: [...stop.target],
+        fov: stop.fov,
+      });
+    }
+    SCENE_CONFIG.progressKeyframes.splice(
+      0,
+      SCENE_CONFIG.progressKeyframes.length,
+      ...Array.from(seen.values()).sort((a, b) => a.progress - b.progress),
+    );
+  }
+
+  private readCurrentViewTarget(): THREE.Vector3 {
+    if (this.viewportNav?.enabled) return this.viewportNav.target.clone();
+    if (this.isOrbitMode) {
+      const supplied = this.currentViewTarget?.();
+      if (supplied) return supplied.clone();
+    }
+    return this.manualLookAt.clone();
+  }
+
+  private cameraPointsForGizmos() {
+    return this.activeCameraPoints();
   }
 
   private hydrateGlobalsFromConfig() {
@@ -813,12 +857,20 @@ export class SceneStudioGUI {
     const fog = this.scene.fog as THREE.Fog | null;
 
     return {
+      cameraMethod: SCENE_CONFIG.cameraMethod,
       cameraStops: SCENE_CONFIG.stops.map((stop) => ({
         id: stop.id,
         progress: stop.progress,
         camera: [...stop.camera] as [number, number, number],
         target: [...stop.target] as [number, number, number],
         fov: stop.fov ?? SCENE_CONFIG.camera.defaultFov,
+      })),
+      progressKeyframes: SCENE_CONFIG.progressKeyframes.map((keyframe) => ({
+        id: keyframe.id,
+        progress: keyframe.progress,
+        camera: [...keyframe.camera] as [number, number, number],
+        target: [...keyframe.target] as [number, number, number],
+        fov: keyframe.fov ?? SCENE_CONFIG.camera.defaultFov,
       })),
       lights: this.collectCurrentLights(),
       environment: {
@@ -918,7 +970,13 @@ export class SceneStudioGUI {
   }
 
   private writePayloadIntoMemory(payload: StudioSavePayload) {
+    SCENE_CONFIG.cameraMethod = payload.cameraMethod ?? SCENE_CONFIG.cameraMethod;
     SCENE_CONFIG.stops.splice(0, SCENE_CONFIG.stops.length, ...payload.cameraStops);
+    SCENE_CONFIG.progressKeyframes.splice(
+      0,
+      SCENE_CONFIG.progressKeyframes.length,
+      ...(payload.progressKeyframes ?? []),
+    );
     SCENE_CONFIG.environment.backgroundColor = payload.environment.backgroundColor;
     SCENE_CONFIG.environment.fogColor = payload.environment.fogColor ?? payload.environment.backgroundColor;
     SCENE_CONFIG.environment.fogStart = payload.environment.fogStart;
@@ -987,35 +1045,44 @@ export class SceneStudioGUI {
       );
 
       this.manualCamPos.copy(this.camera.position);
+      const initialCameraPoint = this.activeCameraPoints()[0] ?? SCENE_CONFIG.stops[0];
       this.manualLookAt.set(
-        SCENE_CONFIG.stops[0]?.target[0] ?? 14,
-        SCENE_CONFIG.stops[0]?.target[1] ?? 2,
-        SCENE_CONFIG.stops[0]?.target[2] ?? 0,
+        initialCameraPoint?.target[0] ?? 14,
+        initialCameraPoint?.target[1] ?? 2,
+        initialCameraPoint?.target[2] ?? 0,
       );
 
       const camFolder = this.addTab('Camera & Stop Points');
 
       this.currentStopIndex = 0;
-      const getStopNames = () => SCENE_CONFIG.stops.map((s, i) => `${i + 1}. ${s.id}`);
-      const COPY_NONE = '— pick a stop —';
+      if (SCENE_CONFIG.cameraMethod === 'progress') this.ensureProgressKeyframes();
+      const getActivePoints = () => this.activeCameraPoints();
+      const getPointNames = () => getActivePoints().map((s, i) => `${i + 1}. ${s.id}`);
+      const COPY_NONE = '— pick a point —';
       const viewportLabel = 'Viewport (Blender)';
+      const methodLabels = {
+        stops: 'Stop points',
+        progress: 'Progress keyframes',
+      } as const;
+      const firstPoint = getActivePoints()[0] ?? SCENE_CONFIG.stops[0];
       const firstHeading = headingFromLook(
-        SCENE_CONFIG.stops[0]?.camera ?? [0, 0, 0],
-        SCENE_CONFIG.stops[0]?.target ?? [0, 0, -1],
+        firstPoint?.camera ?? [0, 0, 0],
+        firstPoint?.target ?? [0, 0, -1],
       );
 
       const camParams = {
+        cameraMethod: methodLabels[SCENE_CONFIG.cameraMethod],
         mode: isAdmin ? viewportLabel : 'Scroll Journey',
-        selectedStop: getStopNames()[0],
+        selectedPoint: getPointNames()[0],
         copyFrom: COPY_NONE,
-        scrollT: SCENE_CONFIG.stops[0]?.progress ?? 0.0,
-        camX: SCENE_CONFIG.stops[0]?.camera[0] ?? this.camera.position.x,
-        camY: SCENE_CONFIG.stops[0]?.camera[1] ?? this.camera.position.y,
-        camZ: SCENE_CONFIG.stops[0]?.camera[2] ?? this.camera.position.z,
-        targetX: SCENE_CONFIG.stops[0]?.target[0] ?? 14.0,
-        targetY: SCENE_CONFIG.stops[0]?.target[1] ?? 2.0,
-        targetZ: SCENE_CONFIG.stops[0]?.target[2] ?? 0.0,
-        fov: SCENE_CONFIG.stops[0]?.fov ?? 45,
+        scrollT: firstPoint?.progress ?? 0.0,
+        camX: firstPoint?.camera[0] ?? this.camera.position.x,
+        camY: firstPoint?.camera[1] ?? this.camera.position.y,
+        camZ: firstPoint?.camera[2] ?? this.camera.position.z,
+        targetX: firstPoint?.target[0] ?? 14.0,
+        targetY: firstPoint?.target[1] ?? 2.0,
+        targetZ: firstPoint?.target[2] ?? 0.0,
+        fov: firstPoint?.fov ?? 45,
         showCamGizmo: this.showCamGizmo,
         showTargetGizmo: this.showTargetGizmo,
         showCamPath: this.showCamPath,
@@ -1027,6 +1094,21 @@ export class SceneStudioGUI {
         pitch: 0,
         lookDist: firstHeading.dist,
 
+        copyViewportToSelectedStop: () => {
+          const point = SCENE_CONFIG.stops[this.currentStopIndex];
+          if (!point) return;
+          const points = SCENE_CONFIG.stops;
+          const prev = this.currentStopIndex > 0 ? points[this.currentStopIndex - 1].progress : 0;
+          const next = this.currentStopIndex < points.length - 1 ? points[this.currentStopIndex + 1].progress : 1;
+          const progress = clampOrdered(this.playheadT, prev, next);
+          copyCurrentViewToPoint(point, progress);
+          if (progress !== this.playheadT) {
+            alert(`The playhead was clamped to ${progress.toFixed(3)} to keep stop points ordered.`);
+          }
+        },
+        setKeyframeFromViewport: () => {
+          setProgressKeyframeFromView();
+        },
         addNewStop: () => {
           const look = this.isOrbitMode && this.viewportNav ? this.viewportNav.target : this.manualLookAt;
           const newId = `stop_${SCENE_CONFIG.stops.length + 1}_custom`;
@@ -1047,9 +1129,9 @@ export class SceneStudioGUI {
           };
           SCENE_CONFIG.stops.push(newStop);
 
-          stopDropdownController.options(getStopNames());
-          stopDropdownController.setValue(`${SCENE_CONFIG.stops.length}. ${newId}`);
-          copyFromCtrl.options([COPY_NONE, ...getStopNames()]);
+          pointDropdownController?.options(getPointNames());
+          pointDropdownController?.setValue(`${SCENE_CONFIG.stops.length}. ${newId}`);
+          copyFromCtrl?.options([COPY_NONE, ...getPointNames()]);
           camParams.copyFrom = COPY_NONE;
           copyFromCtrl.updateDisplay();
           this.notifyTimingChanged();
@@ -1079,6 +1161,120 @@ export class SceneStudioGUI {
       };
       const aimedLook = (camera: readonly [number, number, number]) =>
         lookFromHeading(camera, headingBase.yaw + camParams.yaw, headingBase.pitch + camParams.pitch, camParams.lookDist);
+
+      let pointDropdownController: any = null;
+      let copyFromCtrl: any = null;
+      let addStopCtrl: any = null;
+      let setKeyframeCtrl: any = null;
+      let copyViewportCtrl: any = null;
+
+      const loadActivePointIntoControls = () => {
+        const points = getActivePoints();
+        const point = points[this.currentStopIndex];
+        if (!point) return;
+        camParams.selectedPoint = getPointNames()[this.currentStopIndex];
+        camParams.scrollT = point.progress;
+        camParams.camX = point.camera[0];
+        camParams.camY = point.camera[1];
+        camParams.camZ = point.camera[2];
+        camParams.targetX = point.target[0];
+        camParams.targetY = point.target[1];
+        camParams.targetZ = point.target[2];
+        camParams.fov = point.fov ?? 45;
+        this.manualCamPos.set(...point.camera);
+        this.manualLookAt.set(...point.target);
+        if (!this.isOrbitMode) {
+          this.camera.position.copy(this.manualCamPos);
+          this.camera.lookAt(this.manualLookAt);
+          this.camera.fov = camParams.fov;
+          this.camera.updateProjectionMatrix();
+        }
+        this.cameraGizmos?.bindStop(point);
+        if (!this.lookAtTarget) captureHeadingBase();
+        else {
+          camParams.yaw = 0;
+          camParams.pitch = 0;
+        }
+        this.refreshCamDisplay();
+      };
+
+      const syncCameraMethodUi = () => {
+        const progress = SCENE_CONFIG.cameraMethod === 'progress';
+        pointDropdownController?.name(progress ? 'Edit Keyframe' : 'Edit Stop Point');
+        addStopCtrl?.[progress ? 'hide' : 'show']?.();
+        setKeyframeCtrl?.[progress ? 'show' : 'hide']?.();
+        copyViewportCtrl?.[progress ? 'hide' : 'show']?.();
+        if (pointDropdownController) {
+          pointDropdownController.options(getPointNames());
+          pointDropdownController.setValue(camParams.selectedPoint);
+        }
+        copyFromCtrl?.options([COPY_NONE, ...getPointNames()]);
+        camParams.copyFrom = COPY_NONE;
+        copyFromCtrl?.updateDisplay();
+      };
+
+      const copyCurrentViewToPoint = (point: CameraStop, progress: number) => {
+        const target = this.readCurrentViewTarget();
+        point.camera = [
+          Number(this.camera.position.x.toFixed(4)),
+          Number(this.camera.position.y.toFixed(4)),
+          Number(this.camera.position.z.toFixed(4)),
+        ];
+        point.target = [
+          Number(target.x.toFixed(4)),
+          Number(target.y.toFixed(4)),
+          Number(target.z.toFixed(4)),
+        ];
+        point.fov = Number(this.camera.fov.toFixed(2));
+        point.progress = clamp01(progress);
+        this.manualCamPos.set(...point.camera);
+        this.manualLookAt.set(...point.target);
+        loadActivePointIntoControls();
+        this.cameraGizmos?.bindStop(point);
+        this.refreshCamDisplay();
+        this.notifyTimingChanged();
+      };
+
+      const setProgressKeyframeFromView = () => {
+        this.ensureProgressKeyframes();
+        const t = this.playheadT;
+        const points = SCENE_CONFIG.progressKeyframes;
+        let index = points.findIndex((point) => Math.abs(point.progress - t) < 0.004);
+        let point = index >= 0 ? points[index] : null;
+        if (!point) {
+          const number = points.length + 1;
+          point = {
+            id: `keyframe_${number}`,
+            progress: t,
+            camera: [0, 0, 0],
+            target: [0, 0, -1],
+            fov: this.camera.fov,
+          };
+          points.push(point);
+        }
+        points.sort((a, b) => a.progress - b.progress);
+        this.currentStopIndex = points.indexOf(point);
+        if (this.currentStopIndex < 0) this.currentStopIndex = 0;
+        copyCurrentViewToPoint(point, t);
+        camParams.selectedPoint = getPointNames()[this.currentStopIndex];
+        pointDropdownController?.options(getPointNames());
+        pointDropdownController?.setValue(camParams.selectedPoint);
+        pointDropdownController?.updateDisplay();
+        syncCameraMethodUi();
+      };
+
+      camFolder
+        .add(camParams, 'cameraMethod', [methodLabels.stops, methodLabels.progress])
+        .name('Camera method')
+        .onChange((value: string) => {
+          SCENE_CONFIG.cameraMethod = value === methodLabels.progress ? 'progress' : 'stops';
+          if (SCENE_CONFIG.cameraMethod === 'progress') this.ensureProgressKeyframes();
+          this.currentStopIndex = Math.min(this.currentStopIndex, Math.max(0, getActivePoints().length - 1));
+          loadActivePointIntoControls();
+          syncCameraMethodUi();
+          this.notifyTimingChanged();
+          this.broadcastLive();
+        });
 
       if (isAdmin) {
         this.isOrbitMode = true;
@@ -1152,15 +1348,16 @@ export class SceneStudioGUI {
           lookDistCtrl.updateDisplay();
         });
 
-      const stopDropdownController = camFolder
-        .add(camParams, 'selectedStop', getStopNames())
-        .name('Edit Stop Point')
+      pointDropdownController = camFolder
+        .add(camParams, 'selectedPoint', getPointNames())
+        .name(SCENE_CONFIG.cameraMethod === 'progress' ? 'Edit Keyframe' : 'Edit Stop Point')
         .onChange((name: string) => {
-          const names = getStopNames();
+          const names = getPointNames();
+          const points = getActivePoints();
           const idx = names.indexOf(name);
-          if (idx >= 0 && idx < SCENE_CONFIG.stops.length) {
+          if (idx >= 0 && idx < points.length) {
             this.currentStopIndex = idx;
-            const stop = SCENE_CONFIG.stops[idx];
+            const stop = points[idx];
 
             camParams.scrollT = stop.progress;
             camParams.camX = stop.camera[0];
@@ -1192,15 +1389,16 @@ export class SceneStudioGUI {
           }
         });
 
-      const copyFromCtrl = camFolder
-        .add(camParams, 'copyFrom', [COPY_NONE, ...getStopNames()])
+      copyFromCtrl = camFolder
+        .add(camParams, 'copyFrom', [COPY_NONE, ...getPointNames()])
         .name('Copy camera from')
         .onChange((name: string) => {
           if (!name || name === COPY_NONE) return;
-          const names = getStopNames();
+          const names = getPointNames();
+          const points = getActivePoints();
           const srcIdx = names.indexOf(name);
-          const dest = SCENE_CONFIG.stops[this.currentStopIndex];
-          const src = SCENE_CONFIG.stops[srcIdx];
+          const dest = points[this.currentStopIndex];
+          const src = points[srcIdx];
           if (!dest || !src) {
             camParams.copyFrom = COPY_NONE;
             copyFromCtrl.updateDisplay();
@@ -1236,7 +1434,7 @@ export class SceneStudioGUI {
         });
 
       this.pullCamSlidersFromStop = () => {
-        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        const stop = getActivePoints()[this.currentStopIndex];
         if (!stop) return;
         camParams.scrollT = stop.progress;
         camParams.camX = stop.camera[0];
@@ -1253,7 +1451,7 @@ export class SceneStudioGUI {
 
       const writeStopCamera = (axis: 0 | 1 | 2, value: number) => {
         this.manualCamPos.setComponent(axis, value);
-        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        const stop = getActivePoints()[this.currentStopIndex];
         if (stop) stop.camera[axis] = value;
         if (!this.lookAtTarget && stop) {
           const next = aimedLook(stop.camera);
@@ -1274,7 +1472,7 @@ export class SceneStudioGUI {
 
       const writeStopTarget = (axis: 0 | 1 | 2, value: number) => {
         this.manualLookAt.setComponent(axis, value);
-        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        const stop = getActivePoints()[this.currentStopIndex];
         if (stop) stop.target[axis] = value;
         if (!this.isOrbitMode) this.camera.lookAt(this.manualLookAt);
       };
@@ -1284,10 +1482,15 @@ export class SceneStudioGUI {
         .name('Scroll t')
         .listen()
         .onChange((val: number) => {
-          if (SCENE_CONFIG.stops[this.currentStopIndex]) {
-            SCENE_CONFIG.stops[this.currentStopIndex].progress = val;
-          }
-          if (this.onProgressChange) this.onProgressChange(val);
+          const points = getActivePoints();
+          const point = points[this.currentStopIndex];
+          if (!point) return;
+          const prev = this.currentStopIndex > 0 ? points[this.currentStopIndex - 1].progress : 0;
+          const next = this.currentStopIndex < points.length - 1 ? points[this.currentStopIndex + 1].progress : 1;
+          const clamped = clampOrdered(val, prev, next);
+          point.progress = clamped;
+          camParams.scrollT = clamped;
+          if (this.onProgressChange) this.onProgressChange(clamped);
           this.notifyTimingChanged();
         });
 
@@ -1336,13 +1539,14 @@ export class SceneStudioGUI {
             this.camera.fov = v;
             this.camera.updateProjectionMatrix();
           }
-          if (SCENE_CONFIG.stops[this.currentStopIndex]) {
-            SCENE_CONFIG.stops[this.currentStopIndex].fov = v;
+          const point = getActivePoints()[this.currentStopIndex];
+          if (point) {
+            point.fov = v;
           }
         });
 
       const writeHeading = () => {
-        const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+        const stop = getActivePoints()[this.currentStopIndex];
         if (!stop) return;
         camParams.yaw = THREE.MathUtils.clamp(camParams.yaw, -180, 180);
         camParams.pitch = THREE.MathUtils.clamp(camParams.pitch, -89, 89);
@@ -1394,7 +1598,13 @@ export class SceneStudioGUI {
       };
       syncAimMode();
 
-      camFolder.add(camParams, 'addNewStop').name('➕ Add Current View as Stop');
+      addStopCtrl = camFolder.add(camParams, 'addNewStop').name('➕ Add Current View as Stop');
+      setKeyframeCtrl = camFolder
+        .add(camParams, 'setKeyframeFromViewport')
+        .name('Set Current View as Keyframe');
+      copyViewportCtrl = camFolder
+        .add(camParams, 'copyViewportToSelectedStop')
+        .name('Copy Viewport to Selected Stop');
       camFolder.add(camParams, 'copyStopsConfig').name('📋 Copy Stops JSON');
 
       this.refreshCamDisplay = () => {
@@ -1419,6 +1629,18 @@ export class SceneStudioGUI {
         pitchCtrl.updateDisplay();
         lookDistCtrl.updateDisplay();
       };
+
+      this.selectCameraPointFromTimeline = (index: number) => {
+        const points = getActivePoints();
+        if (!points[index]) return;
+        this.currentStopIndex = index;
+        camParams.selectedPoint = getPointNames()[index];
+        pointDropdownController?.setValue(camParams.selectedPoint);
+        loadActivePointIntoControls();
+        this.onProgressChange?.(points[index].progress);
+      };
+
+      syncCameraMethodUi();
 
       this.populateLightsAndShadows();
       this.populateMaterials();
@@ -2035,7 +2257,7 @@ export class SceneStudioGUI {
 
     const root = this.addTab('Story Timing');
 
-    const playhead = { t: SCENE_CONFIG.stops[0]?.progress ?? 0 };
+    const playhead = { t: this.playheadT };
     root
       .add(playhead, 't', 0, 1, 0.01)
       .name('Playhead')
@@ -2045,15 +2267,19 @@ export class SceneStudioGUI {
       });
 
     const cameraFolder = root;
-    SCENE_CONFIG.stops.forEach((stop, index) => {
+    const cameraPoints = this.activeCameraPoints();
+    SCENE_CONFIG.cameraMethod === 'progress' && cameraPoints.length
+      ? root.add({ info: 'Use the bottom timeline to add or drag keyframes' }, 'info').name('Progress mode')
+      : undefined;
+    cameraPoints.forEach((stop, index) => {
       const row = { progress: stop.progress };
       const ctrl = cameraFolder
         .add(row, 'progress', 0, 1, 0.01)
         .name(`${index + 1}. ${stop.id}`)
         .listen()
         .onChange((value: number) => {
-          const prev = index > 0 ? SCENE_CONFIG.stops[index - 1].progress : 0;
-          const next = index < SCENE_CONFIG.stops.length - 1 ? SCENE_CONFIG.stops[index + 1].progress : 1;
+          const prev = index > 0 ? cameraPoints[index - 1].progress : 0;
+          const next = index < cameraPoints.length - 1 ? cameraPoints[index + 1].progress : 1;
           const clamped = clampOrdered(value, prev, next);
           row.progress = clamped;
           stop.progress = clamped;
@@ -2969,6 +3195,13 @@ export class SceneStudioGUI {
 
   private refreshCamDisplay = () => {};
   private pullCamSlidersFromStop = () => {};
+  private selectCameraPointFromTimeline = (_index: number) => {};
+
+  private onCameraPointSelected = (event: Event) => {
+    const detail = (event as CustomEvent<{ method?: string; index?: number }>).detail;
+    if (detail?.method !== SCENE_CONFIG.cameraMethod || typeof detail.index !== 'number') return;
+    this.selectCameraPointFromTimeline(detail.index);
+  };
 
   private broadcastLive() {
     publishLive({
@@ -2981,7 +3214,9 @@ export class SceneStudioGUI {
       flowSteps: FLOW_CONFIG,
       flowChrome: FLOW_CHROME,
       siteContent: SITE_CONTENT,
+      cameraMethod: SCENE_CONFIG.cameraMethod,
       cameraStops: SCENE_CONFIG.stops,
+      progressKeyframes: SCENE_CONFIG.progressKeyframes,
       scroll: SCENE_CONFIG.scroll,
       look: LOOK_CONFIG,
     });
@@ -3076,10 +3311,10 @@ export class SceneStudioGUI {
   public tick() {
     this.lightGizmos?.syncAll();
     if (!this.cameraGizmos) return;
-    this.cameraGizmos.syncPath(SCENE_CONFIG.stops, this.playheadT);
+    this.cameraGizmos.syncPath(this.cameraPointsForGizmos(), this.playheadT);
     const aspect = this.camera.aspect;
     if (this.grabCamera) {
-      const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+      const stop = this.activeCameraPoints()[this.currentStopIndex];
       if (stop) this.cameraGizmos.sync(stop, aspect);
       return;
     }
@@ -3088,7 +3323,7 @@ export class SceneStudioGUI {
       this.cameraGizmos.syncPose(this.journeySample, aspect);
       return;
     }
-    const stop = SCENE_CONFIG.stops[this.currentStopIndex];
+    const stop = this.activeCameraPoints()[this.currentStopIndex];
     if (stop) this.cameraGizmos.sync(stop, aspect);
   }
 
@@ -3099,6 +3334,7 @@ export class SceneStudioGUI {
     window.removeEventListener('resize', this.onChromeLayout);
     window.removeEventListener(STORY_FRAME_EVENT, this.onStoryFrame);
     window.removeEventListener('rastaak-studio-timing-changed', this.onStudioTiming);
+    window.removeEventListener('rastaak-camera-point-selected', this.onCameraPointSelected);
     this.chromeObserver?.disconnect();
     this.chromeObserver = null;
     this.setGrabMode(false);

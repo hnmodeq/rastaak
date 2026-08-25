@@ -104,7 +104,9 @@ export function AdminApp() {
     setSaving(true);
     try {
       const payload = {
+        cameraMethod: SCENE_CONFIG.cameraMethod,
         cameraStops: SCENE_CONFIG.stops,
+        progressKeyframes: SCENE_CONFIG.progressKeyframes,
         lights: LIGHTS_CONFIG,
         environment: SCENE_CONFIG.environment,
         renderer: SCENE_CONFIG.renderer,

@@ -23,6 +23,7 @@ function pct(t: number): string {
 type DragKind =
   | 'playhead'
   | 'cam'
+  | 'keyframe'
   | 'step-start'
   | 'step-end'
   | 'step-move'
@@ -52,6 +53,7 @@ type DragState = {
 
 type TimingSnapshot = {
   stops: number[];
+  keyframes: number[];
   steps: Array<[number, number]>;
   clients: Array<{
     appear: number;
@@ -308,6 +310,13 @@ export class StoryTimelinePanel {
     return `calc(${LABEL_W}px + 8px + ${clamp01(t)} * (100% - ${LABEL_W}px - 8px))`;
   }
 
+  private cameraPoints() {
+    if (SCENE_CONFIG.cameraMethod === 'progress' && SCENE_CONFIG.progressKeyframes.length) {
+      return SCENE_CONFIG.progressKeyframes;
+    }
+    return SCENE_CONFIG.stops;
+  }
+
   private setPlayhead(t: number) {
     this.playhead = clamp01(t);
     if (this.needle) this.needle.style.left = this.needleLeft(this.playhead);
@@ -324,6 +333,7 @@ export class StoryTimelinePanel {
   private capture(): TimingSnapshot {
     return {
       stops: SCENE_CONFIG.stops.map((stop) => stop.progress),
+      keyframes: SCENE_CONFIG.progressKeyframes.map((keyframe) => keyframe.progress),
       steps: FLOW_CONFIG.map((step) => [step.progressRange[0], step.progressRange[1]]),
       clients: STORY_CONFIG.clients.map((client) => ({
         appear: client.appear,
@@ -340,6 +350,9 @@ export class StoryTimelinePanel {
   private applySnapshot(snapshot: TimingSnapshot) {
     snapshot.stops.forEach((progress, index) => {
       if (SCENE_CONFIG.stops[index]) SCENE_CONFIG.stops[index].progress = progress;
+    });
+    snapshot.keyframes.forEach((progress, index) => {
+      if (SCENE_CONFIG.progressKeyframes[index]) SCENE_CONFIG.progressKeyframes[index].progress = progress;
     });
     snapshot.steps.forEach((range, index) => {
       if (FLOW_CONFIG[index]) FLOW_CONFIG[index].progressRange = [range[0], range[1]];
@@ -398,9 +411,9 @@ export class StoryTimelinePanel {
       const caption = STORY_CONFIG.captions[index];
       return caption ? [caption.range[0], caption.range[1]] : [0, 0];
     }
-    if (kind === 'cam') {
-      const stop = SCENE_CONFIG.stops[index];
-      const t = stop?.progress ?? 0;
+    if (kind === 'cam' || kind === 'keyframe') {
+      const point = this.cameraPoints()[index];
+      const t = point?.progress ?? 0;
       return [t, t];
     }
     if (kind === 'resolve') {
@@ -453,12 +466,13 @@ export class StoryTimelinePanel {
       return;
     }
 
-    if (kind === 'cam') {
-      const prev = index > 0 ? SCENE_CONFIG.stops[index - 1].progress : 0;
-      const next = index < SCENE_CONFIG.stops.length - 1 ? SCENE_CONFIG.stops[index + 1].progress : 1;
-      SCENE_CONFIG.stops[index].progress = clampOrdered(t, prev, next);
-      this.setPlayhead(SCENE_CONFIG.stops[index].progress);
-      this.onSeek(SCENE_CONFIG.stops[index].progress);
+    if (kind === 'cam' || kind === 'keyframe') {
+      const points = this.cameraPoints();
+      const prev = index > 0 ? points[index - 1].progress : 0;
+      const next = index < points.length - 1 ? points[index + 1].progress : 1;
+      points[index].progress = clampOrdered(t, prev, next);
+      this.setPlayhead(points[index].progress);
+      this.onSeek(points[index].progress);
       this.paint();
       this.rebindDragLane();
       return;
@@ -583,16 +597,30 @@ export class StoryTimelinePanel {
     this.bindSeek(rulerLane);
     this.lanes.appendChild(ruler);
 
-    const cam = this.makeTrack('Camera', 'camera');
+    const cam = this.makeTrack(
+      SCENE_CONFIG.cameraMethod === 'progress' ? 'Camera keyframes' : 'Camera stops',
+      'camera',
+    );
     const camLane = cam.querySelector('.stl-lane') as HTMLDivElement;
-    SCENE_CONFIG.stops.forEach((stop, index) => {
+    const points = this.cameraPoints();
+    points.forEach((point, index) => {
       const mark = document.createElement('button');
       mark.type = 'button';
       mark.className = 'stl-cam';
-      mark.style.left = pct(stop.progress);
-      mark.title = `${stop.id} @ ${stop.progress.toFixed(2)}`;
+      mark.style.left = pct(point.progress);
+      mark.title = `${point.id} @ ${point.progress.toFixed(2)}`;
       mark.textContent = String(index + 1);
-      mark.addEventListener('pointerdown', (event) => this.startDrag('cam', index, camLane, event));
+      mark.addEventListener('pointerdown', (event) => {
+        window.dispatchEvent(
+          new CustomEvent('rastaak-camera-point-selected', {
+            detail: {
+              index,
+              method: SCENE_CONFIG.cameraMethod,
+            },
+          }),
+        );
+        this.startDrag(SCENE_CONFIG.cameraMethod === 'progress' ? 'keyframe' : 'cam', index, camLane, event);
+      });
       camLane.appendChild(mark);
     });
     this.bindSeek(camLane);

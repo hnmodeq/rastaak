@@ -39,7 +39,13 @@ export function sampleSceneJourney(
   t: number,
   out: { camera: [number, number, number]; target: [number, number, number]; fov: number },
 ): void {
-  const stops = SCENE_CONFIG.stops;
+  // Progress mode uses its own editable keyframe list. Keep the old stop
+  // list as a safe fallback for configs created before progress mode existed.
+  const source =
+    SCENE_CONFIG.cameraMethod === 'progress' && SCENE_CONFIG.progressKeyframes.length
+      ? SCENE_CONFIG.progressKeyframes
+      : SCENE_CONFIG.stops;
+  const stops = [...source].sort((a, b) => a.progress - b.progress);
   if (!stops || stops.length === 0) return;
 
   if (stops.length === 1) {

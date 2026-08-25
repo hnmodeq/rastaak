@@ -6,10 +6,12 @@
 import { LIGHTS_CONFIG } from './lightingConfig';
 import type { CameraStop, MaterialsConfig, SceneConfig } from './sceneTypes';
 
-export type { CameraStop, MaterialsConfig, LightConfig, SceneConfig } from './sceneTypes';
+export type { CameraKeyframe, CameraMethod, CameraStop, MaterialsConfig, LightConfig, SceneConfig } from './sceneTypes';
 export { LIGHTS_CONFIG } from './lightingConfig';
 
 export const SCENE_CONFIG: SceneConfig = {
+  cameraMethod: 'stops',
+
   stops: [
     {
       id: "stop_1_overview",
@@ -75,6 +77,10 @@ export const SCENE_CONFIG: SceneConfig = {
       fov: 89.995445
     }
   ] as CameraStop[],
+
+  // Progress-mode keyframes are intentionally separate from stop points.
+  // The studio seeds this list from stops the first time Progress is selected.
+  progressKeyframes: [],
 
   scroll: {
     headerScrollMultiplier: 5,

@@ -24,7 +24,7 @@ import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 import { BuildingNamePlateSet } from './scene/BuildingNamePlates';
 import { subscribeLive } from '@/components/live/liveChannel';
-import type { LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
+import type { CameraKeyframe, CameraMethod, CameraStop, LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
 import {
   LOOK_CONFIG,
   LookComposer,
@@ -307,6 +307,19 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       if (patch.renderer && typeof patch.renderer === 'object' && 'toneMappingExposure' in (patch.renderer as object)) {
         renderer.toneMappingExposure = Number((patch.renderer as { toneMappingExposure: number }).toneMappingExposure);
       }
+      if (patch.cameraMethod === 'stops' || patch.cameraMethod === 'progress') {
+        SCENE_CONFIG.cameraMethod = patch.cameraMethod as CameraMethod;
+      }
+      if (Array.isArray(patch.cameraStops)) {
+        SCENE_CONFIG.stops.splice(0, SCENE_CONFIG.stops.length, ...(patch.cameraStops as CameraStop[]));
+      }
+      if (Array.isArray(patch.progressKeyframes)) {
+        SCENE_CONFIG.progressKeyframes.splice(
+          0,
+          SCENE_CONFIG.progressKeyframes.length,
+          ...(patch.progressKeyframes as CameraKeyframe[]),
+        );
+      }
       if (patch.materials && world) {
         applyMaterialsConfig(world, patch.materials as MaterialsConfig);
         story.rebindIdlePalette();
@@ -353,6 +366,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
           }
         },
         viewport,
+        () => (mode === 'admin' ? controls.target : viewport.target),
       );
       if (world) studioGUI.populateMaterials();
     };
@@ -505,7 +519,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       if (studioGUI?.isManualMode) {
         camera.position.copy(studioGUI.manualCamPos);
         camera.lookAt(studioGUI.manualLookAt);
-      } else if (viewport.enabled || studioGUI?.isOrbitMode) {
+      } else if (viewport.enabled || (studioGUI?.isOrbitMode && mode !== 'admin')) {
         camera.lookAt(viewport.target);
       } else if (mode === 'admin' && controls.enabled) {
         if (orbitSeekT !== null) {

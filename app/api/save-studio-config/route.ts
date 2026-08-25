@@ -187,8 +187,18 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
           fov: asFinite(stop?.fov, 45),
         }))
       : null;
+    const progressKeyframes = Array.isArray(body.progressKeyframes)
+      ? body.progressKeyframes.map((keyframe, index) => ({
+          id: sanitizeId(keyframe?.id, `keyframe_${index + 1}`),
+          progress: Math.min(1, Math.max(0, asFinite(keyframe?.progress, index / Math.max(1, body.progressKeyframes!.length - 1)))),
+          camera: asVec3(keyframe?.camera, [0, 10, 10]),
+          target: asVec3(keyframe?.target, [0, 0, 0]),
+          fov: asFinite(keyframe?.fov, 45),
+        }))
+      : null;
+    const cameraMethod = body.cameraMethod === 'progress' ? 'progress' : 'stops';
 
-    if (cameraStops || body.environment || body.materials || body.renderer || body.scroll) {
+    if (cameraStops || progressKeyframes || body.cameraMethod || body.environment || body.materials || body.renderer || body.scroll) {
       const overrides: Record<string, Record<string, unknown>> = {};
       const rawOverrides = body.materials?.overrides;
       if (rawOverrides && typeof rawOverrides === 'object') {
@@ -279,6 +289,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
       };
 
       const stops = cameraStops ?? [];
+      const keyframes = progressKeyframes ?? [];
 
       const sceneConfigPath = path.join(rootDir, 'components', 'canvas', 'scene', 'sceneConfig.ts');
       const sceneConfigCode = `/**
@@ -289,11 +300,13 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 import { LIGHTS_CONFIG } from './lightingConfig';
 import type { CameraStop, MaterialsConfig, SceneConfig } from './sceneTypes';
 
-export type { CameraStop, MaterialsConfig, LightConfig, SceneConfig } from './sceneTypes';
+export type { CameraKeyframe, CameraMethod, CameraStop, MaterialsConfig, LightConfig, SceneConfig } from './sceneTypes';
 export { LIGHTS_CONFIG } from './lightingConfig';
 
 export const SCENE_CONFIG: SceneConfig = {
+  cameraMethod: ${emit(cameraMethod, 1)},
   stops: ${emit(stops, 1)} as CameraStop[],
+  progressKeyframes: ${emit(keyframes, 1)} as CameraStop[],
 
   scroll: ${emit(scroll, 1)},
 

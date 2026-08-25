@@ -12,7 +12,9 @@ export type LivePatch = {
   materials?: unknown;
   environment?: unknown;
   renderer?: unknown;
+  cameraMethod?: unknown;
   cameraStops?: unknown;
+  progressKeyframes?: unknown;
   scroll?: unknown;
   look?: unknown;
 };
