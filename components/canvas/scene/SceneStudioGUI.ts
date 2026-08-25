@@ -1129,12 +1129,38 @@ export class SceneStudioGUI {
         setKeyframeFromViewport: () => {
           setProgressKeyframeFromView();
         },
+        removeCameraKeyframe: () => {
+          if (SCENE_CONFIG.cameraMethod !== 'progress') return;
+          const points = SCENE_CONFIG.progressKeyframes;
+          if (points.length <= 1) {
+            alert('Keep at least one progress keyframe.');
+            return;
+          }
+          points.splice(this.currentStopIndex, 1);
+          this.currentStopIndex = Math.min(this.currentStopIndex, points.length - 1);
+          loadActivePointIntoControls();
+          pointDropdownController?.options(getPointNames());
+          pointDropdownController?.setValue(camParams.selectedPoint);
+          syncCameraMethodUi();
+          this.notifyTimingChanged();
+        },
         addNewStop: () => {
-          const look = this.isOrbitMode && this.viewportNav ? this.viewportNav.target : this.manualLookAt;
-          const newId = `stop_${SCENE_CONFIG.stops.length + 1}_custom`;
+          const look = this.readCurrentViewTarget();
+          const points = SCENE_CONFIG.stops;
+          const progress = clamp01(this.playheadT);
+          const newId = `stop_${points.length + 1}_custom`;
+          const existingIndex = points.findIndex((point) => Math.abs(point.progress - progress) < 0.0005);
+          if (existingIndex >= 0) {
+            this.currentStopIndex = existingIndex;
+            copyCurrentViewToPoint(points[existingIndex], progress);
+            pointDropdownController?.setValue(getPointNames()[existingIndex]);
+            alert(`Updated the existing stop point at t ${progress.toFixed(3)}.`);
+            return;
+          }
+
           const newStop: CameraStop = {
             id: newId,
-            progress: 1.0,
+            progress,
             camera: [
               parseFloat(this.camera.position.x.toFixed(2)),
               parseFloat(this.camera.position.y.toFixed(2)),
@@ -1147,15 +1173,21 @@ export class SceneStudioGUI {
             ],
             fov: this.camera.fov,
           };
-          SCENE_CONFIG.stops.push(newStop);
+          const insertIndex = points.findIndex((point) => point.progress > progress);
+          const index = insertIndex < 0 ? points.length : insertIndex;
+          points.splice(index, 0, newStop);
+          this.currentStopIndex = index;
+          loadActivePointIntoControls();
 
           pointDropdownController?.options(getPointNames());
-          pointDropdownController?.setValue(`${SCENE_CONFIG.stops.length}. ${newId}`);
+          camParams.selectedPoint = getPointNames()[index];
+          pointDropdownController?.setValue(camParams.selectedPoint);
           copyFromCtrl?.options([COPY_NONE, ...getPointNames()]);
           camParams.copyFrom = COPY_NONE;
-          copyFromCtrl.updateDisplay();
+          copyFromCtrl?.updateDisplay();
+          this.refreshCamDisplay();
           this.notifyTimingChanged();
-          alert(`Added new stop point '${newId}'!`);
+          alert(`Added new stop point '${newId}' at t ${progress.toFixed(3)}.`);
         },
 
         copyStopsConfig: () => {
@@ -1186,6 +1218,7 @@ export class SceneStudioGUI {
       let copyFromCtrl: any = null;
       let addStopCtrl: any = null;
       let setKeyframeCtrl: any = null;
+      let removeCameraKeyframeCtrl: any = null;
       let copyViewportCtrl: any = null;
 
       const loadActivePointIntoControls = () => {
@@ -1223,6 +1256,7 @@ export class SceneStudioGUI {
         pointDropdownController?.name(progress ? 'Edit Keyframe' : 'Edit Stop Point');
         addStopCtrl?.[progress ? 'hide' : 'show']?.();
         setKeyframeCtrl?.[progress ? 'show' : 'hide']?.();
+        removeCameraKeyframeCtrl?.[progress ? 'show' : 'hide']?.();
         copyViewportCtrl?.[progress ? 'hide' : 'show']?.();
         if (pointDropdownController) {
           pointDropdownController.options(getPointNames());
@@ -1622,6 +1656,9 @@ export class SceneStudioGUI {
       setKeyframeCtrl = camFolder
         .add(camParams, 'setKeyframeFromViewport')
         .name('Set Current View as Keyframe');
+      removeCameraKeyframeCtrl = camFolder
+        .add(camParams, 'removeCameraKeyframe')
+        .name('Remove Selected Keyframe');
       copyViewportCtrl = camFolder
         .add(camParams, 'copyViewportToSelectedStop')
         .name('Copy Viewport to Selected Stop');
