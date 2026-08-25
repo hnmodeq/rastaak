@@ -44,7 +44,6 @@ export function HomeTheme() {
           if (FLOW_CONFIG[index] && step && typeof step === 'object') Object.assign(FLOW_CONFIG[index], step);
         });
         syncFlowDom();
-        window.dispatchEvent(new CustomEvent('rastaak-studio-timing-changed'));
       }
       if (patch.flowChrome && typeof patch.flowChrome === 'object') {
         Object.assign(FLOW_CHROME, patch.flowChrome);

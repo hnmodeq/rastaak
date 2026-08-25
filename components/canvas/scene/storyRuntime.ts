@@ -706,7 +706,7 @@ export class StoryRuntime {
 
       chips.push({
         id: client.config.id,
-        text: needTitleAt(client.config, t),
+        text: needTitleAt(client.config, t, burst.delay),
         x: (_projected.x * 0.5 + 0.5) * input.width,
         y: (-_projected.y * 0.5 + 0.5) * input.height,
         state: state === 'idle' ? 'need' : state,

@@ -1,5 +1,5 @@
 import { SCENE_CONFIG } from './sceneConfig';
-import { STORY_CONFIG, STORY_FRAME_EVENT, needEndAt, storyBuildingLabel, type StoryFrame } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, needEndAt, resolveAt, type StoryFrame } from './storyConfig';
 import { FLOW_CONFIG } from '@/components/home/flowConfig';
 
 const MIN_FLIGHT = 0.02;
@@ -30,11 +30,15 @@ type DragKind =
   | 'need'
   | 'launch'
   | 'arrive'
+  | 'resolve'
   | 'need-move'
   | 'logo-move'
   | 'hold-start'
   | 'hold-end'
-  | 'hold-move';
+  | 'hold-move'
+  | 'cap-start'
+  | 'cap-end'
+  | 'cap-move';
 
 type DragState = {
   kind: DragKind;
@@ -55,8 +59,10 @@ type TimingSnapshot = {
     appear: number;
     dispatch: number;
     arrive: number;
+    resolve: number;
     needEnd?: number;
   }>;
+  captions: Array<[number, number]>;
   chipHoldAfterArrive: number;
 };
 
@@ -164,11 +170,11 @@ export class StoryTimelinePanel {
           </div>
         </div>
         <div class="stl-legend">
-          <i class="stl-swatch" style="background:#6f0000"></i>Request
-          <i class="stl-swatch" style="background:#1c6bff"></i>Shooting
-          <i class="stl-swatch" style="background:#2f9e6b"></i>Solved
-          <i class="stl-swatch" style="background:#7a5cff"></i>Chapters / Flow
-          <i class="stl-swatch" style="background:#c9a227"></i>Camera
+          <i class="stl-swatch" style="background:#6f0000"></i>red
+          <i class="stl-swatch" style="background:#229afd"></i>blue
+          <i class="stl-swatch" style="background:#1c6bff"></i>logo
+          <i class="stl-swatch" style="background:#7a5cff"></i>page
+          <i class="stl-swatch" style="background:#c9a227"></i>camera
           <span class="stl-hint">drag bar to move · drag edges to trim</span>
         </div>
         <div class="stl-lanes"></div>
@@ -333,8 +339,10 @@ export class StoryTimelinePanel {
         appear: client.appear,
         dispatch: client.dispatch,
         arrive: client.arrive,
+        resolve: resolveAt(client),
         needEnd: client.needEnd,
       })),
+      captions: STORY_CONFIG.captions.map((caption) => [caption.range[0], caption.range[1]]),
       chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
     };
   }
@@ -355,8 +363,12 @@ export class StoryTimelinePanel {
       client.appear = times.appear;
       client.dispatch = times.dispatch;
       client.arrive = times.arrive;
+      client.resolve = times.resolve;
       if (times.needEnd === undefined) delete client.needEnd;
       else client.needEnd = times.needEnd;
+    });
+    snapshot.captions.forEach((range, index) => {
+      if (STORY_CONFIG.captions[index]) STORY_CONFIG.captions[index].range = [range[0], range[1]];
     });
     STORY_CONFIG.chipHoldAfterArrive = snapshot.chipHoldAfterArrive;
     this.paint();
@@ -395,9 +407,18 @@ export class StoryTimelinePanel {
     if (client && (kind === 'arrive' || kind === 'hold-start' || kind === 'hold-end' || kind === 'hold-move')) {
       return [client.arrive, needEndAt(client)];
     }
+    if (kind === 'cap-start' || kind === 'cap-end' || kind === 'cap-move') {
+      const caption = STORY_CONFIG.captions[index];
+      return caption ? [caption.range[0], caption.range[1]] : [0, 0];
+    }
     if (kind === 'cam' || kind === 'keyframe') {
       const point = this.cameraPoints()[index];
       const t = point?.progress ?? 0;
+      return [t, t];
+    }
+    if (kind === 'resolve') {
+      const item = STORY_CONFIG.clients[index];
+      const t = item ? resolveAt(item) : 0;
       return [t, t];
     }
     return [0, 0];
@@ -490,6 +511,7 @@ export class StoryTimelinePanel {
       kind === 'need' ||
       kind === 'launch' ||
       kind === 'arrive' ||
+      kind === 'resolve' ||
       kind === 'need-move' ||
       kind === 'logo-move' ||
       kind === 'hold-start' ||
@@ -501,6 +523,7 @@ export class StoryTimelinePanel {
       if (kind === 'need') {
         client.appear = clampOrdered(t, 0, client.arrive - MIN_FLIGHT);
         if (client.dispatch < client.appear) client.dispatch = client.appear;
+        if (resolveAt(client) < client.appear) client.resolve = client.appear;
         if (needEndAt(client) < client.appear + MIN_SPAN) client.needEnd = Math.min(1, client.appear + MIN_SPAN);
       } else if (kind === 'launch') {
         client.dispatch = clampOrdered(t, client.appear, client.arrive - MIN_FLIGHT);
@@ -513,10 +536,13 @@ export class StoryTimelinePanel {
         const pinnedEnd = this.dragging.originRight;
         client.needEnd = pinnedEnd;
         client.arrive = clampOrdered(t, client.dispatch + MIN_FLIGHT, pinnedEnd - MIN_SPAN);
+      } else if (kind === 'resolve') {
+        client.resolve = clampOrdered(t, client.appear, 1);
       } else if (kind === 'need-move') {
         const [nextAppear, nextDispatch] = this.shiftedRange(t, 0, client.arrive - MIN_FLIGHT, MIN_SPAN);
         client.appear = nextAppear;
         client.dispatch = Math.min(nextDispatch, client.arrive - MIN_FLIGHT);
+        if (resolveAt(client) < client.appear) client.resolve = client.appear;
       } else if (kind === 'logo-move') {
         const [nextDispatch, nextArrive] = this.shiftedRange(t, client.appear, 1, MIN_FLIGHT);
         client.dispatch = Math.max(client.appear, nextDispatch);
@@ -538,6 +564,21 @@ export class StoryTimelinePanel {
       return;
     }
 
+    const caption = STORY_CONFIG.captions[index];
+    if (!caption) return;
+    if (kind === 'cap-move') {
+      const [nextStart, nextEnd] = this.shiftedRange(t, 0, 1.01, MIN_SPAN);
+      caption.range[0] = nextStart;
+      caption.range[1] = nextEnd;
+    } else if (kind === 'cap-start') {
+      caption.range[0] = clampOrdered(t, 0, caption.range[1] - MIN_SPAN);
+    } else {
+      caption.range[1] = clampOrdered(t, caption.range[0] + MIN_SPAN, 1.01);
+    }
+    this.setPlayhead(t);
+    this.onSeek(t);
+    this.paint();
+    this.rebindDragLane();
   }
 
   private paint() {
@@ -585,9 +626,7 @@ export class StoryTimelinePanel {
     this.bindSeek(camLane);
     this.lanes.appendChild(cam);
 
-    // Chapters are the four website flow panels. Their ranges drive the
-    // active panel on the homepage, not the camera itself.
-    const page = this.makeTrack('Chapters / Flow', 'chapters');
+    const page = this.makeTrack('Chapters', 'chapters');
     const pageLane = page.querySelector('.stl-lane') as HTMLDivElement;
     FLOW_CONFIG.forEach((step, index) => {
       pageLane.appendChild(
@@ -608,16 +647,16 @@ export class StoryTimelinePanel {
     this.lanes.appendChild(page);
 
     STORY_CONFIG.clients.forEach((client, index) => {
-      const row = this.makeTrack(storyBuildingLabel(client), `client-${client.id || index}`);
+      const row = this.makeTrack(client.building.replace(' Building', ''), `client-${client.id || index}`);
       const lane = row.querySelector('.stl-lane') as HTMLDivElement;
       const holdEnd = needEndAt(client);
       lane.appendChild(
         this.makeClip({
           left: client.appear,
           right: client.dispatch,
-          label: 'Request',
+          label: 'red',
           color: '#6f0000',
-          title: `${storyBuildingLabel(client)} request`,
+          title: `${client.building} turns red`,
           lane,
           onStart: (event) => this.startDrag('need', index, lane, event),
           onEnd: (event) => this.startDrag('launch', index, lane, event),
@@ -628,9 +667,9 @@ export class StoryTimelinePanel {
         this.makeClip({
           left: client.dispatch,
           right: client.arrive,
-          label: 'Shooting',
+          label: 'logo',
           color: '#1c6bff',
-          title: `${storyBuildingLabel(client)} shooting`,
+          title: `${client.building} logo flight`,
           lane,
           onStart: (event) => this.startDrag('launch', index, lane, event),
           onEnd: (event) => this.startDrag('arrive', index, lane, event),
@@ -642,9 +681,9 @@ export class StoryTimelinePanel {
           this.makeClip({
             left: client.arrive,
             right: holdEnd,
-            label: 'Solved',
+            label: 'need',
             color: '#2f9e6b',
-            title: `${storyBuildingLabel(client)} solved`,
+            title: `${client.building} needs window`,
             lane,
             onStart: (event) => this.startDrag('hold-start', index, lane, event),
             onEnd: (event) => this.startDrag('hold-end', index, lane, event),
@@ -652,9 +691,37 @@ export class StoryTimelinePanel {
           }),
         );
       }
+      const blue = document.createElement('button');
+      blue.type = 'button';
+      blue.className = 'stl-resolve';
+      blue.style.left = pct(resolveAt(client));
+      blue.title = `${client.building} turns blue @ ${resolveAt(client).toFixed(2)}`;
+      blue.textContent = 'B';
+      blue.addEventListener('pointerdown', (event) => this.startDrag('resolve', index, lane, event));
+      lane.appendChild(blue);
       this.bindSeek(lane);
       this.lanes!.appendChild(row);
     });
+
+    const caps = this.makeTrack('Captions', 'captions');
+    const capLane = caps.querySelector('.stl-lane') as HTMLDivElement;
+    STORY_CONFIG.captions.forEach((caption, index) => {
+      capLane.appendChild(
+        this.makeClip({
+          left: caption.range[0],
+          right: Math.min(1, caption.range[1]),
+          label: caption.text,
+          color: '#b07020',
+          title: caption.text,
+          lane: capLane,
+          onStart: (event) => this.startDrag('cap-start', index, capLane, event),
+          onEnd: (event) => this.startDrag('cap-end', index, capLane, event),
+          onMove: (event) => this.startDrag('cap-move', index, capLane, event),
+        }),
+      );
+    });
+    this.bindSeek(capLane);
+    this.lanes.appendChild(caps);
 
     const needle = document.createElement('div');
     needle.className = 'stl-needle';
@@ -666,7 +733,7 @@ export class StoryTimelinePanel {
 
   private bindSeek(lane: HTMLElement) {
     lane.addEventListener('pointerdown', (event) => {
-      if ((event.target as HTMLElement).closest('.stl-clip, .stl-cam, .stl-handle')) return;
+      if ((event.target as HTMLElement).closest('.stl-clip, .stl-cam, .stl-handle, .stl-resolve')) return;
       this.startDrag('playhead', -1, lane, event);
     });
   }
@@ -946,6 +1013,21 @@ export class StoryTimelinePanel {
         font-size: 9px;
         font-weight: 700;
         cursor: grab;
+      }
+      #rastaak-story-timeline .stl-resolve {
+        position: absolute;
+        top: 2px;
+        width: 16px;
+        height: 16px;
+        margin-left: -8px;
+        border: 0;
+        border-radius: 3px;
+        background: #229afd;
+        color: #041018;
+        font-size: 9px;
+        font-weight: 700;
+        cursor: grab;
+        z-index: 3;
       }
       #rastaak-story-timeline .stl-tick {
         position: absolute;

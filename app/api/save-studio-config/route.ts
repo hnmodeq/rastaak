@@ -377,12 +377,15 @@ export const SCENE_CONFIG: SceneConfig = {
         clients: rawClients.map((client, index) => ({
           id: sanitizeId(client?.id, `client_${index + 1}`),
           building: sanitizeText(client?.building, `Building ${index + 1}`, 80),
-          label: sanitizeText(client?.label, sanitizeText(client?.building, `Building ${index + 1}`, 80), 80),
           need: sanitizeText(client?.need, '', 160),
           needAfter: sanitizeText(client?.needAfter, '', 160) || undefined,
           appear: asFinite(client?.appear, 0.1),
           dispatch: asFinite(client?.dispatch, 0.16),
           arrive: asFinite(client?.arrive, 0.24),
+          resolve: asFinite(
+            client?.resolve,
+            asFinite(client?.arrive, 0.24),
+          ),
           needEnd:
             client?.needEnd === undefined || client?.needEnd === null
               ? undefined
@@ -432,15 +435,13 @@ export type StoryBuildingState = 'idle' | 'need' | 'resolved';
 
 export interface StoryClientConfig {
   id: string;
-  /** GLB object name used for lookup. */
   building: string;
-  /** Human-facing name used in Studio and the timeline. */
-  label?: string;
   need: string;
   needAfter?: string;
   appear: number;
   dispatch: number;
   arrive: number;
+  resolve?: number;
   needEnd?: number;
   land?: [number, number, number];
   launch?: [number, number, number];
@@ -499,13 +500,12 @@ export interface StoryConfig {
   chipMaxWidth?: number;
 }
 
-/** The solved state begins when the shooting clip reaches the building. */
-export function resolveAt(client: { appear: number; arrive: number }): number {
-  return Math.min(1, Math.max(client.appear, client.arrive));
-}
-
-export function storyBuildingLabel(client: { building: string; label?: string }): string {
-  return client.label?.trim() || client.building;
+export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
+  const value = client.resolve;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.min(1, Math.max(client.appear, value));
+  }
+  return client.arrive;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -522,9 +522,11 @@ export function needEndAt(client: { appear: number; arrive: number; needEnd?: nu
 export function needTitleAt(
   client: { need: string; needAfter?: string; arrive: number },
   t: number,
+  burstDelay?: number,
 ): string {
+  const delay = Math.max(0, burstDelay ?? STORY_CONFIG.burstDelay ?? 0.045);
   const after = client.needAfter;
-  if (typeof after === 'string' && after.trim() && t >= client.arrive) {
+  if (typeof after === 'string' && after.trim() && t >= client.arrive + delay) {
     return after;
   }
   return client.need;
