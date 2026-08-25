@@ -31,7 +31,10 @@ export function applyRendererShadowFilter(renderer: THREE.WebGLRenderer, filter?
       ? THREE.BasicShadowMap
       : next === 'pcf'
         ? THREE.PCFShadowMap
-        : THREE.PCFSoftShadowMap;
+        // Three.js 0.183 maps the old PCFSoftShadowMap constant to PCFShadowMap
+        // and logs a deprecation warning. Keep the saved option name for
+        // backwards compatibility while using the supported implementation.
+        : THREE.PCFShadowMap;
   if (renderer.shadowMap.type !== type) {
     renderer.shadowMap.type = type;
     renderer.shadowMap.needsUpdate = true;

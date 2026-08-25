@@ -23,6 +23,7 @@ import { applyLightShadow, applyRendererShadowFilter } from './scene/shadowSetup
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 import { BuildingNamePlateSet } from './scene/BuildingNamePlates';
+import { ensureCinematicSky, disposeCinematicSky, setCinematicSkyEnabled } from './scene/CinematicSky';
 import { subscribeLive } from '@/components/live/liveChannel';
 import type { CameraKeyframe, CameraMethod, CameraStop, LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
 import {
@@ -68,6 +69,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     const scene = new THREE.Scene();
     scene.background = backgroundColor;
     scene.fog = env.fogEnabled === false ? null : new THREE.Fog(fogColor, env.fogStart, env.fogEnd);
+    ensureCinematicSky(scene, env.skyEnabled !== false);
 
     const host = containerRef.current;
     const viewW = () => Math.max(1, host.clientWidth || window.innerWidth);
@@ -300,6 +302,10 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         if (scene.fog && envPatch.fogStart !== undefined) (scene.fog as THREE.Fog).near = envPatch.fogStart;
         if (scene.fog && envPatch.fogEnd !== undefined) (scene.fog as THREE.Fog).far = envPatch.fogEnd;
         if (envPatch.fogEnabled !== undefined) SCENE_CONFIG.environment.fogEnabled = envPatch.fogEnabled;
+        if (envPatch.skyEnabled !== undefined) {
+          SCENE_CONFIG.environment.skyEnabled = envPatch.skyEnabled;
+          setCinematicSkyEnabled(scene, envPatch.skyEnabled);
+        }
         if (envPatch.shadowColor !== undefined) SCENE_CONFIG.environment.shadowColor = envPatch.shadowColor;
         if (envPatch.shadowOpacity !== undefined) SCENE_CONFIG.environment.shadowOpacity = envPatch.shadowOpacity;
         applySceneShadows(lightsMap.values());
@@ -620,6 +626,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         world = null;
       }
 
+      disposeCinematicSky(scene);
       lookPost.dispose();
       dracoLoader.dispose();
       renderer.dispose();

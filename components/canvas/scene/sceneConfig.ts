@@ -98,38 +98,41 @@ export const SCENE_CONFIG: SceneConfig = {
   lights: LIGHTS_CONFIG,
 
   environment: {
-    backgroundColor: 0x030303,
-    fogColor: 0x0b0b0b,
-    fogStart: 0,
-    fogEnd: 20,
-    fogEnabled: false,
-    shadowColor: 0x202020,
-    shadowOpacity: 0
+    backgroundColor: 0x050812,
+    fogColor: 0x0b1220,
+    fogStart: 18,
+    fogEnd: 72,
+    fogEnabled: true,
+    skyEnabled: true,
+    shadowColor: 0x111b31,
+    shadowOpacity: 0.32
   },
 
   renderer: {
-    toneMappingExposure: 0.7,
-    shadowMapType: "pcf"
+    toneMappingExposure: 0.88,
+    shadowMapType: "pcfsoft"
   },
 
   materials: {
-    buildingColor: 0x000000,
-    windowColor: 0xc1c1c1,
-    rastaakColor: 0x000000,
-    logoColor: 0xffffff,
-    groundColor: 0x00001c,
-    plateColor: 0x7f7f7f,
-    borderColor: 0x04002b,
-    treeTrunkColor: 0x6a6a6a,
-    treeLeafColor: 0x1e1e1e,
-    globalFacadeColor: 0x000000,
-    globalWindowColor: 0xc1c1c1,
-    roughness: 0.4,
-    metalness: 1,
-    envMapIntensity: 1.4,
-    groundRoughness: 1,
-    groundMetalness: 0.38,
-    groundEnvMapIntensity: 1.6,
+    // Lift the facades just above pure black so cool reflections can describe
+    // the architecture instead of clipping it into a silhouette.
+    buildingColor: 0x0b101a,
+    windowColor: 0x9dbfe8,
+    rastaakColor: 0x060a28,
+    logoColor: 0xf4f8ff,
+    groundColor: 0x080d19,
+    plateColor: 0x141c2c,
+    borderColor: 0x2b3c5d,
+    treeTrunkColor: 0x3b2b25,
+    treeLeafColor: 0x101b25,
+    globalFacadeColor: 0x0b101a,
+    globalWindowColor: 0x9dbfe8,
+    roughness: 0.38,
+    metalness: 0.68,
+    envMapIntensity: 1.25,
+    groundRoughness: 0.64,
+    groundMetalness: 0.16,
+    groundEnvMapIntensity: 0.92,
     overrides: {}
   } as MaterialsConfig,
 

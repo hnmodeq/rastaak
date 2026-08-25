@@ -24,17 +24,18 @@ export interface LookConfig {
 
 export const LOOK_CONFIG: LookConfig = {
   envEnabled: true,
-  envIntensity: 0.75,
-  grain: 0.21,
-  grainSize: 1.7,
-  vignette: 0.5,
-  vignetteStart: 0.46,
-  vignetteSoft: 0.55,
-  bloom: 0.3,
-  bloomRadius: 0.65,
-  gradeShadows: 0,
-  gradeMids: 0.08,
-  gradeHighlights: 0.04
+  envIntensity: 0.9,
+  // Keep the cinematic texture subtle; the architecture should stay crisp.
+  grain: 0.08,
+  grainSize: 1.45,
+  vignette: 0.32,
+  vignetteStart: 0.5,
+  vignetteSoft: 0.6,
+  bloom: 0.22,
+  bloomRadius: 0.58,
+  gradeShadows: 0.08,
+  gradeMids: 0.04,
+  gradeHighlights: 0.06
 };
 
 let envTexture: THREE.Texture | null = null;

@@ -42,6 +42,7 @@ import { BlenderViewport } from './BlenderViewport';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
 import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
+import { setCinematicSkyEnabled } from './CinematicSky';
 import { BUILDING_NAMES } from './buildingNamesConfig';
 import { notifyBuildingNamesChanged } from './BuildingNamePlates';
 import { STUDIO_OVERLAY } from './studioOverlay';
@@ -879,6 +880,7 @@ export class SceneStudioGUI {
         fogStart: fog?.near ?? SCENE_CONFIG.environment.fogStart,
         fogEnd: fog?.far ?? SCENE_CONFIG.environment.fogEnd,
         fogEnabled: Boolean(fog) && SCENE_CONFIG.environment.fogEnabled !== false,
+        skyEnabled: SCENE_CONFIG.environment.skyEnabled !== false,
         shadowColor: SCENE_CONFIG.environment.shadowColor ?? 0x000000,
         shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       },
@@ -982,6 +984,7 @@ export class SceneStudioGUI {
     SCENE_CONFIG.environment.fogStart = payload.environment.fogStart;
     SCENE_CONFIG.environment.fogEnd = payload.environment.fogEnd;
     SCENE_CONFIG.environment.fogEnabled = payload.environment.fogEnabled !== false;
+    SCENE_CONFIG.environment.skyEnabled = payload.environment.skyEnabled !== false;
     SCENE_CONFIG.environment.shadowColor = payload.environment.shadowColor ?? 0x000000;
     SCENE_CONFIG.environment.shadowOpacity = payload.environment.shadowOpacity ?? 1;
     SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
@@ -1693,6 +1696,7 @@ export class SceneStudioGUI {
         fogColor: currentFogHex,
         fogNear: (this.scene.fog as THREE.Fog)?.near ?? SCENE_CONFIG.environment.fogStart,
         fogFar: (this.scene.fog as THREE.Fog)?.far ?? SCENE_CONFIG.environment.fogEnd,
+        skyEnabled: SCENE_CONFIG.environment.skyEnabled !== false,
         shadowColor: '#' + new THREE.Color(SCENE_CONFIG.environment.shadowColor ?? 0x000000).getHexString(),
         shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       };
@@ -1715,6 +1719,14 @@ export class SceneStudioGUI {
           this.scene.background = col;
           document.body.style.backgroundColor = v;
           SCENE_CONFIG.environment.backgroundColor = col.getHex();
+        });
+
+      envFolder
+        .add(envParams, 'skyEnabled')
+        .name('Cinematic sky')
+        .onChange((value: boolean) => {
+          SCENE_CONFIG.environment.skyEnabled = value;
+          setCinematicSkyEnabled(this.scene, value);
         });
 
       envFolder

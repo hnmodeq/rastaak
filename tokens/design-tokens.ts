@@ -107,6 +107,12 @@ export const tokens = {
     gizmoLamp: 0xffc14a,
     gizmoAim: 0xff6a3d,
     gizmoOff: 0x8a9099,
+    cinematicSkyZenith: 0x02050e,
+    cinematicSkyUpper: 0x081a31,
+    cinematicSkyHorizon: 0x27375c,
+    cinematicSkyWarmth: 0x4d3044,
+    cinematicSkyMoon: 0xffdfb4,
+    cinematicSkyStar: 0xc8dcff,
   },
 
   dataStorageScene: {

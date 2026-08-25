@@ -323,9 +323,34 @@ export function applyMaterialsConfig(root: THREE.Object3D, config: MaterialsConf
         std.vertexColors = false;
       }
       applySurfaceToMaterial(std, surfaceForCategory(category, config));
+      applyCinematicMaterialFinish(std, category);
       std.needsUpdate = true;
     });
   });
+}
+
+function applyCinematicMaterialFinish(
+  mat: THREE.MeshStandardMaterial,
+  category: Exclude<MaterialCategory, 'ignore'>,
+) {
+  // Keep glass readable and softly alive at night without turning every window
+  // into a bright emissive panel. Vegetation stays diffuse even when the global
+  // object material is tuned toward black chrome.
+  if (category === 'window') {
+    mat.metalness = Math.min(mat.metalness, 0.18);
+    mat.roughness = Math.max(mat.roughness, 0.2);
+    mat.emissive.copy(mat.color);
+    mat.emissiveIntensity = 0.1;
+  } else if (category === 'logo') {
+    mat.metalness = Math.min(mat.metalness, 0.3);
+    mat.roughness = Math.max(mat.roughness, 0.24);
+    mat.emissive.copy(mat.color);
+    mat.emissiveIntensity = 0.08;
+  } else if (category === 'treeTrunk' || category === 'treeLeaf') {
+    mat.metalness = Math.min(mat.metalness, 0.05);
+    mat.roughness = Math.max(mat.roughness, 0.72);
+    mat.emissiveIntensity = 0;
+  }
 }
 
 function applySurfaceToMaterial(mat: THREE.MeshStandardMaterial, surface: SurfaceParams) {

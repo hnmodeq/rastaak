@@ -88,6 +88,7 @@ export interface SceneEnvironmentConfig {
   fogStart: number;
   fogEnd: number;
   fogEnabled?: boolean;
+  skyEnabled?: boolean;
   shadowColor?: number;
   shadowOpacity?: number;
 }

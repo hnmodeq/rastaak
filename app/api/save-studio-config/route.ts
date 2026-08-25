@@ -258,6 +258,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         fogStart: asFinite(body.environment?.fogStart, 15),
         fogEnd: asFinite(body.environment?.fogEnd, 110),
         fogEnabled: body.environment?.fogEnabled !== false,
+        skyEnabled: body.environment?.skyEnabled !== false,
         shadowColor: hexLit(asHexNumber(body.environment?.shadowColor, 0x000000)),
         shadowOpacity: Math.min(1, Math.max(0, asFinite(body.environment?.shadowOpacity, 1))),
       };
