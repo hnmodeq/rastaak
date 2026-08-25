@@ -10,8 +10,7 @@ export type { CameraKeyframe, CameraMethod, CameraStop, MaterialsConfig, LightCo
 export { LIGHTS_CONFIG } from './lightingConfig';
 
 export const SCENE_CONFIG: SceneConfig = {
-  cameraMethod: 'stops',
-
+  cameraMethod: "stops",
   stops: [
     {
       id: "stop_1_overview",
@@ -77,10 +76,7 @@ export const SCENE_CONFIG: SceneConfig = {
       fov: 89.995445
     }
   ] as CameraStop[],
-
-  // Progress-mode keyframes are intentionally separate from stop points.
-  // The studio seeds this list from stops the first time Progress is selected.
-  progressKeyframes: [],
+  progressKeyframes: [] as CameraStop[],
 
   scroll: {
     headerScrollMultiplier: 5,
@@ -99,33 +95,33 @@ export const SCENE_CONFIG: SceneConfig = {
 
   environment: {
     backgroundColor: 0x050812,
-    fogColor: 0x14233c,
+    fogColor: 0x000000,
     fogStart: 14,
     fogEnd: 68,
     fogEnabled: true,
     skyEnabled: true,
     sky: {
-      zenithColor: 0x02050e,
+      zenithColor: 0x00025b,
       upperColor: 0x081a31,
       horizonColor: 0x27375c,
       warmthColor: 0x4d3044,
-      moonColor: 0xffdfb4,
+      moonColor: 0xffffff,
       starColor: 0xc8dcff,
-      moonAzimuth: -109,
-      moonElevation: 31,
-      moonSize: 1,
+      moonAzimuth: -94,
+      moonElevation: 39,
+      moonSize: 1.15,
       moonGlow: 1,
       horizonGlow: 1,
-      starDensity: 1,
-      starIntensity: 1,
-      exposure: 1
+      starDensity: 0.88,
+      starIntensity: 1.72,
+      exposure: 3
     },
     horizon: {
       enabled: true,
-      color: 0x14233c,
-      opacity: 0.72,
-      height: 0,
-      softness: 0.28
+      color: 0x000000,
+      opacity: 0.74,
+      height: -0.05,
+      softness: 0.57
     },
     shadowColor: 0x111b31,
     shadowOpacity: 0.32
@@ -133,12 +129,10 @@ export const SCENE_CONFIG: SceneConfig = {
 
   renderer: {
     toneMappingExposure: 0.88,
-    shadowMapType: "pcfsoft"
+    shadowMapType: "pcf"
   },
 
   materials: {
-    // Lift the facades just above pure black so cool reflections can describe
-    // the architecture instead of clipping it into a silhouette.
     buildingColor: 0x0b101a,
     windowColor: 0x9dbfe8,
     rastaakColor: 0x060a28,

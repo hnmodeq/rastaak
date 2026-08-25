@@ -17,6 +17,6 @@ export const STUDIO_OVERLAY: StudioOverlayConfig = {
   showTargetGizmo: false,
   showCamPath: false,
   showTargetPath: false,
-  showLightGizmos: true,
+  showLightGizmos: false,
   showHero: false
 };

@@ -25,7 +25,6 @@ export interface LookConfig {
 export const LOOK_CONFIG: LookConfig = {
   envEnabled: true,
   envIntensity: 0.9,
-  // Keep the cinematic texture subtle; the architecture should stay crisp.
   grain: 0.08,
   grainSize: 1.45,
   vignette: 0.32,

@@ -1,9 +1,6 @@
 /**
  * RASTAAK 3D LIGHTING CONTROLLER CONFIG
  * Saved automatically from 3D Studio
- *
- * Night architectural rig for glossy black facades.
- * One shadow caster. Softboxes do the reflections. Practicals add warmth.
  */
 
 import type { LightConfig } from './sceneTypes';
@@ -15,8 +12,9 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     id: "sky_fill",
     type: "hemisphere",
     color: 0x9db5d8,
-    groundColor: 0x151822,
     intensity: 0.14,
+    groundColor: 0x151822,
+    position: [0, 1, 0],
     enabled: true
   },
   {
@@ -26,14 +24,15 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     intensity: 1.35,
     position: [22, 28, 13],
     target: [13.36, 0.2, -0.7],
+    radius: 3.4,
     castShadow: true,
+    enabled: true,
     shadowMapSize: 2048,
     shadowBias: -0.0004,
     shadowNormalBias: 0.04,
     shadowNear: 6,
     shadowFar: 88,
-    radius: 3.4,
-    enabled: true
+    shadowIntensity: 1
   },
   {
     id: "sky_soft",
@@ -87,8 +86,15 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     position: [4.4, 10.8, -6.4],
     distance: 30,
     decay: 2,
+    radius: 1,
     castShadow: false,
-    enabled: true
+    enabled: true,
+    shadowMapSize: 512,
+    shadowBias: 0,
+    shadowNormalBias: 0,
+    shadowNear: 0.5,
+    shadowFar: 250,
+    shadowIntensity: 1
   },
   {
     id: "accent_rastaak",
@@ -98,7 +104,14 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     position: [16.4, 6.5, 2.15],
     distance: 12,
     decay: 2,
+    radius: 1,
     castShadow: false,
-    enabled: true
+    enabled: true,
+    shadowMapSize: 512,
+    shadowBias: 0,
+    shadowNormalBias: 0,
+    shadowNear: 0.5,
+    shadowFar: 250,
+    shadowIntensity: 1
   }
 ];
