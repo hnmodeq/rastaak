@@ -100,7 +100,7 @@ export const SCENE_CONFIG: SceneConfig = {
     },
     {
       id: "keyframe_2",
-      progress: 0.043401,
+      progress: 0.037468,
       camera: [13.5658, 3.1075, 1.3422],
       target: [11.8586, 2.3644, 4.4076],
       fov: 47
