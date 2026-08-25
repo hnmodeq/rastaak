@@ -1081,6 +1081,8 @@ export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};
         showTitle: raw.showTitle !== false,
         showSubtitle: raw.showSubtitle !== false,
         showBar: raw.showBar !== false,
+        copyAlign:
+          raw.copyAlign === 'center' || raw.copyAlign === 'end' ? raw.copyAlign : 'start',
         logoSize: Math.min(160, Math.max(24, asFinite(raw.logoSize, 72))),
         rowGap: Math.min(48, Math.max(0, asFinite(raw.rowGap, 14))),
         copyGap: Math.min(24, Math.max(0, asFinite(raw.copyGap, 6))),
@@ -1118,6 +1120,8 @@ export interface LoaderScreenConfig {
   showTitle: boolean;
   showSubtitle: boolean;
   showBar: boolean;
+  /** Alignment of the title/subtitle pair against each other only. */
+  copyAlign: 'start' | 'center' | 'end';
   logoSize: number;
   rowGap: number;
   copyGap: number;
@@ -1139,6 +1143,10 @@ export interface LoaderScreenConfig {
 }
 
 export const LOADER_CONFIG: LoaderScreenConfig = ${emit(loader, 0)};
+
+export function normalizeCopyAlign(value: unknown): 'start' | 'center' | 'end' {
+  return value === 'center' || value === 'end' ? value : 'start';
+}
 
 export function hexCss(value: number): string {
   return '#' + (value >>> 0).toString(16).padStart(6, '0');
@@ -1198,6 +1206,8 @@ export function applyLoaderChrome(root: HTMLElement | null = typeof document ===
   loader.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
   const row = loader.querySelector<HTMLElement>('.loader__row');
   if (row) row.dataset.logoSide = cfg.logoSide === 'right' ? 'right' : 'left';
+  const copy = loader.querySelector<HTMLElement>('.loader__copy');
+  if (copy) copy.dataset.align = normalizeCopyAlign(cfg.copyAlign);
 
   const title = loader.querySelector<HTMLElement>('.loader__title');
   if (title) {

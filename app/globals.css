@@ -570,21 +570,35 @@ html.rastaak-loading body {
 #loader .loader__copy {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   justify-content: center;
   gap: var(--loader-copy-gap, 6px);
   min-width: 0;
   flex: 0 1 auto;
+  /* Title/subtitle align against each other only, independently of the logo
+     and the bar. `.loader__row` forces direction:ltr to keep the flex order
+     predictable, so restore the loader's own direction here or start/end
+     would resolve against the wrong side for RTL copy. */
+  direction: inherit;
+  align-items: start;
+  text-align: start;
 }
 
 #loader[dir='rtl'] .loader__copy {
-  align-items: flex-end;
-  text-align: right;
+  direction: rtl;
 }
 
 #loader[dir='ltr'] .loader__copy {
-  align-items: flex-start;
-  text-align: left;
+  direction: ltr;
+}
+
+#loader .loader__copy[data-align='center'] {
+  align-items: center;
+  text-align: center;
+}
+
+#loader .loader__copy[data-align='end'] {
+  align-items: end;
+  text-align: end;
 }
 
 #loader .loader__mark {

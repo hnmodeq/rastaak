@@ -10,6 +10,7 @@ import {
   hexCss,
   hexToRgba,
   loaderChromeVars,
+  normalizeCopyAlign,
 } from '@/components/home/loaderConfig';
 
 const HOME_SAFETY_MS = 28000;
@@ -183,7 +184,7 @@ export const Loader: React.FC = () => {
               decoding="async"
             />
           ) : null}
-          <div className="loader__copy">
+          <div className="loader__copy" data-align={normalizeCopyAlign(cfg.copyAlign)}>
             {cfg.showTitle ? (
               <div
                 className="loader__title"

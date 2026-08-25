@@ -328,6 +328,7 @@ export interface StudioSavePayload {
     showTitle: boolean;
     showSubtitle: boolean;
     showBar: boolean;
+    copyAlign?: 'start' | 'center' | 'end';
     logoSize: number;
     rowGap: number;
     copyGap: number;

@@ -15,6 +15,8 @@ export interface LoaderScreenConfig {
   showTitle: boolean;
   showSubtitle: boolean;
   showBar: boolean;
+  /** Alignment of the title/subtitle pair against each other only. */
+  copyAlign: 'start' | 'center' | 'end';
   logoSize: number;
   rowGap: number;
   copyGap: number;
@@ -44,6 +46,7 @@ export const LOADER_CONFIG: LoaderScreenConfig = {
   showTitle: true,
   showSubtitle: true,
   showBar: true,
+  copyAlign: "start",
   logoSize: 46,
   rowGap: 16,
   copyGap: 11,
@@ -63,6 +66,10 @@ export const LOADER_CONFIG: LoaderScreenConfig = {
   trackOpacity: 0.37,
   bgColor: 0x1c1d22
 };
+
+export function normalizeCopyAlign(value: unknown): 'start' | 'center' | 'end' {
+  return value === 'center' || value === 'end' ? value : 'start';
+}
 
 export function hexCss(value: number): string {
   return '#' + (value >>> 0).toString(16).padStart(6, '0');
@@ -122,6 +129,8 @@ export function applyLoaderChrome(root: HTMLElement | null = typeof document ===
   loader.setAttribute('dir', cfg.dir === 'ltr' ? 'ltr' : 'rtl');
   const row = loader.querySelector<HTMLElement>('.loader__row');
   if (row) row.dataset.logoSide = cfg.logoSide === 'right' ? 'right' : 'left';
+  const copy = loader.querySelector<HTMLElement>('.loader__copy');
+  if (copy) copy.dataset.align = normalizeCopyAlign(cfg.copyAlign);
 
   const title = loader.querySelector<HTMLElement>('.loader__title');
   if (title) {

@@ -2714,6 +2714,7 @@ export class SceneStudioGUI {
       showTitle: cfg.showTitle,
       showSubtitle: cfg.showSubtitle,
       showBar: cfg.showBar,
+      copyAlign: cfg.copyAlign === 'center' || cfg.copyAlign === 'end' ? cfg.copyAlign : 'start',
       logoSize: cfg.logoSize,
       rowGap: cfg.rowGap,
       copyGap: cfg.copyGap,
@@ -2745,6 +2746,8 @@ export class SceneStudioGUI {
       cfg.showTitle = params.showTitle;
       cfg.showSubtitle = params.showSubtitle;
       cfg.showBar = params.showBar;
+      cfg.copyAlign =
+        params.copyAlign === 'center' || params.copyAlign === 'end' ? params.copyAlign : 'start';
       cfg.logoSize = params.logoSize;
       cfg.rowGap = params.rowGap;
       cfg.copyGap = params.copyGap;
@@ -2790,6 +2793,10 @@ export class SceneStudioGUI {
     brand.addColor(params, 'subtitleColor').name('Subtitle color').onChange(push);
     brand.add(params, 'subtitleTracking', -4, 8, 0.1).name('Subtitle spacing').onChange(push);
     brand.add(params, 'copyGap', 0, 24, 1).name('Title / subtitle gap').onChange(push);
+    brand
+      .add(params, 'copyAlign', { Start: 'start', Center: 'center', End: 'end' })
+      .name('Title / subtitle align')
+      .onChange(push);
 
     const bar = root;
     bar.add(params, 'showBar').name('Show bar').onChange(push);
