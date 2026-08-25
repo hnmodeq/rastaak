@@ -391,6 +391,8 @@ export const SCENE_CONFIG: SceneConfig = {
       const rawCaptions = Array.isArray(rawStory.captions) ? rawStory.captions : [];
       const insaneStart = Math.min(0.99, Math.max(0, asFinite(rawStory.insaneShooting?.start, 0.92851)));
       const insaneEnd = Math.min(1, Math.max(insaneStart + 0.01, asFinite(rawStory.insaneShooting?.end, 1)));
+      const layoutStart = Math.min(0.99, Math.max(0, asFinite(rawStory.layoutReveal?.start, 0.945668)));
+      const layoutEnd = Math.min(1, Math.max(layoutStart + 0.01, asFinite(rawStory.layoutReveal?.end, 0.988562)));
       const story = {
         hub: sanitizeText(rawStory.hub, 'Rastaak Building', 80),
         logo: sanitizeText(rawStory.logo, 'Logo', 80),
@@ -443,6 +445,10 @@ export const SCENE_CONFIG: SceneConfig = {
           enabled: rawStory.insaneShooting?.enabled !== false,
           start: insaneStart,
           end: insaneEnd,
+        },
+        layoutReveal: {
+          start: layoutStart,
+          end: layoutEnd,
         },
         chipHoldAfterArrive: asFinite(rawStory.chipHoldAfterArrive, 0.14),
         captionFadeIn: asFinite(rawStory.captionFadeIn, 0.06),
@@ -505,6 +511,11 @@ export interface InsaneShootingConfig {
   end: number;
 }
 
+export interface LayoutRevealConfig {
+  start: number;
+  end: number;
+}
+
 export interface StoryColors {
   need: number;
   needWindow: number;
@@ -529,6 +540,7 @@ export interface StoryConfig {
   clients: StoryClientConfig[];
   captions: StoryCaptionConfig[];
   insaneShooting?: InsaneShootingConfig;
+  layoutReveal?: LayoutRevealConfig;
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;
@@ -578,6 +590,20 @@ export function insaneShootingConfig(): InsaneShootingConfig {
   config.start = start;
   config.end = end;
   config.enabled = config.enabled !== false;
+  return config;
+}
+
+const DEFAULT_LAYOUT_REVEAL: LayoutRevealConfig = {
+  start: 0.945668,
+  end: 0.988562,
+};
+
+export function layoutRevealConfig(): LayoutRevealConfig {
+  const config = STORY_CONFIG.layoutReveal ?? (STORY_CONFIG.layoutReveal = { ...DEFAULT_LAYOUT_REVEAL });
+  const start = Math.min(0.99, Math.max(0, Number.isFinite(config.start) ? config.start : DEFAULT_LAYOUT_REVEAL.start));
+  const end = Math.min(1, Math.max(start + 0.01, Number.isFinite(config.end) ? config.end : DEFAULT_LAYOUT_REVEAL.end));
+  config.start = start;
+  config.end = end;
   return config;
 }
 

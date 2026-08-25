@@ -206,6 +206,10 @@ export interface StudioStorySave {
     start: number;
     end: number;
   };
+  layoutReveal?: {
+    start: number;
+    end: number;
+  };
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;

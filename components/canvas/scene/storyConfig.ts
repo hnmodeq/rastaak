@@ -36,6 +36,12 @@ export interface InsaneShootingConfig {
   end: number;
 }
 
+/** The period where the main website layout rises over the 3D scene. */
+export interface LayoutRevealConfig {
+  start: number;
+  end: number;
+}
+
 export interface StoryColors {
   need: number;
   needWindow: number;
@@ -60,6 +66,7 @@ export interface StoryConfig {
   clients: StoryClientConfig[];
   captions: StoryCaptionConfig[];
   insaneShooting?: InsaneShootingConfig;
+  layoutReveal?: LayoutRevealConfig;
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;
@@ -208,6 +215,11 @@ export const STORY_CONFIG: StoryConfig = {
     start: 0.92851,
     end: 1
   },
+  // The main layout begins rising while the finale is still visible.
+  layoutReveal: {
+    start: 0.945668,
+    end: 0.988562
+  },
   chipHoldAfterArrive: 0.14,
   captionFadeIn: 0.06,
   packetIntensity: 235,
@@ -245,6 +257,21 @@ export function insaneShootingConfig(): InsaneShootingConfig {
   config.start = start;
   config.end = end;
   config.enabled = config.enabled !== false;
+  return config;
+}
+
+const DEFAULT_LAYOUT_REVEAL: LayoutRevealConfig = {
+  start: 0.945668,
+  end: 0.988562,
+};
+
+/** Returns the editable timeline range for the main-layout rise. */
+export function layoutRevealConfig(): LayoutRevealConfig {
+  const config = STORY_CONFIG.layoutReveal ?? (STORY_CONFIG.layoutReveal = { ...DEFAULT_LAYOUT_REVEAL });
+  const start = Math.min(0.99, Math.max(0, Number.isFinite(config.start) ? config.start : DEFAULT_LAYOUT_REVEAL.start));
+  const end = Math.min(1, Math.max(start + 0.01, Number.isFinite(config.end) ? config.end : DEFAULT_LAYOUT_REVEAL.end));
+  config.start = start;
+  config.end = end;
   return config;
 }
 

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
   STORY_CONFIG,
   insaneShootingConfig,
+  layoutRevealConfig,
   needEndAt,
   needTitleAt,
   resolveAt,
@@ -762,7 +763,8 @@ export class StoryRuntime {
 
     const insane = insaneShootingConfig();
     this.updateInsaneShooting(t, insane, input.reducedMotion, input.compact);
-    const outroCover = this.enabled && insane.enabled ? this.insaneCoverProgress(t, insane.start, insane.end) : 0;
+    const layoutReveal = layoutRevealConfig();
+    const outroCover = this.enabled ? this.layoutCoverProgress(t, layoutReveal.start, layoutReveal.end) : 0;
 
     if (this.enabled && this.hub) {
       this.applyHubPulse(input.elapsed, dispatchFlash, input.reducedMotion);
@@ -780,12 +782,9 @@ export class StoryRuntime {
     return this.frame;
   }
 
-  /** The layout curtain rises during the latter half of the outro, before its end keyframe. */
-  private insaneCoverProgress(t: number, start: number, end: number): number {
-    const span = Math.max(0.01, end - start);
-    const coverStart = start + span * 0.24;
-    const coverEnd = start + span * 0.84;
-    return smooth01((t - coverStart) / Math.max(0.001, coverEnd - coverStart));
+  /** The timeline-controlled main-layout curtain rises over this exact range. */
+  private layoutCoverProgress(t: number, start: number, end: number): number {
+    return smooth01((t - start) / Math.max(0.001, end - start));
   }
 
   private updateInsaneShooting(

@@ -925,6 +925,7 @@ export class SceneStudioGUI {
           range: [...caption.range] as [number, number],
         })),
         insaneShooting: STORY_CONFIG.insaneShooting ? { ...STORY_CONFIG.insaneShooting } : undefined,
+        layoutReveal: STORY_CONFIG.layoutReveal ? { ...STORY_CONFIG.layoutReveal } : undefined,
         chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
         captionFadeIn: STORY_CONFIG.captionFadeIn,
         packetIntensity: STORY_CONFIG.packetIntensity,

@@ -3,6 +3,7 @@ import {
   STORY_CONFIG,
   STORY_FRAME_EVENT,
   insaneShootingConfig,
+  layoutRevealConfig,
   needEndAt,
   storyBuildingLabel,
   type StoryFrame,
@@ -44,7 +45,10 @@ type DragKind =
   | 'hold-move'
   | 'insane-start'
   | 'insane-end'
-  | 'insane-move';
+  | 'insane-move'
+  | 'layout-start'
+  | 'layout-end'
+  | 'layout-move';
 
 type DragState = {
   kind: DragKind;
@@ -69,6 +73,10 @@ type TimingSnapshot = {
   }>;
   insaneShooting: {
     enabled: boolean;
+    start: number;
+    end: number;
+  };
+  layoutReveal: {
     start: number;
     end: number;
   };
@@ -351,6 +359,7 @@ export class StoryTimelinePanel {
         needEnd: client.needEnd,
       })),
       insaneShooting: { ...insaneShootingConfig() },
+      layoutReveal: { ...layoutRevealConfig() },
       chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
     };
   }
@@ -375,6 +384,7 @@ export class StoryTimelinePanel {
       else client.needEnd = times.needEnd;
     });
     Object.assign(insaneShootingConfig(), snapshot.insaneShooting);
+    Object.assign(layoutRevealConfig(), snapshot.layoutReveal);
     STORY_CONFIG.chipHoldAfterArrive = snapshot.chipHoldAfterArrive;
     this.paint();
     window.dispatchEvent(new CustomEvent(TIMING_EVENT));
@@ -420,6 +430,10 @@ export class StoryTimelinePanel {
     if (kind === 'insane-start' || kind === 'insane-end' || kind === 'insane-move') {
       const insane = insaneShootingConfig();
       return [insane.start, insane.end];
+    }
+    if (kind === 'layout-start' || kind === 'layout-end' || kind === 'layout-move') {
+      const layout = layoutRevealConfig();
+      return [layout.start, layout.end];
     }
     return [0, 0];
   }
@@ -488,6 +502,24 @@ export class StoryTimelinePanel {
         insane.start = clampOrdered(t, 0, insane.end - MIN_SPAN);
       } else {
         insane.end = clampOrdered(t, insane.start + MIN_SPAN, 1);
+      }
+      this.setPlayhead(t);
+      this.onSeek(t);
+      this.paint();
+      this.rebindDragLane();
+      return;
+    }
+
+    if (kind === 'layout-start' || kind === 'layout-end' || kind === 'layout-move') {
+      const layout = layoutRevealConfig();
+      if (kind === 'layout-move') {
+        const [start, end] = this.shiftedRange(t, 0, 1, MIN_SPAN);
+        layout.start = start;
+        layout.end = end;
+      } else if (kind === 'layout-start') {
+        layout.start = clampOrdered(t, 0, layout.end - MIN_SPAN);
+      } else {
+        layout.end = clampOrdered(t, layout.start + MIN_SPAN, 1);
       }
       this.setPlayhead(t);
       this.onSeek(t);
@@ -665,6 +697,25 @@ export class StoryTimelinePanel {
     );
     this.bindSeek(insaneLane);
     this.lanes.appendChild(insaneTrack);
+
+    const layout = layoutRevealConfig();
+    const layoutTrack = this.makeTrack('Main layout', 'layout-reveal');
+    const layoutLane = layoutTrack.querySelector('.stl-lane') as HTMLDivElement;
+    layoutLane.appendChild(
+      this.makeClip({
+        left: layout.start,
+        right: layout.end,
+        label: 'Main layout',
+        color: '#9eb8cf',
+        title: 'Main layout rise over the 3D scene',
+        lane: layoutLane,
+        onStart: (event) => this.startDrag('layout-start', -1, layoutLane, event),
+        onEnd: (event) => this.startDrag('layout-end', -1, layoutLane, event),
+        onMove: (event) => this.startDrag('layout-move', -1, layoutLane, event),
+      }),
+    );
+    this.bindSeek(layoutLane);
+    this.lanes.appendChild(layoutTrack);
 
     STORY_CONFIG.clients.forEach((client, index) => {
       const row = this.makeTrack(storyBuildingLabel(client), `client-${client.id || index}`);
