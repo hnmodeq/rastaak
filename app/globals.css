@@ -258,8 +258,9 @@ main[data-taxi],
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
+  /* Let the chip grow to the complete Need title instead of constraining it into a second row. */
   width: max-content;
-  max-width: min(var(--story-chip-max-width, 680px), 92vw);
+  max-width: none;
   padding: 0.42em 0.95em 0.42em 0.55em;
   border-radius: 999px;
   background: var(--story-chip-bg, var(--color-dark));
@@ -320,7 +321,7 @@ main[data-taxi],
   font-weight: inherit;
   line-height: inherit;
   letter-spacing: inherit;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .story-captions {
