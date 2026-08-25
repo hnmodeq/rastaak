@@ -41,10 +41,9 @@ export function sampleSceneJourney(
 ): void {
   // Progress mode uses its own editable keyframe list. Keep the old stop
   // list as a safe fallback for configs created before progress mode existed.
-  const source =
-    SCENE_CONFIG.cameraMethod === 'progress' && SCENE_CONFIG.progressKeyframes.length
-      ? SCENE_CONFIG.progressKeyframes
-      : SCENE_CONFIG.stops;
+  const usesProgressKeyframes =
+    SCENE_CONFIG.cameraMethod === 'progress' && SCENE_CONFIG.progressKeyframes.length > 0;
+  const source = usesProgressKeyframes ? SCENE_CONFIG.progressKeyframes : SCENE_CONFIG.stops;
   const stops = [...source].sort((a, b) => a.progress - b.progress);
   if (!stops || stops.length === 0) return;
 
@@ -78,14 +77,22 @@ export function sampleSceneJourney(
   const pRange = p2.progress - p1.progress;
   const f = pRange > 0 ? (clamped - p1.progress) / pRange : 0;
 
+  // A progress keyframe is an authoring anchor: users expect its segment to
+  // travel directly to the next keyframe. Catmull-Rom calculates each tangent
+  // from neighbouring keys, so a distant previous key can make a short next
+  // segment loop past the camera and look like an unwanted zoom. Keep the
+  // legacy stop-point journey smooth, but make progress keyframes predictable
+  // and non-overshooting.
   for (let axis = 0; axis < 3; axis++) {
-    out.camera[axis] = catmullRom(
-      p0.camera[axis],
-      p1.camera[axis],
-      p2.camera[axis],
-      p3.camera[axis],
-      f,
-    );
+    out.camera[axis] = usesProgressKeyframes
+      ? THREE.MathUtils.lerp(p1.camera[axis], p2.camera[axis], f)
+      : catmullRom(
+          p0.camera[axis],
+          p1.camera[axis],
+          p2.camera[axis],
+          p3.camera[axis],
+          f,
+        );
   }
 
   // Slerp the look, do not Catmull-Rom the target. Independent target curves
