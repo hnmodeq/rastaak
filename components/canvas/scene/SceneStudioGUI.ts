@@ -10,7 +10,7 @@ import {
   type ShadowFilter,
 } from './shadowSetup';
 import type { CameraKeyframe, CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
-import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, resolveAt, type StoryFrame } from './storyConfig';
+import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, storyBuildingLabel, type StoryFrame } from './storyConfig';
 import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
@@ -150,7 +150,6 @@ export class SceneStudioGUI {
   private refreshNeedTimes = () => {};
   private onStudioTiming = () => {
     this.refreshNeedTimes();
-    this.broadcastLive();
   };
   private readonly journeySample = {
     camera: [0, 0, 0] as [number, number, number],
@@ -2208,7 +2207,7 @@ export class SceneStudioGUI {
       endCtrl: { updateDisplay: () => void };
     }> = [];
     STORY_CONFIG.clients.forEach((client) => {
-      const folder = needsFolder.addFolder(client.building);
+      const folder = needsFolder.addFolder(storyBuildingLabel(client));
       const params = {
         need: client.need,
         needAfter: client.needAfter ?? '',
@@ -2231,7 +2230,6 @@ export class SceneStudioGUI {
           if (client.arrive < client.dispatch + MIN_FLIGHT) {
             client.arrive = Math.min(1, client.dispatch + MIN_FLIGHT);
           }
-          if (resolveAt(client) < client.appear) client.resolve = client.appear;
           if (needEndAt(client) < client.appear + 0.01) client.needEnd = Math.min(1, client.appear + 0.01);
           params.start = client.appear;
           params.end = needEndAt(client);
@@ -2461,28 +2459,24 @@ export class SceneStudioGUI {
     const beatsFolder = root;
 
     STORY_CONFIG.clients.forEach((client) => {
-      const folder = beatsFolder.addFolder(client.building);
+      const folder = beatsFolder.addFolder(storyBuildingLabel(client));
       const row = {
         appear: client.appear,
-        resolve: resolveAt(client),
         dispatch: client.dispatch,
         arrive: client.arrive,
         flight: Math.max(MIN_FLIGHT, client.arrive - client.dispatch),
-        previewRed: () => this.seekStory(client.appear),
-        previewBlue: () => this.seekStory(resolveAt(client)),
-        previewLaunch: () => this.seekStory(client.dispatch),
+        previewRequest: () => this.seekStory(client.appear),
+        previewShooting: () => this.seekStory(client.dispatch),
         previewArrive: () => this.seekStory(client.arrive),
         previewBurst: () => this.seekStory(client.arrive + (STORY_CONFIG.burstDelay ?? 0.045)),
       };
 
       const syncRow = () => {
         row.appear = client.appear;
-        row.resolve = resolveAt(client);
         row.dispatch = client.dispatch;
         row.arrive = client.arrive;
         row.flight = Math.max(MIN_FLIGHT, client.arrive - client.dispatch);
         appearCtrl.updateDisplay();
-        resolveCtrl.updateDisplay();
         dispatchCtrl.updateDisplay();
         arriveCtrl.updateDisplay();
         flightCtrl.updateDisplay();
@@ -2490,32 +2484,21 @@ export class SceneStudioGUI {
 
       const appearCtrl = folder
         .add(row, 'appear', 0, 1, 0.01)
-        .name('Turns red')
+        .name('Request starts')
         .onChange((value: number) => {
           client.appear = clampOrdered(value, 0, client.arrive - MIN_FLIGHT);
           if (client.dispatch < client.appear) client.dispatch = client.appear;
           if (client.arrive < client.dispatch + MIN_FLIGHT) {
             client.arrive = Math.min(1, client.dispatch + MIN_FLIGHT);
           }
-          if (resolveAt(client) < client.appear) client.resolve = client.appear;
           syncRow();
           this.seekStory(client.appear);
           this.notifyTimingChanged();
         });
 
-      const resolveCtrl = folder
-        .add(row, 'resolve', 0, 1, 0.01)
-        .name('Building turns blue')
-        .onChange((value: number) => {
-          client.resolve = clampOrdered(value, client.appear, 1);
-          syncRow();
-          this.seekStory(client.resolve);
-          this.notifyTimingChanged();
-        });
-
       const dispatchCtrl = folder
         .add(row, 'dispatch', 0, 1, 0.01)
-        .name('Logo launches')
+        .name('Shooting starts')
         .onChange((value: number) => {
           client.dispatch = clampOrdered(value, client.appear, client.arrive - MIN_FLIGHT);
           syncRow();
@@ -2525,7 +2508,7 @@ export class SceneStudioGUI {
 
       const arriveCtrl = folder
         .add(row, 'arrive', 0, 1, 0.01)
-        .name('Logo arrives')
+        .name('Solved starts')
         .onChange((value: number) => {
           client.arrive = clampOrdered(value, client.dispatch + MIN_FLIGHT, 1);
           syncRow();
@@ -2544,51 +2527,14 @@ export class SceneStudioGUI {
           this.notifyTimingChanged();
         });
 
-      folder.add(row, 'previewRed').name('Preview — turns red');
-      folder.add(row, 'previewBlue').name('Preview — turns blue');
-      folder.add(row, 'previewLaunch').name('Preview — logo launches');
-      folder.add(row, 'previewArrive').name('Preview — logo arrives');
+      folder.add(row, 'previewRequest').name('Preview — Request');
+      folder.add(row, 'previewShooting').name('Preview — Shooting');
+      folder.add(row, 'previewArrive').name('Preview — Solved');
       folder.add(row, 'previewBurst').name('Preview — explosion');
-    });
-
-    const captionFolder = root;
-    STORY_CONFIG.captions.forEach((caption) => {
-      const folder = captionFolder.addFolder(caption.text || caption.id);
-      const row = {
-        start: caption.range[0],
-        end: caption.range[1],
-        preview: () => this.seekStory(caption.range[0]),
-      };
-      const sync = () => {
-        row.start = caption.range[0];
-        row.end = caption.range[1];
-        startCtrl.updateDisplay();
-        endCtrl.updateDisplay();
-      };
-      const startCtrl = folder
-        .add(row, 'start', 0, 1, 0.01)
-        .name('Start')
-        .onChange((value: number) => {
-          caption.range[0] = clampOrdered(value, 0, caption.range[1] - 0.01);
-          sync();
-          this.seekStory(caption.range[0]);
-          this.notifyTimingChanged();
-        });
-      const endCtrl = folder
-        .add(row, 'end', 0, 1, 0.01)
-        .name('End')
-        .onChange((value: number) => {
-          caption.range[1] = clampOrdered(value, caption.range[0] + 0.01, 1);
-          sync();
-          this.seekStory(caption.range[1]);
-          this.notifyTimingChanged();
-        });
-      folder.add(row, 'preview').name('Preview start');
     });
 
     const hold = {
       chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
-      captionFadeIn: STORY_CONFIG.captionFadeIn,
     };
     root
       .add(hold, 'chipHoldAfterArrive', 0, 0.4, 0.01)
@@ -2596,12 +2542,6 @@ export class SceneStudioGUI {
       .onChange((value: number) => {
         STORY_CONFIG.chipHoldAfterArrive = clamp01(value);
         this.notifyTimingChanged();
-      });
-    root
-      .add(hold, 'captionFadeIn', 0, 0.3, 0.01)
-      .name('Captions appear after')
-      .onChange((value: number) => {
-        STORY_CONFIG.captionFadeIn = clamp01(value);
       });
   }
 
@@ -2691,7 +2631,7 @@ export class SceneStudioGUI {
     });
 
     STORY_CONFIG.clients.forEach((client) => {
-      const folder = root.addFolder(client.building);
+      const folder = root.addFolder(storyBuildingLabel(client));
       const row = {
         startX: client.launch?.[0] ?? 0,
         startY: client.launch?.[1] ?? 0,

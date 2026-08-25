@@ -44,6 +44,8 @@ export function HomeTheme() {
           if (FLOW_CONFIG[index] && step && typeof step === 'object') Object.assign(FLOW_CONFIG[index], step);
         });
         syncFlowDom();
+        // Notify the scroll controller without emitting another live patch.
+        window.dispatchEvent(new CustomEvent('rastaak-flow-timing-changed'));
       }
       if (patch.flowChrome && typeof patch.flowChrome === 'object') {
         Object.assign(FLOW_CHROME, patch.flowChrome);

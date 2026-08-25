@@ -126,6 +126,9 @@ export function HomeInteractions() {
     updateScrollUi();
     window.addEventListener('scroll', updateScrollUi, { passive: true });
     window.addEventListener('resize', updateScrollUi);
+    // Story Timeline edits can change chapter ranges without a page scroll.
+    window.addEventListener('rastaak-studio-timing-changed', updateScrollUi);
+    window.addEventListener('rastaak-flow-timing-changed', updateScrollUi);
 
     const menuBtn = document.querySelector<HTMLButtonElement>('.menu-btn');
     const mobileNav = document.querySelector<HTMLElement>('.mobile-nav');
@@ -171,6 +174,8 @@ export function HomeInteractions() {
       faqHeaders.forEach((header) => header.removeEventListener('click', onFaqClick));
       window.removeEventListener('scroll', updateScrollUi);
       window.removeEventListener('resize', updateScrollUi);
+      window.removeEventListener('rastaak-studio-timing-changed', updateScrollUi);
+      window.removeEventListener('rastaak-flow-timing-changed', updateScrollUi);
       menuBtn?.removeEventListener('click', toggleMenu);
       overlay?.removeEventListener('click', closeMenu);
       closeBtn?.removeEventListener('click', closeMenu);

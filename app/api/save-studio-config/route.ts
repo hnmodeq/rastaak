@@ -57,6 +57,17 @@ function sanitizeOverrideKey(value: string): string | null {
   return slugged || null;
 }
 
+/**
+ * Write generated source files atomically. Next.js watches this directory;
+ * writing directly can make it compile a temporarily empty file and report
+ * misleading "Module not found" errors during Apply & Save.
+ */
+function writeFileAtomic(filePath: string, content: string) {
+  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tempPath, content, 'utf8');
+  fs.renameSync(tempPath, filePath);
+}
+
 function emit(value: unknown, indent: number): string {
   const pad = '  '.repeat(indent);
   const inner = '  '.repeat(indent + 1);
@@ -175,7 +186,7 @@ export type { LightConfig };
 
 export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 `;
-      fs.writeFileSync(lightingPath, lightingCode, 'utf8');
+      writeFileAtomic(lightingPath, lightingCode);
     }
 
     const cameraStops = Array.isArray(body.cameraStops)
@@ -348,7 +359,7 @@ export const SCENE_CONFIG: SceneConfig = {
   visibility: ${emit(visibility, 1)},
 };
 `;
-      fs.writeFileSync(sceneConfigPath, sceneConfigCode, 'utf8');
+      writeFileAtomic(sceneConfigPath, sceneConfigCode);
     }
 
     if (body.story) {
@@ -377,6 +388,7 @@ export const SCENE_CONFIG: SceneConfig = {
         clients: rawClients.map((client, index) => ({
           id: sanitizeId(client?.id, `client_${index + 1}`),
           building: sanitizeText(client?.building, `Building ${index + 1}`, 80),
+          label: sanitizeText(client?.label, sanitizeText(client?.building, `Building ${index + 1}`, 80), 80),
           need: sanitizeText(client?.need, '', 160),
           needAfter: sanitizeText(client?.needAfter, '', 160) || undefined,
           appear: asFinite(client?.appear, 0.1),
@@ -435,7 +447,10 @@ export type StoryBuildingState = 'idle' | 'need' | 'resolved';
 
 export interface StoryClientConfig {
   id: string;
+  /** Stable GLB object name used for lookup. */
   building: string;
+  /** Human-facing name shown in Studio and the timeline. */
+  label?: string;
   need: string;
   needAfter?: string;
   appear: number;
@@ -500,12 +515,13 @@ export interface StoryConfig {
   chipMaxWidth?: number;
 }
 
-export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
-  const value = client.resolve;
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.min(1, Math.max(client.appear, value));
-  }
-  return client.arrive;
+/** The solved state begins when the shooting clip reaches the building. */
+export function resolveAt(client: { appear: number; arrive: number }): number {
+  return Math.min(1, Math.max(client.appear, client.arrive));
+}
+
+export function storyBuildingLabel(client: { building: string; label?: string }): string {
+  return client.label?.trim() || client.building;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -522,11 +538,9 @@ export function needEndAt(client: { appear: number; arrive: number; needEnd?: nu
 export function needTitleAt(
   client: { need: string; needAfter?: string; arrive: number },
   t: number,
-  burstDelay?: number,
 ): string {
-  const delay = Math.max(0, burstDelay ?? STORY_CONFIG.burstDelay ?? 0.045);
   const after = client.needAfter;
-  if (typeof after === 'string' && after.trim() && t >= client.arrive + delay) {
+  if (typeof after === 'string' && after.trim() && t >= client.arrive) {
     return after;
   }
   return client.need;
@@ -588,7 +602,7 @@ export function applyStoryTheme(root: HTMLElement | null = typeof document === '
   root.style.setProperty('--story-chip-max-width', chipWidth + 'px');
 }
 `;
-      fs.writeFileSync(storyPath, storyCode, 'utf8');
+      writeFileAtomic(storyPath, storyCode);
     }
 
     if (body.heroCopy) {
@@ -667,7 +681,7 @@ export function applyHeroCopy() {
 }
 
 `;
-      fs.writeFileSync(heroPath, heroCode, 'utf8');
+      writeFileAtomic(heroPath, heroCode);
     }
 
     if (Array.isArray(body.flowSteps) || body.flowChrome) {
@@ -760,7 +774,7 @@ export function applyFlowChrome() {
   if (typeof document === 'undefined') return;
   const flow = document.querySelector<HTMLElement>('.flow');
   if (!flow) return;
-  flow.dataset.align = FLOW_CHROME.align;
+  flow.dataset.align = FLOW_CHROME.aligROME.align;
   flow.dataset.dir = FLOW_CHROME.dir;
   flow.removeAttribute('dir');
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
@@ -800,7 +814,7 @@ export function syncFlowDom() {
   applyFlowChrome();
 }
 `;
-      fs.writeFileSync(flowPath, flowCode, 'utf8');
+      writeFileAtomic(flowPath, flowCode);
     }
 
     if (body.typeChrome) {
@@ -976,7 +990,7 @@ export function applyTypeChrome() {
   applyStudioChrome();
 }
 `;
-      fs.writeFileSync(typePath, typeCode, 'utf8');
+      writeFileAtomic(typePath, typeCode);
     }
 
     if (Array.isArray(body.buildingNames)) {
@@ -1019,7 +1033,7 @@ export interface BuildingNamePlate {
 
 export const BUILDING_NAMES: BuildingNamePlate[] = ${emit(names, 0)};
 `;
-      fs.writeFileSync(namesPath, namesCode, 'utf8');
+      writeFileAtomic(namesPath, namesCode);
     }
 
     if (body.studioOverlay) {
@@ -1049,7 +1063,7 @@ export interface StudioOverlayConfig {
 
 export const STUDIO_OVERLAY: StudioOverlayConfig = ${emit(overlay, 0)};
 `;
-      fs.writeFileSync(overlayPath, overlayCode, 'utf8');
+      writeFileAtomic(overlayPath, overlayCode);
     }
 
     if (body.loader) {
@@ -1214,7 +1228,7 @@ export function previewLoader(open: boolean) {
   window.dispatchEvent(new CustomEvent(LOADER_PREVIEW_EVENT, { detail: { open } }));
 }
 `;
-      fs.writeFileSync(loaderPath, loaderCode, 'utf8');
+      writeFileAtomic(loaderPath, loaderCode);
     }
 
     if (body.look) {
@@ -1239,7 +1253,7 @@ export function previewLoader(open: boolean) {
         /export const LOOK_CONFIG: LookConfig = \{[\s\S]*?\};/,
         `export const LOOK_CONFIG: LookConfig = ${emit(look, 0)};`,
       );
-      fs.writeFileSync(lookPath, next, 'utf8');
+      writeFileAtomic(lookPath, next);
     }
 
     return NextResponse.json({

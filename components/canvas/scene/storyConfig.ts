@@ -7,7 +7,10 @@ export type StoryBuildingState = 'idle' | 'need' | 'resolved';
 
 export interface StoryClientConfig {
   id: string;
+  /** Stable GLB object name used for lookup. */
   building: string;
+  /** Human-facing name shown in Studio and the timeline. */
+  label?: string;
   need: string;
   needAfter?: string;
   appear: number;
@@ -72,12 +75,13 @@ export interface StoryConfig {
   chipMaxWidth?: number;
 }
 
-export function resolveAt(client: { appear: number; arrive: number; resolve?: number }): number {
-  const value = client.resolve;
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.min(1, Math.max(client.appear, value));
-  }
-  return client.arrive;
+/** The solved state begins when the shooting clip reaches the building. */
+export function resolveAt(client: { appear: number; arrive: number }): number {
+  return Math.min(1, Math.max(client.appear, client.arrive));
+}
+
+export function storyBuildingLabel(client: { building: string; label?: string }): string {
+  return client.label?.trim() || client.building;
 }
 
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
@@ -105,6 +109,7 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "hyper",
       building: "Hyper Market Building",
+      label: "Hyper Market",
       need: "به 200 ترابایت فضای ذخیره‌سازی امن نیاز داریم!",
       needAfter: "انجام شد.",
       appear: 0.1,
@@ -119,6 +124,7 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "b7",
       building: "Building 7",
+      label: "Government Organization",
       need: "به یه زیرساخت با سرعت 200 ترابیت در ثانیه نیاز داریم!",
       needAfter: "انجام شد.",
       appear: 0.4,
@@ -132,6 +138,7 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "b30",
       building: "Building 30",
+      label: "Bank",
       need: "به یک بایگانی داده تا 3 هزار زتابایت نیاز داریم!",
       needAfter: "انجام شد.",
       appear: 0.58,
@@ -145,6 +152,7 @@ export const STORY_CONFIG: StoryConfig = {
     {
       id: "b34",
       building: "Building 34",
+      label: "Company",
       need: "به زیرساخت ابری داخلی با پایین‌ترین ضریب خطر نیاز داریم!",
       needAfter: "انجام شد.",
       appear: 0.72,
@@ -216,11 +224,9 @@ export function needEndAt(client: { appear: number; arrive: number; needEnd?: nu
 export function needTitleAt(
   client: { need: string; needAfter?: string; arrive: number },
   t: number,
-  burstDelay?: number,
 ): string {
-  const delay = Math.max(0, burstDelay ?? STORY_CONFIG.burstDelay ?? 0.045);
   const after = client.needAfter;
-  if (typeof after === 'string' && after.trim() && t >= client.arrive + delay) {
+  if (typeof after === 'string' && after.trim() && t >= client.arrive) {
     return after;
   }
   return client.need;
