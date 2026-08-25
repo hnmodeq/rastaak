@@ -91,7 +91,7 @@ export function applyFlowChrome() {
   if (typeof document === 'undefined') return;
   const flow = document.querySelector<HTMLElement>('.flow');
   if (!flow) return;
-  flow.dataset.align = FLOW_CHROME.aligROME.align;
+  flow.dataset.align = FLOW_CHROME.align;
   flow.dataset.dir = FLOW_CHROME.dir;
   flow.removeAttribute('dir');
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
