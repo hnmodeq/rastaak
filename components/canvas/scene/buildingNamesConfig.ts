@@ -61,7 +61,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
     text: "کمپانی خصوصی",
     size: 0.11,
     color: 0x6e6e6e,
-    side: "front",
+    side: "back",
     position: [0, 0.16, -0.44],
     rotation: [0, 0, 0],
     extrude: 0.005

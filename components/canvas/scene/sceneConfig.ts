@@ -94,9 +94,9 @@ export const SCENE_CONFIG: SceneConfig = {
     {
       id: "keyframe_1_stop_1_overview",
       progress: 0,
-      camera: [27.3142, 9.6868, -14.5925],
-      target: [10.3964, 1.6004, 2.5723],
-      fov: 47
+      camera: [8.5455, 0.1202, -22.5373],
+      target: [10.7836, 5.1456, 2.2548],
+      fov: 49
     }
   ] as CameraStop[],
 
