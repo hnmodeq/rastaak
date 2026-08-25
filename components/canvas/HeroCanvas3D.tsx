@@ -366,7 +366,14 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         (forcedT: number) => {
           targetScrollProgress = forcedT;
           currentScrollProgress = forcedT;
-          if (controls.enabled) orbitSeekT = forcedT;
+          // In Blender viewport mode, a keyframe/timeline seek is a preview:
+          // show the exact final journey pose now, then leave navigation free
+          // for the user to compose or capture the next view.
+          if (viewport.enabled) {
+            applyJourneyToCamera(forcedT);
+          } else if (controls.enabled) {
+            orbitSeekT = forcedT;
+          }
         },
         (orbitEnabled: boolean) => {
           if (mode === 'admin') {
@@ -505,7 +512,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     const camPos = new THREE.Vector3();
     const lookAt = new THREE.Vector3();
 
-    const applyJourneyToCamera = (t: number) => {
+    function applyJourneyToCamera(t: number) {
       sampleSceneJourney(t, sample);
       camPos.set(sample.camera[0], sample.camera[1], sample.camera[2]);
       lookAt.set(sample.target[0], sample.target[1], sample.target[2]);
@@ -516,7 +523,10 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         camera.updateProjectionMatrix();
       }
       controls.target.copy(lookAt);
-    };
+      // Blender navigation owns its own target, so synchronize it whenever a
+      // keyframe or timeline seek applies a saved camera pose.
+      viewport.target.copy(lookAt);
+    }
 
     const stopPageWheel = (event: WheelEvent) => {
       event.preventDefault();
