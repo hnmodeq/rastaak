@@ -1,5 +1,12 @@
 import { SCENE_CONFIG } from './sceneConfig';
-import { STORY_CONFIG, STORY_FRAME_EVENT, needEndAt, storyBuildingLabel, type StoryFrame } from './storyConfig';
+import {
+  STORY_CONFIG,
+  STORY_FRAME_EVENT,
+  insaneShootingConfig,
+  needEndAt,
+  storyBuildingLabel,
+  type StoryFrame,
+} from './storyConfig';
 import { FLOW_CONFIG } from '@/components/home/flowConfig';
 
 const MIN_FLIGHT = 0.02;
@@ -34,7 +41,10 @@ type DragKind =
   | 'logo-move'
   | 'hold-start'
   | 'hold-end'
-  | 'hold-move';
+  | 'hold-move'
+  | 'insane-start'
+  | 'insane-end'
+  | 'insane-move';
 
 type DragState = {
   kind: DragKind;
@@ -57,6 +67,11 @@ type TimingSnapshot = {
     arrive: number;
     needEnd?: number;
   }>;
+  insaneShooting: {
+    enabled: boolean;
+    start: number;
+    end: number;
+  };
   chipHoldAfterArrive: number;
 };
 
@@ -335,6 +350,7 @@ export class StoryTimelinePanel {
         arrive: client.arrive,
         needEnd: client.needEnd,
       })),
+      insaneShooting: { ...insaneShootingConfig() },
       chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
     };
   }
@@ -358,6 +374,7 @@ export class StoryTimelinePanel {
       if (times.needEnd === undefined) delete client.needEnd;
       else client.needEnd = times.needEnd;
     });
+    Object.assign(insaneShootingConfig(), snapshot.insaneShooting);
     STORY_CONFIG.chipHoldAfterArrive = snapshot.chipHoldAfterArrive;
     this.paint();
     window.dispatchEvent(new CustomEvent(TIMING_EVENT));
@@ -399,6 +416,10 @@ export class StoryTimelinePanel {
       const point = this.cameraPoints()[index];
       const t = point?.progress ?? 0;
       return [t, t];
+    }
+    if (kind === 'insane-start' || kind === 'insane-end' || kind === 'insane-move') {
+      const insane = insaneShootingConfig();
+      return [insane.start, insane.end];
     }
     return [0, 0];
   }
@@ -452,6 +473,24 @@ export class StoryTimelinePanel {
       points[index].progress = clampOrdered(t, prev, next);
       this.setPlayhead(points[index].progress);
       this.onSeek(points[index].progress);
+      this.paint();
+      this.rebindDragLane();
+      return;
+    }
+
+    if (kind === 'insane-start' || kind === 'insane-end' || kind === 'insane-move') {
+      const insane = insaneShootingConfig();
+      if (kind === 'insane-move') {
+        const [start, end] = this.shiftedRange(t, 0, 1, MIN_SPAN);
+        insane.start = start;
+        insane.end = end;
+      } else if (kind === 'insane-start') {
+        insane.start = clampOrdered(t, 0, insane.end - MIN_SPAN);
+      } else {
+        insane.end = clampOrdered(t, insane.start + MIN_SPAN, 1);
+      }
+      this.setPlayhead(t);
+      this.onSeek(t);
       this.paint();
       this.rebindDragLane();
       return;
@@ -606,6 +645,26 @@ export class StoryTimelinePanel {
     });
     this.bindSeek(pageLane);
     this.lanes.appendChild(page);
+
+    // One aggregate outro beat — its internal building cascade is automatic.
+    const insane = insaneShootingConfig();
+    const insaneTrack = this.makeTrack('Insane shooting', 'insane-shooting');
+    const insaneLane = insaneTrack.querySelector('.stl-lane') as HTMLDivElement;
+    insaneLane.appendChild(
+      this.makeClip({
+        left: insane.start,
+        right: insane.end,
+        label: insane.enabled ? 'Insane shooting' : 'Insane shooting — off',
+        color: insane.enabled ? '#e66a29' : '#56565c',
+        title: 'Finale: cascade every remaining building',
+        lane: insaneLane,
+        onStart: (event) => this.startDrag('insane-start', -1, insaneLane, event),
+        onEnd: (event) => this.startDrag('insane-end', -1, insaneLane, event),
+        onMove: (event) => this.startDrag('insane-move', -1, insaneLane, event),
+      }),
+    );
+    this.bindSeek(insaneLane);
+    this.lanes.appendChild(insaneTrack);
 
     STORY_CONFIG.clients.forEach((client, index) => {
       const row = this.makeTrack(storyBuildingLabel(client), `client-${client.id || index}`);

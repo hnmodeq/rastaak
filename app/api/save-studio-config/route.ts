@@ -389,6 +389,8 @@ export const SCENE_CONFIG: SceneConfig = {
       const rawStory = body.story;
       const rawClients = Array.isArray(rawStory.clients) ? rawStory.clients : [];
       const rawCaptions = Array.isArray(rawStory.captions) ? rawStory.captions : [];
+      const insaneStart = Math.min(0.99, Math.max(0, asFinite(rawStory.insaneShooting?.start, 0.92851)));
+      const insaneEnd = Math.min(1, Math.max(insaneStart + 0.01, asFinite(rawStory.insaneShooting?.end, 1)));
       const story = {
         hub: sanitizeText(rawStory.hub, 'Rastaak Building', 80),
         logo: sanitizeText(rawStory.logo, 'Logo', 80),
@@ -437,6 +439,11 @@ export const SCENE_CONFIG: SceneConfig = {
             asFinite(Array.isArray(caption?.range) ? caption.range[1] : 1, 1),
           ],
         })),
+        insaneShooting: {
+          enabled: rawStory.insaneShooting?.enabled !== false,
+          start: insaneStart,
+          end: insaneEnd,
+        },
         chipHoldAfterArrive: asFinite(rawStory.chipHoldAfterArrive, 0.14),
         captionFadeIn: asFinite(rawStory.captionFadeIn, 0.06),
         packetIntensity: asFinite(rawStory.packetIntensity, 260),
@@ -492,6 +499,12 @@ export interface StoryCaptionConfig {
   range: [number, number];
 }
 
+export interface InsaneShootingConfig {
+  enabled: boolean;
+  start: number;
+  end: number;
+}
+
 export interface StoryColors {
   need: number;
   needWindow: number;
@@ -515,6 +528,7 @@ export interface StoryConfig {
   colors: StoryColors;
   clients: StoryClientConfig[];
   captions: StoryCaptionConfig[];
+  insaneShooting?: InsaneShootingConfig;
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;
@@ -550,6 +564,22 @@ export function storyBuildingLabel(client: { building: string; label?: string })
 export const STORY_FRAME_EVENT = 'rastaak-story-frame';
 
 export const STORY_CONFIG: StoryConfig = ${emit(story, 0)};
+
+const DEFAULT_INSANE_SHOOTING: InsaneShootingConfig = {
+  enabled: true,
+  start: 0.92851,
+  end: 1,
+};
+
+export function insaneShootingConfig(): InsaneShootingConfig {
+  const config = STORY_CONFIG.insaneShooting ?? (STORY_CONFIG.insaneShooting = { ...DEFAULT_INSANE_SHOOTING });
+  const start = Math.min(0.99, Math.max(0, Number.isFinite(config.start) ? config.start : DEFAULT_INSANE_SHOOTING.start));
+  const end = Math.min(1, Math.max(start + 0.01, Number.isFinite(config.end) ? config.end : DEFAULT_INSANE_SHOOTING.end));
+  config.start = start;
+  config.end = end;
+  config.enabled = config.enabled !== false;
+  return config;
+}
 
 export function needEndAt(client: { appear: number; arrive: number; needEnd?: number }): number {
   if (typeof client.needEnd === 'number' && Number.isFinite(client.needEnd)) {
@@ -591,6 +621,7 @@ export interface StoryFrame {
   chips: StoryChipFrame[];
   captions: StoryCaptionConfig[];
   activeCaptionId: string | null;
+  outroCover: number;
   visible: boolean;
 }
 

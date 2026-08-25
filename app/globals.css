@@ -251,6 +251,21 @@ main[data-taxi],
   opacity: 1;
 }
 
+/* A layout-colored curtain rises during the finale before the page itself reaches the next section. */
+.story-outro-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--color-bg);
+  transform: translate3d(0, 100%, 0);
+  will-change: transform;
+}
+
+.story-outro-cover[data-on='false'] {
+  visibility: hidden;
+}
+
 .story-chip {
   position: absolute;
   top: 0;

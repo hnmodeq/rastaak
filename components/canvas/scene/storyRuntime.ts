@@ -1,15 +1,18 @@
 import * as THREE from 'three';
 import {
   STORY_CONFIG,
+  insaneShootingConfig,
   needEndAt,
   needTitleAt,
   resolveAt,
+  type InsaneShootingConfig,
   type StoryBuildingState,
   type StoryChipFrame,
   type StoryClientConfig,
   type StoryFrame,
 } from './storyConfig';
 import { classifyRole, getMeshMaterials, resolvePalette } from './materialKeys';
+import { collectBuildingNodes } from './buildingVisibility';
 import { SCENE_CONFIG } from './sceneConfig';
 import { markStoryBloom } from './lookConfig';
 
@@ -31,6 +34,17 @@ interface ClientActor {
   slots: TrackedSlot[];
   blend: number;
   packet: PacketRig;
+}
+
+/** A non-client building swept into the single "Insane shooting" finale beat. */
+interface OutroActor {
+  id: string;
+  object: THREE.Object3D;
+  roof: THREE.Vector3;
+  slots: TrackedSlot[];
+  blend: number;
+  packet: PacketRig;
+  index: number;
 }
 
 interface PacketRig {
@@ -517,6 +531,7 @@ export class StoryRuntime {
   private scene: THREE.Scene | null = null;
   private hub: HubActor | null = null;
   private clients: ClientActor[] = [];
+  private outroActors: OutroActor[] = [];
   private packetRoot = new THREE.Group();
   private enabled = true;
   private lastT = 0;
@@ -525,6 +540,7 @@ export class StoryRuntime {
     chips: [],
     captions: STORY_CONFIG.captions,
     activeCaptionId: null,
+    outroCover: 0,
     visible: false,
   };
 
@@ -581,12 +597,38 @@ export class StoryRuntime {
       this.clients.push(actor);
     }
 
+    // The finale deliberately targets every remaining building, while the four
+    // authored clients above keep their own normal request / shooting beats.
+    const claimed = new Set([
+      normalizeName(STORY_CONFIG.hub),
+      ...STORY_CONFIG.clients.map((client) => normalizeName(client.building)),
+    ]);
+    for (const object of collectBuildingNodes(world)) {
+      if (claimed.has(normalizeName(object.name))) continue;
+      const roof = new THREE.Vector3();
+      roofPoint(object, roof);
+      const packet = createPacketRig();
+      // Dozens of logo flights are exciting; dozens of point lights are not.
+      packet.light.visible = false;
+      packet.light.intensity = 0;
+      this.packetRoot.add(packet.group);
+      this.outroActors.push({
+        id: object.name,
+        object,
+        roof,
+        slots: collectSlots(object),
+        blend: 0,
+        packet,
+        index: this.outroActors.length,
+      });
+    }
+
     void loadPacketMarkTexture()
       .then((texture) => {
-        for (const client of this.clients) {
-          bindPacketMark(client.packet.core, texture);
-          bindPacketMark(client.packet.glowInner, texture);
-          bindPacketMark(client.packet.glowOuter, texture);
+        for (const actor of [...this.clients, ...this.outroActors]) {
+          bindPacketMark(actor.packet.core, texture);
+          bindPacketMark(actor.packet.glowInner, texture);
+          bindPacketMark(actor.packet.glowOuter, texture);
         }
       })
       .catch(() => {});
@@ -606,17 +648,19 @@ export class StoryRuntime {
   restoreBase() {
     if (this.hub) restoreSlots(this.hub.slots);
     for (const client of this.clients) restoreSlots(client.slots);
+    for (const actor of this.outroActors) restoreSlots(actor.slots);
   }
 
   captureBase() {
     if (this.hub) recaptureSlots(this.hub.slots);
     for (const client of this.clients) recaptureSlots(client.slots);
+    for (const actor of this.outroActors) recaptureSlots(actor.slots);
   }
 
   rebindIdlePalette() {
     const palette = resolvePalette(SCENE_CONFIG.materials);
-    for (const client of this.clients) {
-      for (const slot of client.slots) {
+    for (const actor of [...this.clients, ...this.outroActors]) {
+      for (const slot of actor.slots) {
         const hex = slot.role === 'window' ? palette.windowColor : palette.buildingColor;
         if (hex !== undefined) slot.baseColor.set(hex);
       }
@@ -716,6 +760,10 @@ export class StoryRuntime {
       });
     }
 
+    const insane = insaneShootingConfig();
+    this.updateInsaneShooting(t, insane, input.reducedMotion, input.compact);
+    const outroCover = this.enabled && insane.enabled ? this.insaneCoverProgress(t, insane.start, insane.end) : 0;
+
     if (this.enabled && this.hub) {
       this.applyHubPulse(input.elapsed, dispatchFlash, input.reducedMotion);
     }
@@ -726,22 +774,167 @@ export class StoryRuntime {
       chips,
       captions: STORY_CONFIG.captions,
       activeCaptionId: active?.id ?? STORY_CONFIG.captions[STORY_CONFIG.captions.length - 1]?.id ?? null,
+      outroCover,
       visible: this.enabled && t >= STORY_CONFIG.captionFadeIn && t < 0.985,
     };
     return this.frame;
   }
 
+  /** The layout curtain rises during the latter half of the outro, before its end keyframe. */
+  private insaneCoverProgress(t: number, start: number, end: number): number {
+    const span = Math.max(0.01, end - start);
+    const coverStart = start + span * 0.24;
+    const coverEnd = start + span * 0.84;
+    return smooth01((t - coverStart) / Math.max(0.001, coverEnd - coverStart));
+  }
+
+  private updateInsaneShooting(
+    t: number,
+    config: InsaneShootingConfig,
+    reducedMotion: boolean,
+    compact: boolean,
+  ) {
+    if (!this.outroActors.length) return;
+
+    if (!this.enabled || !config.enabled) {
+      for (const actor of this.outroActors) {
+        if (actor.blend !== 0) {
+          applyBuildingLook(actor.slots, 0);
+          actor.blend = 0;
+        }
+        this.hidePacket(actor.packet);
+      }
+      return;
+    }
+
+    const span = Math.max(0.01, config.end - config.start);
+    const requestSpan = Math.max(0.002, span * 0.12);
+    const flightSpan = Math.max(0.006, span * 0.27);
+    const staggerSpan = Math.max(0, span - requestSpan - flightSpan);
+    const lastIndex = Math.max(1, this.outroActors.length - 1);
+
+    for (const actor of this.outroActors) {
+      const requestAt = config.start + (staggerSpan * actor.index) / lastIndex;
+      const dispatchAt = Math.min(config.end, requestAt + requestSpan);
+      const arriveAt = Math.min(config.end, dispatchAt + flightSpan);
+      const state = t < requestAt ? 0 : t < arriveAt ? 1 : 2;
+
+      if (!actor.object.visible) {
+        this.hidePacket(actor.packet);
+        continue;
+      }
+
+      // Red request, then blue resolved — no overlay title for these outro-only actors.
+      // Before the finale starts, leave idle materials untouched for performance.
+      if (state > 0 || actor.blend !== state) {
+        applyBuildingLook(actor.slots, state);
+        actor.blend = state;
+      }
+      const showPacket = !reducedMotion && !compact && t >= dispatchAt && t < arriveAt;
+      this.updateOutroPacket(actor, dispatchAt, arriveAt, t, showPacket);
+    }
+  }
+
+  private hidePacket(packet: PacketRig) {
+    packet.group.visible = false;
+    packet.light.intensity = 0;
+    packet.light.visible = false;
+    packet.trail.geometry.setDrawRange(0, 0);
+    packet.burstCore.visible = false;
+    packet.burstRing.visible = false;
+    packet.burstSparks.visible = false;
+  }
+
+  /** Lightweight logo flight for the many targets in the finale — no extra point lights or bursts. */
+  private updateOutroPacket(actor: OutroActor, dispatch: number, arrive: number, t: number, show: boolean) {
+    const packet = actor.packet;
+    if (!show || !this.hub) {
+      this.hidePacket(packet);
+      return;
+    }
+
+    const span = Math.max(0.0001, arrive - dispatch);
+    const u = Math.max(0, Math.min(1, (t - dispatch) / span));
+    _landing.copy(actor.roof);
+    _launch.copy(this.hub.origin);
+    const angle = actor.index * 2.399963229728653;
+    _launch.x += Math.cos(angle) * 0.12;
+    _launch.y += ((actor.index % 3) - 1) * 0.045;
+    _launch.z += Math.sin(angle) * 0.12;
+    updatePacketCurve(packet, _launch, _landing);
+    packet.curve.getPoint(u, packet.group.position);
+    packet.group.visible = true;
+    packet.light.visible = false;
+    packet.light.intensity = 0;
+
+    const fadeSpan = Math.max(0.002, Math.min(FADE_IN_T, span * 0.35));
+    const fadeIn = smooth01((t - dispatch) / fadeSpan);
+    const pulse = 0.65 + Math.sin(u * Math.PI) * 0.35;
+    const flicker = 0.75 + Math.sin((actor.index + u) * 42) * 0.25;
+    const glow = Math.max(0, STORY_CONFIG.packetGlow ?? 1);
+    const glowSize = Math.max(0.02, STORY_CONFIG.packetGlowSize ?? 0.22);
+    const coreSize = Math.max(0.02, STORY_CONFIG.packetCoreSize ?? 0.07);
+    const trailAmt = Math.max(0, Math.min(1, STORY_CONFIG.packetTrail ?? 0.7));
+
+    const logoSize = coreSize * 2.4 * (0.35 + 0.65 * fadeIn);
+    packet.core.scale.set(logoSize, logoSize, 1);
+    const coreMat = packet.core.material as THREE.SpriteMaterial;
+    coreMat.color.setHex(0xffffff);
+    coreMat.opacity = 0.96 * pulse * fadeIn;
+
+    const innerMat = packet.glowInner.material as THREE.SpriteMaterial;
+    const outerMat = packet.glowOuter.material as THREE.SpriteMaterial;
+    innerMat.color.copy(_packetInner);
+    outerMat.color.copy(_packetOuter);
+    packet.glowInner.scale.set(logoSize * (1.08 + glow * 0.06) + glowSize, logoSize * (1.08 + glow * 0.06) + glowSize, 1);
+    packet.glowOuter.scale.set(logoSize * (1.22 + glow * 0.16) + glowSize * 2.4, logoSize * (1.22 + glow * 0.16) + glowSize * 2.4, 1);
+    innerMat.opacity = 0.5 * glow * pulse * fadeIn;
+    outerMat.opacity = 0.22 * glow * pulse * fadeIn;
+    const hasMark = Boolean(coreMat.map);
+    packet.core.visible = hasMark && fadeIn > 0.02;
+    packet.glowInner.visible = hasMark && glow > 0.01 && fadeIn > 0.02;
+    packet.glowOuter.visible = hasMark && glow > 0.01 && fadeIn > 0.02;
+
+    const sparkMat = packet.sparks.material as THREE.PointsMaterial;
+    sparkMat.color.copy(_packetSpark);
+    sparkMat.opacity = Math.min(1, glow * 0.85 * flicker * fadeIn);
+    sparkMat.size = coreSize * 0.7;
+    packet.sparks.visible = glow > 0.05 && fadeIn > 0.02;
+    const sparkPos = packet.sparks.geometry.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < sparkPos.count; i++) {
+      const a = i * 2.399 + u * 18 + actor.index;
+      const r = glowSize * (0.35 + (i % 4) * 0.18) * flicker;
+      sparkPos.setXYZ(i, Math.cos(a) * r, Math.sin(a * 1.7) * r * 0.7, Math.sin(a) * r);
+    }
+    sparkPos.needsUpdate = true;
+
+    const trailMat = packet.trail.material as THREE.LineBasicMaterial;
+    trailMat.color.copy(_packetColor);
+    trailMat.opacity = trailAmt * (0.45 + pulse * 0.55) * fadeIn;
+    packet.trail.visible = trailAmt > 0.02 && fadeIn > 0.02;
+    const from = Math.max(0, u - 0.2);
+    for (let i = 0; i < TRAIL_POINTS; i++) {
+      const tu = from + ((u - from) * i) / Math.max(1, TRAIL_POINTS - 1);
+      packet.curve.getPoint(tu, _projected);
+      packet.trailPositions[i * 3] = _projected.x - packet.group.position.x;
+      packet.trailPositions[i * 3 + 1] = _projected.y - packet.group.position.y;
+      packet.trailPositions[i * 3 + 2] = _projected.z - packet.group.position.z;
+    }
+    const attr = packet.trail.geometry.getAttribute('position') as THREE.BufferAttribute;
+    attr.needsUpdate = true;
+    packet.trail.geometry.setDrawRange(0, TRAIL_POINTS);
+    packet.burstCore.visible = false;
+    packet.burstRing.visible = false;
+    packet.burstSparks.visible = false;
+  }
+
   private updatePacket(client: ClientActor, t: number, show: boolean) {
     const packet = client.packet;
     if (!show) {
-      packet.group.visible = false;
-      packet.light.intensity = 0;
-      packet.trail.geometry.setDrawRange(0, 0);
-      packet.burstCore.visible = false;
-      packet.burstRing.visible = false;
-      packet.burstSparks.visible = false;
+      this.hidePacket(packet);
       return;
     }
+    packet.light.visible = true;
 
     const span = Math.max(0.0001, client.config.arrive - client.config.dispatch);
     const u = Math.max(0, Math.min(1, (t - client.config.dispatch) / span));
@@ -885,13 +1078,8 @@ export class StoryRuntime {
   }
 
   private hidePackets() {
-    for (const client of this.clients) {
-      const packet = client.packet;
-      packet.group.visible = false;
-      packet.light.intensity = 0;
-      packet.burstCore.visible = false;
-      packet.burstRing.visible = false;
-      packet.burstSparks.visible = false;
+    for (const actor of [...this.clients, ...this.outroActors]) {
+      this.hidePacket(actor.packet);
     }
   }
 
@@ -900,8 +1088,8 @@ export class StoryRuntime {
     if (this.scene && this.packetRoot.parent === this.scene) {
       this.scene.remove(this.packetRoot);
     }
-    for (const client of this.clients) {
-      const packet = client.packet;
+    for (const actor of [...this.clients, ...this.outroActors]) {
+      const packet = actor.packet;
       (packet.core.material as THREE.Material).dispose();
       (packet.glowInner.material as THREE.Material).dispose();
       (packet.glowOuter.material as THREE.Material).dispose();
@@ -916,6 +1104,7 @@ export class StoryRuntime {
       packet.light.dispose();
     }
     this.clients = [];
+    this.outroActors = [];
     this.hub = null;
     this.scene = null;
     this.packetRoot = new THREE.Group();

@@ -201,6 +201,11 @@ export interface StudioStorySave {
     needOffset?: [number, number, number];
   }>;
   captions: Array<{ id: string; text: string; range: [number, number] }>;
+  insaneShooting?: {
+    enabled: boolean;
+    start: number;
+    end: number;
+  };
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;

@@ -10,7 +10,15 @@ import {
   type ShadowFilter,
 } from './shadowSetup';
 import type { CameraKeyframe, CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
-import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, storyBuildingLabel, type StoryFrame } from './storyConfig';
+import {
+  STORY_CONFIG,
+  STORY_FRAME_EVENT,
+  applyStoryTheme,
+  insaneShootingConfig,
+  needEndAt,
+  storyBuildingLabel,
+  type StoryFrame,
+} from './storyConfig';
 import { setJourneyScrollLength } from './storyRuntime';
 import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
@@ -916,6 +924,7 @@ export class SceneStudioGUI {
           ...caption,
           range: [...caption.range] as [number, number],
         })),
+        insaneShooting: STORY_CONFIG.insaneShooting ? { ...STORY_CONFIG.insaneShooting } : undefined,
         chipHoldAfterArrive: STORY_CONFIG.chipHoldAfterArrive,
         captionFadeIn: STORY_CONFIG.captionFadeIn,
         packetIntensity: STORY_CONFIG.packetIntensity,
@@ -2451,6 +2460,16 @@ export class SceneStudioGUI {
       .listen()
       .onChange((value: number) => {
         this.seekStory(value);
+      });
+
+    const insaneShooting = insaneShootingConfig();
+    const insaneParams = { enabled: insaneShooting.enabled };
+    root
+      .add(insaneParams, 'enabled')
+      .name('Enable insane shooting')
+      .onChange((enabled: boolean) => {
+        insaneShooting.enabled = enabled;
+        this.notifyTimingChanged();
       });
 
     const cameraFolder = root;

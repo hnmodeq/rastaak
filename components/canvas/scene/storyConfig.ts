@@ -29,6 +29,13 @@ export interface StoryCaptionConfig {
   range: [number, number];
 }
 
+/** A single outro beat that cascades shooting logos across every remaining building. */
+export interface InsaneShootingConfig {
+  enabled: boolean;
+  start: number;
+  end: number;
+}
+
 export interface StoryColors {
   need: number;
   needWindow: number;
@@ -52,6 +59,7 @@ export interface StoryConfig {
   colors: StoryColors;
   clients: StoryClientConfig[];
   captions: StoryCaptionConfig[];
+  insaneShooting?: InsaneShootingConfig;
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;
@@ -194,6 +202,12 @@ export const STORY_CONFIG: StoryConfig = {
       range: [0.78, 1.01]
     }
   ],
+  insaneShooting: {
+    enabled: true,
+    // Keyframes 24 → 25: the zoom-out finale.
+    start: 0.92851,
+    end: 1
+  },
   chipHoldAfterArrive: 0.14,
   captionFadeIn: 0.06,
   packetIntensity: 235,
@@ -216,6 +230,23 @@ export const STORY_CONFIG: StoryConfig = {
   chipText: 0xf5f5f2,
   chipMaxWidth: 680
 };
+
+const DEFAULT_INSANE_SHOOTING: InsaneShootingConfig = {
+  enabled: true,
+  start: 0.92851,
+  end: 1,
+};
+
+/** Returns the editable outro beat, normalized to a valid timeline span. */
+export function insaneShootingConfig(): InsaneShootingConfig {
+  const config = STORY_CONFIG.insaneShooting ?? (STORY_CONFIG.insaneShooting = { ...DEFAULT_INSANE_SHOOTING });
+  const start = Math.min(0.99, Math.max(0, Number.isFinite(config.start) ? config.start : DEFAULT_INSANE_SHOOTING.start));
+  const end = Math.min(1, Math.max(start + 0.01, Number.isFinite(config.end) ? config.end : DEFAULT_INSANE_SHOOTING.end));
+  config.start = start;
+  config.end = end;
+  config.enabled = config.enabled !== false;
+  return config;
+}
 
 export function needEndAt(client: { appear: number; arrive: number; needEnd?: number }): number {
   if (typeof client.needEnd === 'number' && Number.isFinite(client.needEnd)) {
@@ -257,6 +288,8 @@ export interface StoryFrame {
   chips: StoryChipFrame[];
   captions: StoryCaptionConfig[];
   activeCaptionId: string | null;
+  /** 0 → 1 progress for the layout curtain that rises during the outro. */
+  outroCover: number;
   visible: boolean;
 }
 
