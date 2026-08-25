@@ -10,7 +10,7 @@ export type { CameraKeyframe, CameraMethod, CameraStop, MaterialsConfig, LightCo
 export { LIGHTS_CONFIG } from './lightingConfig';
 
 export const SCENE_CONFIG: SceneConfig = {
-  cameraMethod: "stops",
+  cameraMethod: "progress",
   stops: [
     {
       id: "stop_1_overview",
@@ -21,7 +21,7 @@ export const SCENE_CONFIG: SceneConfig = {
     },
     {
       id: "stop_2_hyper",
-      progress: 0.1,
+      progress: 0.112961,
       camera: [14.93, 0.3, -1.5],
       target: [14, 0.5, 1.5],
       fov: 15
@@ -56,7 +56,7 @@ export const SCENE_CONFIG: SceneConfig = {
     },
     {
       id: "stop_7_tower",
-      progress: 0.88,
+      progress: 0.803805,
       camera: [13.2, 6.2, -1.2],
       target: [16, 3.4, 2.3],
       fov: 36
@@ -74,9 +74,94 @@ export const SCENE_CONFIG: SceneConfig = {
       camera: [21.44, 6.02, -0.41],
       target: [9.7, -0.03, -0.79],
       fov: 89.995445
+    },
+    {
+      id: "stop_10_custom",
+      progress: 1,
+      camera: [17.18, 3.16, -6.47],
+      target: [9.7, -0.03, -0.79],
+      fov: 41.59453
+    },
+    {
+      id: "stop_11_custom",
+      progress: 1,
+      camera: [14.39, 5.98, 0.24],
+      target: [9.7, -0.03, -0.79],
+      fov: 32.527273
     }
   ] as CameraStop[],
-  progressKeyframes: [] as CameraStop[],
+  progressKeyframes: [
+    {
+      id: "keyframe_1_stop_1_overview",
+      progress: 0,
+      camera: [21.44, 6.02, -0.41],
+      target: [9.7, -0.03, -0.79],
+      fov: 47
+    },
+    {
+      id: "keyframe_2_stop_2_hyper",
+      progress: 0.112961,
+      camera: [14.93, 0.3, -1.5],
+      target: [14, 0.5, 1.5],
+      fov: 15
+    },
+    {
+      id: "keyframe_3_stop_3_hyper_reply",
+      progress: 0.2,
+      camera: [15.054576, 0.5, -1.830526],
+      target: [15, 2, 0.5],
+      fov: 42
+    },
+    {
+      id: "keyframe_4_stop_4_building7",
+      progress: 0.4,
+      camera: [15, 1, -1.5],
+      target: [15, 0.5, 0.5],
+      fov: 40
+    },
+    {
+      id: "keyframe_5_stop_5_south",
+      progress: 0.6,
+      camera: [16.8, 3.4, -7.4],
+      target: [14, 1.5, -1],
+      fov: 42
+    },
+    {
+      id: "keyframe_6_stop_6_building34",
+      progress: 0.74,
+      camera: [6.6, 2.6, -7.6],
+      target: [11.2, 1.1, -2.2],
+      fov: 40
+    },
+    {
+      id: "keyframe_7_stop_7_tower",
+      progress: 0.803805,
+      camera: [13.2, 6.2, -1.2],
+      target: [16, 3.4, 2.3],
+      fov: 36
+    },
+    {
+      id: "keyframe_9_stop_11_custom",
+      progress: 0.838882,
+      camera: [14.39, 5.98, 0.24],
+      target: [9.7, -0.03, -0.79],
+      fov: 32.527273
+    },
+    {
+      id: "keyframe_9",
+      progress: 0.875149,
+      camera: [14.39, 5.98, 0.24],
+      target: [9.7, -0.03, -0.79],
+      fov: 32.53
+    },
+    {
+      id: "keyframe_10",
+      progress: 0.939358,
+      camera: [14.39, 5.98, 0.24],
+      target: [9.7, -0.03, -0.79],
+      fov: 32.53
+    }
+  ] as CameraStop[],
 
   scroll: {
     headerScrollMultiplier: 5,
@@ -95,7 +180,7 @@ export const SCENE_CONFIG: SceneConfig = {
 
   environment: {
     backgroundColor: 0x050812,
-    fogColor: 0x020406,
+    fogColor: 0x050910,
     fogStart: 12,
     fogEnd: 60,
     fogEnabled: true,

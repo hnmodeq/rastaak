@@ -25,7 +25,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
   {
     id: "hyper",
     building: "Hyper Market Building",
-    text: "Hyper Market",
+    text: "هایپر مارکت",
     size: 0.05,
     color: 0xf5f5f2,
     side: "back",
@@ -36,7 +36,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
   {
     id: "b7",
     building: "Building 7",
-    text: "Government Organization",
+    text: "سازمان دولتی",
     size: 0.05,
     color: 0xf5f5f2,
     side: "front",
@@ -47,7 +47,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
   {
     id: "b30",
     building: "Building 30",
-    text: "Bank",
+    text: "بانک",
     size: 0.2,
     color: 0xf5f5f2,
     side: "front",
@@ -58,7 +58,7 @@ export const BUILDING_NAMES: BuildingNamePlate[] = [
   {
     id: "b34",
     building: "Building 34",
-    text: "Company",
+    text: "کمپانی خصوصی",
     size: 0.11,
     color: 0xf5f5f2,
     side: "front",

@@ -33,14 +33,14 @@ export const FLOW_CONFIG: FlowStepConfig[] = [
     title: "راهکار متناسب با نیاز سازمان",
     subtitle: "",
     caption: "ما به‌جای ارائه یک محصول ثابت، زیرساختی متناسب با حجم داده، نوع کاربری و نیاز عملیاتی هر سازمان پیشنهاد می‌دهیم؛ تا سرمایه‌گذاری شما دقیق، بهینه و آینده‌نگر باشد.",
-    progressRange: [0, 0.099437]
+    progressRange: [0, 0.104637]
   },
   {
     num: "02",
     title: "امنیت و حفاظت از داده‌ها",
     subtitle: "",
     caption: "داده‌های حیاتی سازمان نیازمند زیرساختی فراتر از یک فضای ذخیره‌سازی هستند. راهکارهای ما با تمرکز بر امنیت، پشتیبان‌گیری و جلوگیری از از دست رفتن اطلاعات طراحی می‌شوند.",
-    progressRange: [0.099437, 0.19606]
+    progressRange: [0.104637, 0.19606]
   },
   {
     num: "03",
@@ -91,7 +91,7 @@ export function applyFlowChrome() {
   if (typeof document === 'undefined') return;
   const flow = document.querySelector<HTMLElement>('.flow');
   if (!flow) return;
-  flow.dataset.align = FLOW_CHROME.align;
+  flow.dataset.align = FLOW_CHROME.aligROME.align;
   flow.dataset.dir = FLOW_CHROME.dir;
   flow.removeAttribute('dir');
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));

@@ -114,7 +114,7 @@ export const STORY_CONFIG: StoryConfig = {
       needAfter: "انجام شد.",
       appear: 0.1,
       dispatch: 0.177767,
-      arrive: 0.401501,
+      arrive: 0.393579,
       resolve: 0.402908,
       needEnd: 0.601313,
       land: [0, 0, 0],
