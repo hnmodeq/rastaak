@@ -51,8 +51,25 @@ export const KNOWN_BUILDING_NAMES = [
  * "Hyper Market Building", and "Rastaak Building". Trees, ground, and the
  * logo intentionally do not match this rule.
  */
+/**
+ * GLTFLoader normalizes Blender node names such as "Building 7" into
+ * "Building_7". Use one readable, stable name everywhere in the Studio UI
+ * and visibility map, while still matching the actual loaded Object3D.
+ */
+export function displayBuildingName(name: string): string {
+  return name
+    .normalize('NFKC')
+    .trim()
+    .replace(/[._/-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function buildingKey(name: string): string {
+  return displayBuildingName(name).toLowerCase();
+}
+
 export function isBuildingNodeName(name: string): boolean {
-  const value = name.trim();
+  const value = displayBuildingName(name);
   return /^building(?:\s+\d+)?$/i.test(value) || /\bbuilding$/i.test(value);
 }
 
@@ -60,25 +77,33 @@ export function collectBuildingNodes(root: Object3D): Object3D[] {
   const byName = new Map<string, Object3D>();
   root.traverse((child) => {
     const name = child.name?.trim();
-    if (!name || !isBuildingNodeName(name) || byName.has(name)) return;
-    byName.set(name, child);
+    if (!name || !isBuildingNodeName(name)) return;
+    const key = buildingKey(name);
+    if (!byName.has(key)) byName.set(key, child);
   });
 
   return [...byName.values()].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+    displayBuildingName(a.name).localeCompare(displayBuildingName(b.name), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    }),
   );
 }
 
 export function buildingVisibilityNames(root?: Object3D | null): string[] {
   const names = new Set<string>(KNOWN_BUILDING_NAMES);
   if (root) {
-    for (const building of collectBuildingNodes(root)) names.add(building.name);
+    for (const building of collectBuildingNodes(root)) names.add(displayBuildingName(building.name));
   }
   return [...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 export function isBuildingVisible(name: string, visibility?: SceneVisibilityConfig): boolean {
-  return visibility?.buildings?.[name] !== false;
+  const buildings = visibility?.buildings;
+  if (!buildings) return true;
+  if (buildings[name] === false) return false;
+  const key = buildingKey(name);
+  return !Object.entries(buildings).some(([savedName, visible]) => buildingKey(savedName) === key && visible === false);
 }
 
 /** Apply the persisted per-building visibility map to the loaded GLB. */
