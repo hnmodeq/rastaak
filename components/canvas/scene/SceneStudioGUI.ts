@@ -42,7 +42,13 @@ import { BlenderViewport } from './BlenderViewport';
 import { publishLive } from '@/components/live/liveChannel';
 import { SITE_CONTENT } from '@/components/home/siteContent';
 import { LOOK_CONFIG, applyLookOverlay, applySceneEnvironment } from './lookConfig';
-import { setCinematicSkyEnabled } from './CinematicSky';
+import {
+  DEFAULT_CINEMATIC_HORIZON,
+  DEFAULT_CINEMATIC_SKY,
+  setCinematicHorizonConfig,
+  setCinematicSkyConfig,
+  setCinematicSkyEnabled,
+} from './CinematicSky';
 import { BUILDING_NAMES } from './buildingNamesConfig';
 import { notifyBuildingNamesChanged } from './BuildingNamePlates';
 import { STUDIO_OVERLAY } from './studioOverlay';
@@ -881,6 +887,8 @@ export class SceneStudioGUI {
         fogEnd: fog?.far ?? SCENE_CONFIG.environment.fogEnd,
         fogEnabled: Boolean(fog) && SCENE_CONFIG.environment.fogEnabled !== false,
         skyEnabled: SCENE_CONFIG.environment.skyEnabled !== false,
+        sky: { ...(SCENE_CONFIG.environment.sky ?? DEFAULT_CINEMATIC_SKY) },
+        horizon: { ...(SCENE_CONFIG.environment.horizon ?? DEFAULT_CINEMATIC_HORIZON) },
         shadowColor: SCENE_CONFIG.environment.shadowColor ?? 0x000000,
         shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       },
@@ -985,6 +993,16 @@ export class SceneStudioGUI {
     SCENE_CONFIG.environment.fogEnd = payload.environment.fogEnd;
     SCENE_CONFIG.environment.fogEnabled = payload.environment.fogEnabled !== false;
     SCENE_CONFIG.environment.skyEnabled = payload.environment.skyEnabled !== false;
+    SCENE_CONFIG.environment.sky = {
+      ...DEFAULT_CINEMATIC_SKY,
+      ...(payload.environment.sky ?? {}),
+    };
+    SCENE_CONFIG.environment.horizon = {
+      ...DEFAULT_CINEMATIC_HORIZON,
+      ...(payload.environment.horizon ?? {}),
+    };
+    setCinematicSkyConfig(this.scene, SCENE_CONFIG.environment.sky, SCENE_CONFIG.environment.horizon);
+    setCinematicSkyEnabled(this.scene, SCENE_CONFIG.environment.skyEnabled);
     SCENE_CONFIG.environment.shadowColor = payload.environment.shadowColor ?? 0x000000;
     SCENE_CONFIG.environment.shadowOpacity = payload.environment.shadowOpacity ?? 1;
     SCENE_CONFIG.renderer.toneMappingExposure = payload.renderer.toneMappingExposure;
@@ -1701,6 +1719,96 @@ export class SceneStudioGUI {
         shadowOpacity: SCENE_CONFIG.environment.shadowOpacity ?? 1,
       };
 
+      const activeSky = SCENE_CONFIG.environment.sky ?? DEFAULT_CINEMATIC_SKY;
+      const skyColor = (value: number) => '#' + new THREE.Color(value).getHexString();
+      const skyParams = {
+        zenithColor: skyColor(activeSky.zenithColor),
+        upperColor: skyColor(activeSky.upperColor),
+        horizonColor: skyColor(activeSky.horizonColor),
+        warmthColor: skyColor(activeSky.warmthColor),
+        moonColor: skyColor(activeSky.moonColor),
+        starColor: skyColor(activeSky.starColor),
+        moonAzimuth: activeSky.moonAzimuth,
+        moonElevation: activeSky.moonElevation,
+        moonSize: activeSky.moonSize,
+        moonGlow: activeSky.moonGlow,
+        horizonGlow: activeSky.horizonGlow,
+        starDensity: activeSky.starDensity,
+        starIntensity: activeSky.starIntensity,
+        exposure: activeSky.exposure,
+      };
+      const skyFolder = this.addTab('Sky');
+      skyFolder
+        .add(envParams, 'skyEnabled')
+        .name('Enable sky')
+        .onChange((value: boolean) => {
+          SCENE_CONFIG.environment.skyEnabled = value;
+          setCinematicSkyEnabled(this.scene, value);
+          this.broadcastLive();
+        });
+      const applySky = () => {
+        const nextSky = {
+          zenithColor: new THREE.Color(skyParams.zenithColor).getHex(),
+          upperColor: new THREE.Color(skyParams.upperColor).getHex(),
+          horizonColor: new THREE.Color(skyParams.horizonColor).getHex(),
+          warmthColor: new THREE.Color(skyParams.warmthColor).getHex(),
+          moonColor: new THREE.Color(skyParams.moonColor).getHex(),
+          starColor: new THREE.Color(skyParams.starColor).getHex(),
+          moonAzimuth: skyParams.moonAzimuth,
+          moonElevation: skyParams.moonElevation,
+          moonSize: skyParams.moonSize,
+          moonGlow: skyParams.moonGlow,
+          horizonGlow: skyParams.horizonGlow,
+          starDensity: skyParams.starDensity,
+          starIntensity: skyParams.starIntensity,
+          exposure: skyParams.exposure,
+        };
+        SCENE_CONFIG.environment.sky = nextSky;
+        setCinematicSkyConfig(this.scene, nextSky, SCENE_CONFIG.environment.horizon);
+        this.broadcastLive();
+      };
+      skyFolder.addColor(skyParams, 'zenithColor').name('Zenith color').onChange(applySky);
+      skyFolder.addColor(skyParams, 'upperColor').name('Upper sky color').onChange(applySky);
+      skyFolder.addColor(skyParams, 'horizonColor').name('Horizon color').onChange(applySky);
+      skyFolder.addColor(skyParams, 'warmthColor').name('Horizon warmth').onChange(applySky);
+      skyFolder.addColor(skyParams, 'moonColor').name('Moon color').onChange(applySky);
+      skyFolder.addColor(skyParams, 'starColor').name('Star color').onChange(applySky);
+      skyFolder.add(skyParams, 'moonAzimuth', -180, 180, 1).name('Moon azimuth').onChange(applySky);
+      skyFolder.add(skyParams, 'moonElevation', -10, 90, 1).name('Moon elevation').onChange(applySky);
+      skyFolder.add(skyParams, 'moonSize', 0.2, 3, 0.01).name('Moon size').onChange(applySky);
+      skyFolder.add(skyParams, 'moonGlow', 0, 3, 0.01).name('Moon glow').onChange(applySky);
+      skyFolder.add(skyParams, 'horizonGlow', 0, 3, 0.01).name('Horizon glow').onChange(applySky);
+      skyFolder.add(skyParams, 'starDensity', 0, 2, 0.01).name('Star density').onChange(applySky);
+      skyFolder.add(skyParams, 'starIntensity', 0, 3, 0.01).name('Star intensity').onChange(applySky);
+      skyFolder.add(skyParams, 'exposure', 0, 3, 0.01).name('Sky exposure').onChange(applySky);
+
+      const activeHorizon = SCENE_CONFIG.environment.horizon ?? DEFAULT_CINEMATIC_HORIZON;
+      const horizonParams = {
+        enabled: activeHorizon.enabled,
+        color: skyColor(activeHorizon.color),
+        opacity: activeHorizon.opacity,
+        height: activeHorizon.height,
+        softness: activeHorizon.softness,
+      };
+      const horizonFolder = this.addTab('Horizon');
+      const applyHorizon = () => {
+        const nextHorizon = {
+          enabled: horizonParams.enabled,
+          color: new THREE.Color(horizonParams.color).getHex(),
+          opacity: horizonParams.opacity,
+          height: horizonParams.height,
+          softness: horizonParams.softness,
+        };
+        SCENE_CONFIG.environment.horizon = nextHorizon;
+        setCinematicHorizonConfig(this.scene, nextHorizon);
+        this.broadcastLive();
+      };
+      horizonFolder.add(horizonParams, 'enabled').name('Horizon atmosphere').onChange(applyHorizon);
+      horizonFolder.addColor(horizonParams, 'color').name('Mist color').onChange(applyHorizon);
+      horizonFolder.add(horizonParams, 'opacity', 0, 1, 0.01).name('Mist amount').onChange(applyHorizon);
+      horizonFolder.add(horizonParams, 'height', -0.6, 0.6, 0.01).name('Horizon height').onChange(applyHorizon);
+      horizonFolder.add(horizonParams, 'softness', 0.02, 1, 0.01).name('Blend softness').onChange(applyHorizon);
+
       envFolder
         .add(envParams, 'exposure', 0.1, 3.0, 0.05)
         .name('Exposure')
@@ -1719,14 +1827,6 @@ export class SceneStudioGUI {
           this.scene.background = col;
           document.body.style.backgroundColor = v;
           SCENE_CONFIG.environment.backgroundColor = col.getHex();
-        });
-
-      envFolder
-        .add(envParams, 'skyEnabled')
-        .name('Cinematic sky')
-        .onChange((value: boolean) => {
-          SCENE_CONFIG.environment.skyEnabled = value;
-          setCinematicSkyEnabled(this.scene, value);
         });
 
       envFolder

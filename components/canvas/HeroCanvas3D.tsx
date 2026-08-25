@@ -23,7 +23,13 @@ import { applyLightShadow, applyRendererShadowFilter } from './scene/shadowSetup
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
 import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
 import { BuildingNamePlateSet } from './scene/BuildingNamePlates';
-import { ensureCinematicSky, disposeCinematicSky, setCinematicSkyEnabled } from './scene/CinematicSky';
+import {
+  ensureCinematicSky,
+  disposeCinematicSky,
+  setCinematicHorizonConfig,
+  setCinematicSkyConfig,
+  setCinematicSkyEnabled,
+} from './scene/CinematicSky';
 import { subscribeLive } from '@/components/live/liveChannel';
 import type { CameraKeyframe, CameraMethod, CameraStop, LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
 import {
@@ -69,7 +75,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     const scene = new THREE.Scene();
     scene.background = backgroundColor;
     scene.fog = env.fogEnabled === false ? null : new THREE.Fog(fogColor, env.fogStart, env.fogEnd);
-    ensureCinematicSky(scene, env.skyEnabled !== false);
+    ensureCinematicSky(scene, env.skyEnabled !== false, env.sky, env.horizon);
 
     const host = containerRef.current;
     const viewW = () => Math.max(1, host.clientWidth || window.innerWidth);
@@ -305,6 +311,14 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         if (envPatch.skyEnabled !== undefined) {
           SCENE_CONFIG.environment.skyEnabled = envPatch.skyEnabled;
           setCinematicSkyEnabled(scene, envPatch.skyEnabled);
+        }
+        if (envPatch.sky) {
+          SCENE_CONFIG.environment.sky = { ...(SCENE_CONFIG.environment.sky ?? {}), ...envPatch.sky } as NonNullable<SceneEnvironmentConfig['sky']>;
+          setCinematicSkyConfig(scene, SCENE_CONFIG.environment.sky, SCENE_CONFIG.environment.horizon);
+        }
+        if (envPatch.horizon) {
+          SCENE_CONFIG.environment.horizon = { ...(SCENE_CONFIG.environment.horizon ?? {}), ...envPatch.horizon } as NonNullable<SceneEnvironmentConfig['horizon']>;
+          setCinematicHorizonConfig(scene, SCENE_CONFIG.environment.horizon);
         }
         if (envPatch.shadowColor !== undefined) SCENE_CONFIG.environment.shadowColor = envPatch.shadowColor;
         if (envPatch.shadowOpacity !== undefined) SCENE_CONFIG.environment.shadowOpacity = envPatch.shadowOpacity;

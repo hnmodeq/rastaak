@@ -82,6 +82,31 @@ export interface SceneCameraConfig {
   far: number;
 }
 
+export interface SceneSkyConfig {
+  zenithColor: number;
+  upperColor: number;
+  horizonColor: number;
+  warmthColor: number;
+  moonColor: number;
+  starColor: number;
+  moonAzimuth: number;
+  moonElevation: number;
+  moonSize: number;
+  moonGlow: number;
+  horizonGlow: number;
+  starDensity: number;
+  starIntensity: number;
+  exposure: number;
+}
+
+export interface SceneHorizonConfig {
+  enabled: boolean;
+  color: number;
+  opacity: number;
+  height: number;
+  softness: number;
+}
+
 export interface SceneEnvironmentConfig {
   backgroundColor: number;
   fogColor?: number;
@@ -89,6 +114,8 @@ export interface SceneEnvironmentConfig {
   fogEnd: number;
   fogEnabled?: boolean;
   skyEnabled?: boolean;
+  sky?: SceneSkyConfig;
+  horizon?: SceneHorizonConfig;
   shadowColor?: number;
   shadowOpacity?: number;
 }

@@ -54,8 +54,10 @@ function hushPmremPrecisionWarning() {
   if (current.__rastaakX4122) return;
   const original = console.warn;
   const next = ((...args: unknown[]) => {
-    const first = args[0];
-    if (typeof first === 'string' && first.includes('X4122')) return;
+    // ANGLE's HLSL compiler reports harmless floating-point precision
+    // warnings from Three.js' PMREM shader as the second console argument.
+    // Inspect every argument, not only the label in args[0].
+    if (args.some((arg) => typeof arg === 'string' && arg.includes('X4122'))) return;
     original.apply(console, args as Parameters<typeof console.warn>);
   }) as typeof console.warn & { __rastaakX4122?: boolean };
   next.__rastaakX4122 = true;

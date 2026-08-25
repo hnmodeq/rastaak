@@ -99,11 +99,34 @@ export const SCENE_CONFIG: SceneConfig = {
 
   environment: {
     backgroundColor: 0x050812,
-    fogColor: 0x0b1220,
-    fogStart: 18,
-    fogEnd: 72,
+    fogColor: 0x14233c,
+    fogStart: 14,
+    fogEnd: 68,
     fogEnabled: true,
     skyEnabled: true,
+    sky: {
+      zenithColor: 0x02050e,
+      upperColor: 0x081a31,
+      horizonColor: 0x27375c,
+      warmthColor: 0x4d3044,
+      moonColor: 0xffdfb4,
+      starColor: 0xc8dcff,
+      moonAzimuth: -109,
+      moonElevation: 31,
+      moonSize: 1,
+      moonGlow: 1,
+      horizonGlow: 1,
+      starDensity: 1,
+      starIntensity: 1,
+      exposure: 1
+    },
+    horizon: {
+      enabled: true,
+      color: 0x14233c,
+      opacity: 0.72,
+      height: 0,
+      softness: 0.28
+    },
     shadowColor: 0x111b31,
     shadowOpacity: 0.32
   },
