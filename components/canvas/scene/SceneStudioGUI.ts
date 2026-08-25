@@ -131,6 +131,7 @@ export class SceneStudioGUI {
   private chromeObserver: ResizeObserver | null = null;
   private materialsFolderPopulated = false;
   private buildingVisibilityFolderPopulated = false;
+  private buildingVisibilityTab: any = null;
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
   private timelinePanel: StoryTimelinePanel | null = null;
@@ -1089,6 +1090,10 @@ export class SceneStudioGUI {
       );
 
       const camFolder = this.addTab('Camera & Stop Points');
+      // Reserve this tab beside the camera controls so it remains easy to find
+      // even when the GLB finishes loading after the rest of the Studio UI.
+      this.buildingVisibilityTab = this.addTab('Building visibility');
+      (this.buildingVisibilityTab.domElement as HTMLElement).style.display = 'none';
 
       this.currentStopIndex = 0;
       if (SCENE_CONFIG.cameraMethod === 'progress') this.ensureProgressKeyframes();
@@ -3181,7 +3186,9 @@ export class SceneStudioGUI {
     const buildings = collectBuildingNodes(worldGroup);
     if (!buildings.length) return;
 
-    const visibilityTab = this.addTab('Building visibility');
+    const visibilityTab = this.buildingVisibilityTab ?? this.addTab('Building visibility');
+    this.buildingVisibilityTab = visibilityTab;
+    (visibilityTab.domElement as HTMLElement).style.display = '';
     this.buildingVisibilityFolderPopulated = true;
 
     for (const building of buildings) {
