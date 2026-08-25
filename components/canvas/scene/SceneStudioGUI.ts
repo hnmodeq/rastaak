@@ -35,7 +35,7 @@ import {
   type MaterialCategory,
   type SurfaceParams,
 } from './materialKeys';
-import { applyBuildingVisibility, collectBuildingNodes, isBuildingVisible } from './buildingVisibility';
+import { applyBuildingVisibility, buildingVisibilityNames, isBuildingVisible } from './buildingVisibility';
 import { applyTreeVisibility } from './treeVisibility';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
@@ -1090,10 +1090,9 @@ export class SceneStudioGUI {
       );
 
       const camFolder = this.addTab('Camera & Stop Points');
-      // Reserve this tab beside the camera controls so it remains easy to find
-      // even when the GLB finishes loading after the rest of the Studio UI.
+      // Keep this tab beside the camera controls so it is easy to find. Its
+      // fallback building list lets it render before the GLB has loaded.
       this.buildingVisibilityTab = this.addTab('Building visibility');
-      (this.buildingVisibilityTab.domElement as HTMLElement).style.display = 'none';
 
       this.currentStopIndex = 0;
       if (SCENE_CONFIG.cameraMethod === 'progress') this.ensureProgressKeyframes();
@@ -3181,30 +3180,28 @@ export class SceneStudioGUI {
   public populateBuildingVisibility() {
     if (!this.gui || this.buildingVisibilityFolderPopulated) return;
 
-    const worldGroup = this.worldGroupSupplier();
-    if (!worldGroup) return;
-    const buildings = collectBuildingNodes(worldGroup);
+    const buildings = buildingVisibilityNames(this.worldGroupSupplier());
     if (!buildings.length) return;
 
     const visibilityTab = this.buildingVisibilityTab ?? this.addTab('Building visibility');
     this.buildingVisibilityTab = visibilityTab;
-    (visibilityTab.domElement as HTMLElement).style.display = '';
     this.buildingVisibilityFolderPopulated = true;
 
-    for (const building of buildings) {
-      const row = { visible: isBuildingVisible(building.name, SCENE_CONFIG.visibility) };
+    for (const buildingName of buildings) {
+      const row = { visible: isBuildingVisible(buildingName, SCENE_CONFIG.visibility) };
       visibilityTab
         .add(row, 'visible')
-        .name(building.name)
+        .name(buildingName)
         .onChange((visible: boolean) => {
           const buildingMap = { ...(SCENE_CONFIG.visibility?.buildings ?? {}) };
-          if (visible) delete buildingMap[building.name];
-          else buildingMap[building.name] = false;
+          if (visible) delete buildingMap[buildingName];
+          else buildingMap[buildingName] = false;
           SCENE_CONFIG.visibility = {
             ...(SCENE_CONFIG.visibility ?? {}),
             buildings: buildingMap,
           };
-          applyBuildingVisibility(worldGroup, SCENE_CONFIG.visibility);
+          const worldGroup = this.worldGroupSupplier();
+          if (worldGroup) applyBuildingVisibility(worldGroup, SCENE_CONFIG.visibility);
           this.broadcastLive();
         });
     }
