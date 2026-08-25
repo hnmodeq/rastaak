@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { FLOW_CONFIG } from '@/components/home/flowConfig';
+import { LIVE_EVENT } from '@/components/live/liveChannel';
 
 /**
  * Homepage interactions that used to live in the Astro/Three vendor bundle.
@@ -126,6 +127,9 @@ export function HomeInteractions() {
     updateScrollUi();
     window.addEventListener('scroll', updateScrollUi, { passive: true });
     window.addEventListener('resize', updateScrollUi);
+    // Story Timeline edits can change chapter ranges without a page scroll.
+    window.addEventListener('rastaak-studio-timing-changed', updateScrollUi);
+    window.addEventListener(LIVE_EVENT, updateScrollUi);
 
     const menuBtn = document.querySelector<HTMLButtonElement>('.menu-btn');
     const mobileNav = document.querySelector<HTMLElement>('.mobile-nav');
@@ -171,6 +175,8 @@ export function HomeInteractions() {
       faqHeaders.forEach((header) => header.removeEventListener('click', onFaqClick));
       window.removeEventListener('scroll', updateScrollUi);
       window.removeEventListener('resize', updateScrollUi);
+      window.removeEventListener('rastaak-studio-timing-changed', updateScrollUi);
+      window.removeEventListener(LIVE_EVENT, updateScrollUi);
       menuBtn?.removeEventListener('click', toggleMenu);
       overlay?.removeEventListener('click', closeMenu);
       closeBtn?.removeEventListener('click', closeMenu);

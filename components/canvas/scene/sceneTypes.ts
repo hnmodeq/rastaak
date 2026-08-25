@@ -184,12 +184,12 @@ export interface StudioStorySave {
   clients: Array<{
     id: string;
     building: string;
+    label?: string;
     need: string;
     needAfter?: string;
     appear: number;
     dispatch: number;
     arrive: number;
-    resolve?: number;
     needEnd?: number;
     land?: [number, number, number];
     launch?: [number, number, number];
