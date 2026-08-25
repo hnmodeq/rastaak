@@ -27,7 +27,7 @@ export const LOOK_CONFIG: LookConfig = {
   envIntensity: 0.9,
   grain: 0.08,
   grainSize: 1.45,
-  vignette: 0.32,
+  vignette: 0,
   vignetteStart: 0.5,
   vignetteSoft: 0.6,
   bloom: 0.22,

@@ -97,69 +97,6 @@ export const SCENE_CONFIG: SceneConfig = {
       camera: [21.44, 6.02, -0.41],
       target: [9.7, -0.03, -0.79],
       fov: 47
-    },
-    {
-      id: "keyframe_2_stop_2_hyper",
-      progress: 0.112961,
-      camera: [14.93, 0.3, -1.5],
-      target: [14, 0.5, 1.5],
-      fov: 15
-    },
-    {
-      id: "keyframe_3_stop_3_hyper_reply",
-      progress: 0.2,
-      camera: [15.054576, 0.5, -1.830526],
-      target: [15, 2, 0.5],
-      fov: 42
-    },
-    {
-      id: "keyframe_4_stop_4_building7",
-      progress: 0.4,
-      camera: [15, 1, -1.5],
-      target: [15, 0.5, 0.5],
-      fov: 40
-    },
-    {
-      id: "keyframe_5_stop_5_south",
-      progress: 0.6,
-      camera: [16.8, 3.4, -7.4],
-      target: [14, 1.5, -1],
-      fov: 42
-    },
-    {
-      id: "keyframe_6_stop_6_building34",
-      progress: 0.74,
-      camera: [6.6, 2.6, -7.6],
-      target: [11.2, 1.1, -2.2],
-      fov: 40
-    },
-    {
-      id: "keyframe_7_stop_7_tower",
-      progress: 0.803805,
-      camera: [13.2, 6.2, -1.2],
-      target: [16, 3.4, 2.3],
-      fov: 36
-    },
-    {
-      id: "keyframe_9_stop_11_custom",
-      progress: 0.838882,
-      camera: [14.39, 5.98, 0.24],
-      target: [9.7, -0.03, -0.79],
-      fov: 32.527273
-    },
-    {
-      id: "keyframe_9",
-      progress: 0.875149,
-      camera: [14.39, 5.98, 0.24],
-      target: [9.7, -0.03, -0.79],
-      fov: 32.53
-    },
-    {
-      id: "keyframe_10",
-      progress: 0.939358,
-      camera: [14.39, 5.98, 0.24],
-      target: [9.7, -0.03, -0.79],
-      fov: 32.53
     }
   ] as CameraStop[],
 
@@ -180,9 +117,9 @@ export const SCENE_CONFIG: SceneConfig = {
 
   environment: {
     backgroundColor: 0x050812,
-    fogColor: 0x050910,
-    fogStart: 12,
-    fogEnd: 60,
+    fogColor: 0x000000,
+    fogStart: 0,
+    fogEnd: 92,
     fogEnabled: true,
     skyEnabled: true,
     sky: {
@@ -191,20 +128,20 @@ export const SCENE_CONFIG: SceneConfig = {
       horizonColor: 0x27375c,
       warmthColor: 0x000000,
       moonColor: 0xffffff,
-      starColor: 0xc8dcff,
-      rotationY: 0,
-      moonAzimuth: -94,
+      starColor: 0xffffff,
+      rotationY: 178,
+      moonAzimuth: -68,
       moonElevation: 39,
-      moonSize: 1.15,
-      moonGlow: 1,
-      horizonGlow: 1,
-      starDensity: 0.88,
-      starIntensity: 1.72,
+      moonSize: 1.53,
+      moonGlow: 0.53,
+      horizonGlow: 1.51,
+      starDensity: 2,
+      starIntensity: 3,
       exposure: 3
     },
     horizon: {
       enabled: true,
-      color: 0x050910,
+      color: 0x000000,
       opacity: 0.92,
       height: -0.03,
       softness: 0.72
@@ -214,28 +151,28 @@ export const SCENE_CONFIG: SceneConfig = {
   },
 
   renderer: {
-    toneMappingExposure: 0.88,
+    toneMappingExposure: 2.05,
     shadowMapType: "pcf"
   },
 
   materials: {
-    buildingColor: 0x0b101a,
-    windowColor: 0x9dbfe8,
-    rastaakColor: 0x060a28,
+    buildingColor: 0x000000,
+    windowColor: 0x999999,
+    rastaakColor: 0x000000,
     logoColor: 0xf4f8ff,
-    groundColor: 0x080d19,
-    plateColor: 0x141c2c,
-    borderColor: 0x2b3c5d,
-    treeTrunkColor: 0x3b2b25,
-    treeLeafColor: 0x101b25,
-    globalFacadeColor: 0x0b101a,
-    globalWindowColor: 0x9dbfe8,
-    roughness: 0.38,
-    metalness: 0.68,
+    groundColor: 0x000000,
+    plateColor: 0x1d1d1d,
+    borderColor: 0x282828,
+    treeTrunkColor: 0x000000,
+    treeLeafColor: 0x00240c,
+    globalFacadeColor: 0x000000,
+    globalWindowColor: 0x999999,
+    roughness: 0.42,
+    metalness: 0.79,
     envMapIntensity: 1.25,
     groundRoughness: 0.64,
-    groundMetalness: 0.16,
-    groundEnvMapIntensity: 0.92,
+    groundMetalness: 0.74,
+    groundEnvMapIntensity: 0.95,
     overrides: {}
   } as MaterialsConfig,
 
