@@ -1256,10 +1256,29 @@ export function previewLoader(open: boolean) {
       writeFileAtomic(lookPath, next);
     }
 
+    // Homepage copy / section visibility edited from the admin panel. This was
+    // previously sent by the client but never written, so every admin change
+    // was lost on reload.
+    if (body.siteContent && typeof body.siteContent === 'object') {
+      const { mergeSiteContent } = await import('@/components/home/siteContent');
+      const site = mergeSiteContent(body.siteContent);
+      const sitePath = path.join(rootDir, 'components', 'home', 'siteContent.ts');
+      const existingSite = fs.readFileSync(sitePath, 'utf8');
+      const pattern = /export const SITE_CONTENT: SiteContentConfig = \{[\s\S]*?\n\};/;
+      if (!pattern.test(existingSite)) {
+        throw new Error('Could not locate SITE_CONTENT literal in siteContent.ts');
+      }
+      const nextSite = existingSite.replace(
+        pattern,
+        `export const SITE_CONTENT: SiteContentConfig = ${emit(site, 0)};`,
+      );
+      writeFileAtomic(sitePath, nextSite);
+    }
+
     return NextResponse.json({
       success: true,
       message:
-        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, buildingNamesConfig.ts, studioOverlay.ts, and loaderConfig.ts',
+        'Config saved to sceneConfig.ts, lightingConfig.ts, storyConfig.ts, flowConfig.ts, heroCopy.ts, typeChrome.ts, lookConfig.ts, buildingNamesConfig.ts, studioOverlay.ts, siteContent.ts, and loaderConfig.ts',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save config';

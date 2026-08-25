@@ -308,6 +308,8 @@ export interface StudioSavePayload {
   heroCopy?: StudioHeroCopySave;
   flowChrome?: StudioFlowChromeSave;
   typeChrome?: StudioTypeChromeSave;
+  /** Homepage copy + section visibility, saved from the admin panel. */
+  siteContent?: unknown;
   look?: LookConfigSave;
   studioOverlay?: {
     showCamGizmo: boolean;

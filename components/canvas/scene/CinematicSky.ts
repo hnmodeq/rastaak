@@ -155,15 +155,32 @@ function normalizeSkyConfig(config?: Partial<SceneSkyConfig>): SceneSkyConfig {
   };
 }
 
+/**
+ * Last fully-resolved sky/horizon state per material.
+ *
+ * Callers such as `setCinematicHorizonConfig` intentionally pass only a subset
+ * of the state (e.g. horizon only). Without remembering the previous values we
+ * would silently fall back to DEFAULT_CINEMATIC_SKY and visibly reset user
+ * edits (sky rotation, moon placement, ...) on the next unrelated update.
+ */
+const skyState = new WeakMap<
+  THREE.ShaderMaterial,
+  { sky: SceneSkyConfig; horizon: SceneHorizonConfig }
+>();
+
 function applySkyConfig(
   material: THREE.ShaderMaterial,
   rawConfig?: Partial<SceneSkyConfig>,
   rawHorizon?: Partial<SceneHorizonConfig>,
 ) {
-  const config = rawConfig ? normalizeSkyConfig(rawConfig) : null;
-  const horizon = normalizeHorizonConfig(rawHorizon);
+  const previous = skyState.get(material);
+  // Merge onto the previous resolved state so partial updates never reset
+  // untouched fields back to the defaults.
+  const config = normalizeSkyConfig({ ...(previous?.sky ?? {}), ...(rawConfig ?? {}) });
+  const horizon = normalizeHorizonConfig({ ...(previous?.horizon ?? {}), ...(rawHorizon ?? {}) });
+  skyState.set(material, { sky: config, horizon });
   const uniforms = material.uniforms;
-  if (config) {
+  {
     uniforms.uZenith.value.setHex(config.zenithColor);
     uniforms.uUpper.value.setHex(config.upperColor);
     uniforms.uHorizon.value.setHex(config.horizonColor);
@@ -183,9 +200,8 @@ function applySkyConfig(
   uniforms.uHorizonHeight.value = horizon.height;
   uniforms.uHorizonSoftness.value = horizon.softness;
 
-  const directionConfig = config ?? normalizeSkyConfig();
-  const azimuth = THREE.MathUtils.degToRad(directionConfig.moonAzimuth);
-  const elevation = THREE.MathUtils.degToRad(directionConfig.moonElevation);
+  const azimuth = THREE.MathUtils.degToRad(config.moonAzimuth);
+  const elevation = THREE.MathUtils.degToRad(config.moonElevation);
   uniforms.uMoonDirection.value.set(
     Math.cos(elevation) * Math.cos(azimuth),
     Math.sin(elevation),
@@ -246,7 +262,9 @@ export function ensureCinematicSky(
   const existing = skies.get(scene);
   if (existing) {
     existing.visible = enabled;
-    applySkyConfig(existing.material, config, horizon);
+    // Only re-apply when the caller actually supplied state; otherwise keep
+    // whatever the studio has already pushed into the material.
+    if (config || horizon) applySkyConfig(existing.material, config, horizon);
     return existing;
   }
   const sky = makeSky(config, horizon);
