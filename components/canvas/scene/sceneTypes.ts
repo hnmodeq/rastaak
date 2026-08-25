@@ -132,6 +132,8 @@ export interface SceneRendererConfig {
 export interface SceneVisibilityConfig {
   showBigTrees?: boolean;
   showSmallTrees?: boolean;
+  /** Hidden buildings are stored as `false`; missing entries remain visible. */
+  buildings?: Record<string, boolean>;
 }
 
 export interface LookConfigSave {

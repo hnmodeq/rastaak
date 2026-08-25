@@ -17,6 +17,7 @@ import { LIGHTS_CONFIG } from './scene/lightingConfig';
 import { SceneStudioGUI } from './scene/SceneStudioGUI';
 import { BlenderViewport } from './scene/BlenderViewport';
 import { applyMaterialsConfig } from './scene/materialKeys';
+import { applyBuildingVisibility } from './scene/buildingVisibility';
 import { applyTreeVisibility } from './scene/treeVisibility';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { applyLightShadow, applyRendererShadowFilter } from './scene/shadowSetup';
@@ -38,7 +39,15 @@ import {
   tickCinematicSky,
 } from './scene/CinematicSky';
 import { subscribeLive } from '@/components/live/liveChannel';
-import type { CameraKeyframe, CameraMethod, CameraStop, LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
+import type {
+  CameraKeyframe,
+  CameraMethod,
+  CameraStop,
+  LightConfig,
+  MaterialsConfig,
+  SceneEnvironmentConfig,
+  SceneVisibilityConfig,
+} from './scene/sceneTypes';
 import {
   LOOK_CONFIG,
   LookComposer,
@@ -340,6 +349,18 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         Object.assign(SCENE_CONFIG.scroll, patch.scroll as Partial<typeof SCENE_CONFIG.scroll>);
         setJourneyScrollLength(SCENE_CONFIG.scroll.journeyScrollLength ?? 1);
       }
+      if (patch.visibility && typeof patch.visibility === 'object') {
+        const visibilityPatch = patch.visibility as SceneVisibilityConfig;
+        SCENE_CONFIG.visibility = {
+          ...(SCENE_CONFIG.visibility ?? {}),
+          ...visibilityPatch,
+          ...(visibilityPatch.buildings ? { buildings: { ...visibilityPatch.buildings } } : {}),
+        };
+        if (world) {
+          applyTreeVisibility(world, SCENE_CONFIG.visibility);
+          applyBuildingVisibility(world, SCENE_CONFIG.visibility);
+        }
+      }
       if (patch.cameraMethod === 'stops' || patch.cameraMethod === 'progress') {
         SCENE_CONFIG.cameraMethod = patch.cameraMethod as CameraMethod;
       }
@@ -462,6 +483,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
 
         applyMaterialsConfig(world, SCENE_CONFIG.materials);
         applyTreeVisibility(world, SCENE_CONFIG.visibility);
+        applyBuildingVisibility(world, SCENE_CONFIG.visibility);
         tintWorldShadows(world);
         applySceneShadows(lightsMap.values());
         applySceneEnvironment(scene, renderer);
@@ -474,6 +496,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         story.attach(world, scene);
         namePlates.attach(world, scene);
         studioGUI?.populateMaterials();
+        studioGUI?.populateBuildingVisibility();
         reportHeroLoad(94);
       },
       (xhr: ProgressEvent) => {

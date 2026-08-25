@@ -179,6 +179,7 @@ export const SCENE_CONFIG: SceneConfig = {
 
   visibility: {
     showBigTrees: true,
-    showSmallTrees: false
+    showSmallTrees: false,
+    buildings: {}
   },
 };

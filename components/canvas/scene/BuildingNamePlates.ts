@@ -5,6 +5,8 @@ import {
   type BuildingNamePlate,
   type BuildingNameSide,
 } from './buildingNamesConfig';
+import { BUILDING_VISIBILITY_EVENT, isBuildingVisible } from './buildingVisibility';
+import { SCENE_CONFIG } from './sceneConfig';
 
 const CITY_CENTER_X = 13.36;
 const CITY_CENTER_Z = -0.7;
@@ -427,6 +429,7 @@ export class BuildingNamePlateSet {
     }
     if (typeof window !== 'undefined') {
       window.addEventListener(BUILDING_NAMES_EVENT, this.onConfig);
+      window.addEventListener(BUILDING_VISIBILITY_EVENT, this.syncVisibility);
     }
   }
 
@@ -454,12 +457,19 @@ export class BuildingNamePlateSet {
   dispose() {
     if (typeof window !== 'undefined') {
       window.removeEventListener(BUILDING_NAMES_EVENT, this.onConfig);
+      window.removeEventListener(BUILDING_VISIBILITY_EVENT, this.syncVisibility);
     }
     this.detach();
   }
 
   private onConfig = () => {
     this.rebuild();
+  };
+
+  private syncVisibility = () => {
+    for (const actor of this.actors) {
+      actor.group.visible = isBuildingVisible(actor.config.building, SCENE_CONFIG.visibility);
+    }
   };
 
   private detach() {
@@ -493,6 +503,7 @@ export class BuildingNamePlateSet {
     mesh.receiveShadow = true;
     const group = new THREE.Group();
     group.name = 'name-plate-' + config.id;
+    group.visible = isBuildingVisible(config.building, SCENE_CONFIG.visibility);
     group.add(mesh);
     const pose = headerPose(object, config.side);
     group.position.copy(pose.position);

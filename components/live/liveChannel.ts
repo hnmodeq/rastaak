@@ -16,6 +16,7 @@ export type LivePatch = {
   cameraStops?: unknown;
   progressKeyframes?: unknown;
   scroll?: unknown;
+  visibility?: unknown;
   look?: unknown;
 };
 

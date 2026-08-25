@@ -669,8 +669,9 @@ export class StoryRuntime {
       const burstEnd = client.config.arrive + burst.delay + burst.span;
       const impacting = t >= client.config.arrive && t < client.config.arrive + burst.delay;
       const bursting = t >= client.config.arrive + burst.delay && t < burstEnd;
+      const buildingVisible = client.object.visible;
       const showPacket =
-        this.enabled && !input.reducedMotion && !input.compact && (traveling || impacting || bursting);
+        buildingVisible && this.enabled && !input.reducedMotion && !input.compact && (traveling || impacting || bursting);
 
       this.updatePacket(client, t, showPacket);
 
@@ -710,7 +711,7 @@ export class StoryRuntime {
         x: (_projected.x * 0.5 + 0.5) * input.width,
         y: (-_projected.y * 0.5 + 0.5) * input.height,
         state: state === 'idle' ? 'need' : state,
-        visible: this.enabled && chipOn && onScreen && !compactHide && opacity > 0.04,
+        visible: buildingVisible && this.enabled && chipOn && onScreen && !compactHide && opacity > 0.04,
         opacity: Math.max(0, Math.min(1, opacity)),
       });
     }

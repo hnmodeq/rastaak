@@ -50,6 +50,18 @@ function sanitizeSide(value: unknown): 'front' | 'back' | 'left' | 'right' {
   return 'front';
 }
 
+function sanitizeBuildingVisibility(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const result: Record<string, boolean> = {};
+  for (const [rawName, rawVisible] of Object.entries(value as Record<string, unknown>)) {
+    if (rawVisible !== false) continue;
+    const name = sanitizeText(rawName, '', 120).trim();
+    if (!name || name === '__proto__' || name === 'constructor' || name === 'prototype') continue;
+    result[name] = false;
+  }
+  return result;
+}
+
 function sanitizeOverrideKey(value: string): string | null {
   const trimmed = value.trim().slice(0, 160);
   if (/^[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed;
@@ -209,7 +221,16 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
       : null;
     const cameraMethod = body.cameraMethod === 'progress' ? 'progress' : 'stops';
 
-    if (cameraStops || progressKeyframes || body.cameraMethod || body.environment || body.materials || body.renderer || body.scroll) {
+    if (
+      cameraStops ||
+      progressKeyframes ||
+      body.cameraMethod ||
+      body.environment ||
+      body.materials ||
+      body.renderer ||
+      body.scroll ||
+      body.visibility
+    ) {
       const overrides: Record<string, Record<string, unknown>> = {};
       const rawOverrides = body.materials?.overrides;
       if (rawOverrides && typeof rawOverrides === 'object') {
@@ -323,6 +344,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
       const visibility = {
         showBigTrees: body.visibility?.showBigTrees !== false,
         showSmallTrees: body.visibility?.showSmallTrees !== false,
+        buildings: sanitizeBuildingVisibility(body.visibility?.buildings),
       };
 
       const stops = cameraStops ?? [];

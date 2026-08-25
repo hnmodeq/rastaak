@@ -35,6 +35,7 @@ import {
   type MaterialCategory,
   type SurfaceParams,
 } from './materialKeys';
+import { applyBuildingVisibility, collectBuildingNodes, isBuildingVisible } from './buildingVisibility';
 import { applyTreeVisibility } from './treeVisibility';
 import { StoryTimelinePanel } from './StoryTimelinePanel';
 import { LightGizmoSet } from './LightGizmos';
@@ -129,6 +130,7 @@ export class SceneStudioGUI {
   private foldersExpanded = false;
   private chromeObserver: ResizeObserver | null = null;
   private materialsFolderPopulated = false;
+  private buildingVisibilityFolderPopulated = false;
   private lightsFolderPopulated = false;
   private pointerHandler: ((e: MouseEvent) => void) | null = null;
   private timelinePanel: StoryTimelinePanel | null = null;
@@ -902,6 +904,7 @@ export class SceneStudioGUI {
       visibility: {
         showBigTrees: SCENE_CONFIG.visibility?.showBigTrees !== false,
         showSmallTrees: SCENE_CONFIG.visibility?.showSmallTrees !== false,
+        buildings: { ...(SCENE_CONFIG.visibility?.buildings ?? {}) },
       },
       story: {
         hub: STORY_CONFIG.hub,
@@ -1018,6 +1021,17 @@ export class SceneStudioGUI {
     SCENE_CONFIG.camera.near = payload.camera.near;
     SCENE_CONFIG.camera.far = payload.camera.far;
     SCENE_CONFIG.materials = payload.materials;
+    if (payload.visibility) {
+      SCENE_CONFIG.visibility = {
+        ...payload.visibility,
+        buildings: { ...(payload.visibility.buildings ?? {}) },
+      };
+      const world = this.worldGroupSupplier();
+      if (world) {
+        applyTreeVisibility(world, SCENE_CONFIG.visibility);
+        applyBuildingVisibility(world, SCENE_CONFIG.visibility);
+      }
+    }
 
     LIGHTS_CONFIG.splice(0, LIGHTS_CONFIG.length, ...payload.lights);
     if (payload.look) Object.assign(LOOK_CONFIG, payload.look);
@@ -1715,6 +1729,7 @@ export class SceneStudioGUI {
 
       this.populateLightsAndShadows();
       this.populateMaterials();
+      this.populateBuildingVisibility();
       this.populateStoryControls();
       this.populateShootingLogo();
       this.populateLoadingScreen();
@@ -3158,6 +3173,38 @@ export class SceneStudioGUI {
     }
   }
 
+  public populateBuildingVisibility() {
+    if (!this.gui || this.buildingVisibilityFolderPopulated) return;
+
+    const worldGroup = this.worldGroupSupplier();
+    if (!worldGroup) return;
+    const buildings = collectBuildingNodes(worldGroup);
+    if (!buildings.length) return;
+
+    const visibilityTab = this.addTab('Building visibility');
+    this.buildingVisibilityFolderPopulated = true;
+
+    for (const building of buildings) {
+      const row = { visible: isBuildingVisible(building.name, SCENE_CONFIG.visibility) };
+      visibilityTab
+        .add(row, 'visible')
+        .name(building.name)
+        .onChange((visible: boolean) => {
+          const buildingMap = { ...(SCENE_CONFIG.visibility?.buildings ?? {}) };
+          if (visible) delete buildingMap[building.name];
+          else buildingMap[building.name] = false;
+          SCENE_CONFIG.visibility = {
+            ...(SCENE_CONFIG.visibility ?? {}),
+            buildings: buildingMap,
+          };
+          applyBuildingVisibility(worldGroup, SCENE_CONFIG.visibility);
+          this.broadcastLive();
+        });
+    }
+
+    if (!this.foldersExpanded) visibilityTab.close?.();
+  }
+
   public populateMaterials() {
     if (!this.gui || this.materialsFolderPopulated) return;
 
@@ -3265,10 +3312,12 @@ export class SceneStudioGUI {
     };
     const writeTreeVis = () => {
       SCENE_CONFIG.visibility = {
+        ...(SCENE_CONFIG.visibility ?? {}),
         showBigTrees: treeVis.showBigTrees,
         showSmallTrees: treeVis.showSmallTrees,
       };
       applyTreeVisibility(worldGroup, SCENE_CONFIG.visibility);
+      this.broadcastLive();
     };
     matFolder.add(treeVis, 'showBigTrees').name('Show big trees').onChange(writeTreeVis);
     matFolder.add(treeVis, 'showSmallTrees').name('Show small trees').onChange(writeTreeVis);
@@ -3335,6 +3384,7 @@ export class SceneStudioGUI {
       cameraStops: SCENE_CONFIG.stops,
       progressKeyframes: SCENE_CONFIG.progressKeyframes,
       scroll: SCENE_CONFIG.scroll,
+      visibility: SCENE_CONFIG.visibility,
       look: LOOK_CONFIG,
     });
   }

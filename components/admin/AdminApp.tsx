@@ -113,6 +113,7 @@ export function AdminApp() {
         scroll: SCENE_CONFIG.scroll,
         camera: SCENE_CONFIG.camera,
         materials: SCENE_CONFIG.materials,
+        visibility: SCENE_CONFIG.visibility,
         heroCopy: HERO_COPY,
         flowSteps: FLOW_CONFIG,
         flowChrome: FLOW_CHROME,
