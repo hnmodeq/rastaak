@@ -33,45 +33,45 @@ export const FLOW_CONFIG: FlowStepConfig[] = [
     title: "راهکار متناسب با نیاز سازمان",
     subtitle: "",
     caption: "ما به‌جای ارائه یک محصول ثابت، زیرساختی متناسب با حجم داده، نوع کاربری و نیاز عملیاتی هر سازمان پیشنهاد می‌دهیم؛ تا سرمایه‌گذاری شما دقیق، بهینه و آینده‌نگر باشد.",
-    progressRange: [0, 0.104637]
+    progressRange: [0, 0.249108]
   },
   {
     num: "02",
     title: "امنیت و حفاظت از داده‌ها",
     subtitle: "",
     caption: "داده‌های حیاتی سازمان نیازمند زیرساختی فراتر از یک فضای ذخیره‌سازی هستند. راهکارهای ما با تمرکز بر امنیت، پشتیبان‌گیری و جلوگیری از از دست رفتن اطلاعات طراحی می‌شوند.",
-    progressRange: [0.104637, 0.19606]
+    progressRange: [0.249108, 0.488109]
   },
   {
     num: "03",
     title: "عملکرد و پایداری بالا",
     subtitle: "",
     caption: "زیرساخت سازمان نباید نقطه توقف کسب‌وکار باشد. تجهیزات و راهکارهای ما برای ارائه عملکرد پایدار، دسترس‌پذیری بالا و پاسخ‌گویی به بارهای کاری سنگین انتخاب و پیاده‌سازی می‌شوند.",
-    progressRange: [0.19606, 0.82]
+    progressRange: [0.488109, 0.750297]
   },
   {
     num: "04",
     title: "تخصص و مشاوره فنی",
     subtitle: "",
     caption: "انتخاب Storage یا Server مناسب، صرفاً مقایسه مشخصات سخت‌افزاری نیست. تیم متخصص ما با شناخت نیاز واقعی سازمان، در انتخاب، طراحی و پیاده‌سازی بهترین راهکار همراه شماست.",
-    progressRange: [0.82, 1]
+    progressRange: [0.750297, 1]
   }
 ];
 
 export const FLOW_CHROME: FlowChromeConfig = {
   align: "right",
   dir: "rtl",
-  titleColor: 0xffffff,
+  titleColor: 0xe1e1e1,
   titleBg: 0x0c0d12,
   titleBgOpacity: 0,
-  numberColor: 0xffffff,
+  numberColor: 0xe1e1e1,
   numberActiveColor: 0x3b3b3b,
-  numberBg: 0xffffff,
-  descriptionColor: 0x648eff,
+  numberBg: 0xe1e1e1,
+  descriptionColor: 0xe1e1e1,
   descriptionBg: 0x0c0d12,
   descriptionBgOpacity: 0,
-  trackColor: 0xcecece,
-  trackFillColor: 0x353aff
+  trackColor: 0xe1e1e1,
+  trackFillColor: 0x818181
 };
 
 function hexCss(value: number): string {

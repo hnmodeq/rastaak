@@ -53,7 +53,7 @@ export const TYPE_WEIGHTS = {
 
 export const TYPE_CHROME: TypeChromeConfig = {
   siteName: "هونامیک ارتباط رستاک",
-  siteNameColor: 0xffffff,
+  siteNameColor: 0xe1e1e1,
   siteNameLayoutColor: 0x1a1b22,
   siteNamePaddingTop: -127,
   showSiteLogo: true,
@@ -69,7 +69,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     lineHeight: 0.76,
     letterSpacing: -0.6,
     shadowColor: 0x000000,
-    shadowOpacity: 0.39,
+    shadowOpacity: 0,
     shadowBlur: 9,
     shadowX: 7.5,
     shadowY: 6.5
@@ -80,7 +80,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     lineHeight: 0.7,
     letterSpacing: 0,
     shadowColor: 0x000000,
-    shadowOpacity: 0.66,
+    shadowOpacity: 0,
     shadowBlur: 4,
     shadowX: 2,
     shadowY: 3.5
@@ -91,7 +91,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     lineHeight: 1.15,
     letterSpacing: 0,
     shadowColor: 0x000000,
-    shadowOpacity: 0.09,
+    shadowOpacity: 0,
     shadowBlur: 0,
     shadowX: 0,
     shadowY: 0
@@ -145,7 +145,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
     weight: 400,
     lineHeight: 1.15,
     letterSpacing: 0,
-    shadowColor: 0x272727,
+    shadowColor: 0xffffff,
     shadowOpacity: 0,
     shadowBlur: 1.5,
     shadowX: 3,

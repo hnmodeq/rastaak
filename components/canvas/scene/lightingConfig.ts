@@ -37,7 +37,7 @@ export const LIGHTS_CONFIG: LightConfig[] = [
   {
     id: "sky_soft",
     type: "rectarea",
-    color: 0xa9c2ea,
+    color: 0xc9c9c9,
     intensity: 2.8,
     position: [13.4, 21, -0.7],
     target: [13.4, 0, -0.7],
@@ -88,7 +88,7 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     decay: 2,
     radius: 1,
     castShadow: false,
-    enabled: true,
+    enabled: false,
     shadowMapSize: 512,
     shadowBias: 0,
     shadowNormalBias: 0,

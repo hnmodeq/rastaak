@@ -94,8 +94,15 @@ export const SCENE_CONFIG: SceneConfig = {
     {
       id: "keyframe_1_stop_1_overview",
       progress: 0,
-      camera: [21.44, 6.02, -0.41],
-      target: [9.7, -0.03, -0.79],
+      camera: [27.3142, 9.6868, -14.5925],
+      target: [10.3964, 1.6004, 2.5723],
+      fov: 47
+    },
+    {
+      id: "keyframe_2",
+      progress: 0.043401,
+      camera: [13.5658, 3.1075, 1.3422],
+      target: [11.8586, 2.3644, 4.4076],
       fov: 47
     }
   ] as CameraStop[],
@@ -156,20 +163,20 @@ export const SCENE_CONFIG: SceneConfig = {
   },
 
   materials: {
-    buildingColor: 0x000000,
-    windowColor: 0x999999,
+    buildingColor: 0x0a0a0a,
+    windowColor: 0x6e6e6e,
     rastaakColor: 0x000000,
-    logoColor: 0xf4f8ff,
+    logoColor: 0x6e6e6e,
     groundColor: 0x000000,
     plateColor: 0x1d1d1d,
     borderColor: 0x282828,
     treeTrunkColor: 0x000000,
     treeLeafColor: 0x00240c,
-    globalFacadeColor: 0x000000,
-    globalWindowColor: 0x999999,
-    roughness: 0.42,
-    metalness: 0.79,
-    envMapIntensity: 1.25,
+    globalFacadeColor: 0x0a0a0a,
+    globalWindowColor: 0x6e6e6e,
+    roughness: 0.37,
+    metalness: 0.8,
+    envMapIntensity: 1.3,
     groundRoughness: 0.64,
     groundMetalness: 0.74,
     groundEnvMapIntensity: 0.95,

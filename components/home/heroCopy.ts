@@ -20,15 +20,15 @@ export interface HeroCopyConfig {
 export const HERO_COPY: HeroCopyConfig = {
   titleLine1: "تنها یک بار اتفاق میافتد.",
   titleLine2: "",
-  titleColor: 0xffffff,
+  titleColor: 0xe1e1e1,
   titlePaddingTop: 92,
-  subtitleLine1: "یک خطا  کافی است، تا سال‌ها اطلاعات در یک ثانیه از بین برود.",
+  subtitleLine1: "تنها یک خطا  کافی است، تا سال‌ها اطلاعات در یک ثانیه از بین برود.",
   subtitleLine2: "",
-  subtitleColor: 0xffffff,
+  subtitleColor: 0x959595,
   subtitlePaddingTop: 9,
-  stackGap: 25,
+  stackGap: 34,
   scrollHint: "پیمایش کنید",
-  scrollHintColor: 0xf5f5f2
+  scrollHintColor: 0xe1e1e1
 };
 
 function hexCss(value: number): string {
