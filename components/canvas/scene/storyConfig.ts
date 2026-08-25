@@ -44,12 +44,6 @@ export interface InsaneShootingConfig {
   shootingColor?: InsaneShootingColor;
 }
 
-/** The period where the main website layout rises over the 3D scene. */
-export interface LayoutRevealConfig {
-  start: number;
-  end: number;
-}
-
 export interface StoryColors {
   need: number;
   needWindow: number;
@@ -74,7 +68,6 @@ export interface StoryConfig {
   clients: StoryClientConfig[];
   captions: StoryCaptionConfig[];
   insaneShooting?: InsaneShootingConfig;
-  layoutReveal?: LayoutRevealConfig;
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;
@@ -226,11 +219,6 @@ export const STORY_CONFIG: StoryConfig = {
     requestColor: 'before',
     shootingColor: 'after'
   },
-  // The main layout begins rising while the finale is still visible.
-  layoutReveal: {
-    start: 0.945668,
-    end: 0.988562
-  },
   chipHoldAfterArrive: 0.14,
   captionFadeIn: 0.06,
   packetIntensity: 235,
@@ -282,21 +270,6 @@ export function insaneShootingConfig(): InsaneShootingConfig {
   return config;
 }
 
-const DEFAULT_LAYOUT_REVEAL: LayoutRevealConfig = {
-  start: 0.945668,
-  end: 0.988562,
-};
-
-/** Returns the editable timeline range for the main-layout rise. */
-export function layoutRevealConfig(): LayoutRevealConfig {
-  const config = STORY_CONFIG.layoutReveal ?? (STORY_CONFIG.layoutReveal = { ...DEFAULT_LAYOUT_REVEAL });
-  const start = Math.min(0.99, Math.max(0, Number.isFinite(config.start) ? config.start : DEFAULT_LAYOUT_REVEAL.start));
-  const end = Math.min(1, Math.max(start + 0.01, Number.isFinite(config.end) ? config.end : DEFAULT_LAYOUT_REVEAL.end));
-  config.start = start;
-  config.end = end;
-  return config;
-}
-
 export function needEndAt(client: { appear: number; arrive: number; needEnd?: number }): number {
   if (typeof client.needEnd === 'number' && Number.isFinite(client.needEnd)) {
     return Math.min(1, Math.max(client.appear, client.needEnd));
@@ -337,8 +310,6 @@ export interface StoryFrame {
   chips: StoryChipFrame[];
   captions: StoryCaptionConfig[];
   activeCaptionId: string | null;
-  /** 0 → 1 progress for the layout curtain that rises during the outro. */
-  outroCover: number;
   visible: boolean;
 }
 

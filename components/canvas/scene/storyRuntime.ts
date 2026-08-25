@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import {
   STORY_CONFIG,
   insaneShootingConfig,
-  layoutRevealConfig,
   needEndAt,
   needTitleAt,
   resolveAt,
@@ -541,7 +540,6 @@ export class StoryRuntime {
     chips: [],
     captions: STORY_CONFIG.captions,
     activeCaptionId: null,
-    outroCover: 0,
     visible: false,
   };
 
@@ -763,8 +761,6 @@ export class StoryRuntime {
 
     const insane = insaneShootingConfig();
     this.updateInsaneShooting(t, insane, input.reducedMotion, input.compact);
-    const layoutReveal = layoutRevealConfig();
-    const outroCover = this.enabled ? this.layoutCoverProgress(t, layoutReveal.start, layoutReveal.end) : 0;
 
     if (this.enabled && this.hub) {
       this.applyHubPulse(input.elapsed, dispatchFlash, input.reducedMotion);
@@ -776,15 +772,9 @@ export class StoryRuntime {
       chips,
       captions: STORY_CONFIG.captions,
       activeCaptionId: active?.id ?? STORY_CONFIG.captions[STORY_CONFIG.captions.length - 1]?.id ?? null,
-      outroCover,
       visible: this.enabled && t >= STORY_CONFIG.captionFadeIn && t < 0.985,
     };
     return this.frame;
-  }
-
-  /** The timeline-controlled main-layout curtain rises over this exact range. */
-  private layoutCoverProgress(t: number, start: number, end: number): number {
-    return smooth01((t - start) / Math.max(0.001, end - start));
   }
 
   private updateInsaneShooting(

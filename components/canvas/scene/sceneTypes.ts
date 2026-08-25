@@ -209,10 +209,6 @@ export interface StudioStorySave {
     requestColor?: 'before' | 'after';
     shootingColor?: 'before' | 'after';
   };
-  layoutReveal?: {
-    start: number;
-    end: number;
-  };
   chipHoldAfterArrive: number;
   captionFadeIn: number;
   packetIntensity: number;
