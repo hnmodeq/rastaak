@@ -18,11 +18,11 @@ export interface HeroCopyConfig {
 }
 
 export const HERO_COPY: HeroCopyConfig = {
-  titleLine1: "از آنچه برایتان مهم است، محافظت کنید.",
+  titleLine1: "تنها یک بار اتفاق میافتد.",
   titleLine2: "",
   titleColor: 0xffffff,
   titlePaddingTop: 92,
-  subtitleLine1: "یک خرابی کافی است تا سال‌ها اطلاعات در چند دقیقه از بین برود.",
+  subtitleLine1: "یک خطا  کافی است، تا سال‌ها اطلاعات در یک ثانیه از بین برود.",
   subtitleLine2: "",
   subtitleColor: 0xffffff,
   subtitlePaddingTop: 9,

@@ -55,7 +55,7 @@ export const TYPE_CHROME: TypeChromeConfig = {
   siteName: "هونامیک ارتباط رستاک",
   siteNameColor: 0xffffff,
   siteNameLayoutColor: 0x1a1b22,
-  siteNamePaddingTop: 120,
+  siteNamePaddingTop: -127,
   showSiteLogo: true,
   siteLogoSize: 39,
   siteLogoGap: 10,
