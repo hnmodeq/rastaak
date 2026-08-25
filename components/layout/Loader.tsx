@@ -177,9 +177,8 @@ export const Loader: React.FC = () => {
           {cfg.showLogo ? (
             <img
               className="loader__mark"
-              src="/icons/icon-192x192.png"
+              src="/icons/loader-mark.png"
               alt=""
-              width={cfg.logoSize}
               height={cfg.logoSize}
               decoding="async"
             />

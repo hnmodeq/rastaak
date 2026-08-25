@@ -536,20 +536,30 @@ html.rastaak-loading body {
 }
 
 #loader .loader__cluster {
+  /* The cluster is a real box: one column, centred, with the progress bar
+     defining the block width so every element shares the same measure. */
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: var(--loader-stack-gap, 22px);
   padding: 0 24px;
-  max-width: min(720px, calc(100vw - 32px));
+  /* Shrink-to-fit the brand row, but never narrower than the configured bar
+     width. The bar then stretches to that same measure, so the logo, the copy
+     and the bar all share one common left/right edge. */
+  width: fit-content;
+  min-width: min(var(--loader-bar-width, 268px), calc(100vw - 48px));
+  max-width: calc(100vw - 32px);
 }
 
 #loader .loader__row {
   display: flex;
   flex-direction: row;
+  /* Optical centring: the logo is centred against the whole copy block
+     rather than sitting on the title baseline. */
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: var(--loader-row-gap, 14px);
+  width: 100%;
   direction: ltr;
 }
 
@@ -561,8 +571,10 @@ html.rastaak-loading body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   gap: var(--loader-copy-gap, 6px);
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 #loader[dir='rtl'] .loader__copy {
@@ -571,21 +583,30 @@ html.rastaak-loading body {
 }
 
 #loader[dir='ltr'] .loader__copy {
+  align-items: flex-start;
   text-align: left;
 }
 
 #loader .loader__mark {
-  width: var(--loader-logo-size, 72px) !important;
+  /* The source art is trimmed to the glyph, so the reserved box equals the
+     ink box. Height drives the size; width follows the natural aspect. */
   height: var(--loader-logo-size, 72px) !important;
-  max-width: var(--loader-logo-size, 72px) !important;
+  width: auto !important;
+  max-width: none !important;
   flex: 0 0 auto;
   object-fit: contain;
+  display: block;
 }
 
 #loader .loader__title,
 #loader .loader__subtitle {
   font-family: 'Kalameh', sans-serif !important;
   line-height: 1.25;
+  width: 100%;
+  white-space: nowrap;
+  /* Trim the half-leading above/below the text so the visual edges of the
+     type line up with the logo and bar instead of the line box. */
+  text-box: trim-both cap alphabetic;
 }
 
 #loader .loader__title {
@@ -603,7 +624,8 @@ html.rastaak-loading body {
 }
 
 #loader .loader__bar {
-  width: min(var(--loader-bar-width, 240px), 72vw);
+  /* Spans the full cluster width so its ends align with the row edges. */
+  width: 100%;
   height: var(--loader-bar-height, 3px);
   border-radius: 999px;
   overflow: hidden;
@@ -613,4 +635,19 @@ html.rastaak-loading body {
   height: 100%;
   border-radius: 999px;
   transition: width 160ms linear;
+}
+
+@media (max-width: 480px) {
+  /* On very narrow screens let the copy wrap rather than overflow the box.
+     The shared measure is preserved because the bar still stretches to the
+     cluster width. */
+  #loader .loader__cluster {
+    min-width: 0;
+    width: 100%;
+  }
+
+  #loader .loader__title,
+  #loader .loader__subtitle {
+    white-space: normal;
+  }
 }
