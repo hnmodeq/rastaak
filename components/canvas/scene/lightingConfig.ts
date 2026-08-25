@@ -72,10 +72,10 @@ export const LIGHTS_CONFIG: LightConfig[] = [
     type: "rectarea",
     color: 0xffdfb8,
     intensity: 1.2,
-    position: [13.4, 0.32, -0.7],
-    target: [13.4, 7.5, -0.7],
-    width: 18,
-    height: 12,
+    position: [13.4, -0.5, -0.7],
+    target: [13.5, 7.5, -0.7],
+    width: 24.4,
+    height: 23.7,
     enabled: true
   },
   {
