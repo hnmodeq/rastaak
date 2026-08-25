@@ -11,6 +11,7 @@ export const DEFAULT_CINEMATIC_SKY: SceneSkyConfig = {
   warmthColor: tokens.experimentalScene.cinematicSkyWarmth,
   moonColor: tokens.experimentalScene.cinematicSkyMoon,
   starColor: tokens.experimentalScene.cinematicSkyStar,
+  rotationY: 0,
   moonAzimuth: -109,
   moonElevation: 31,
   moonSize: 1,
@@ -24,9 +25,9 @@ export const DEFAULT_CINEMATIC_SKY: SceneSkyConfig = {
 export const DEFAULT_CINEMATIC_HORIZON: SceneHorizonConfig = {
   enabled: true,
   color: tokens.experimentalScene.cinematicHorizonMist,
-  opacity: 0.72,
-  height: 0,
-  softness: 0.28,
+  opacity: 0.92,
+  height: -0.03,
+  softness: 0.72,
 };
 
 const SKY_VERTEX = `
@@ -52,6 +53,8 @@ uniform float uHorizonGlow;
 uniform float uStarDensity;
 uniform float uStarIntensity;
 uniform float uExposure;
+uniform float uRotationY;
+uniform float uTime;
 uniform vec3 uHorizonMist;
 uniform float uHorizonMistOpacity;
 uniform float uHorizonHeight;
@@ -66,7 +69,13 @@ float hash21(vec2 p) {
 }
 
 void main() {
-  vec3 direction = normalize(vSkyDirection);
+  float rotationCos = cos(uRotationY);
+  float rotationSin = sin(uRotationY);
+  vec3 direction = normalize(vec3(
+    rotationCos * vSkyDirection.x - rotationSin * vSkyDirection.z,
+    vSkyDirection.y,
+    rotationSin * vSkyDirection.x + rotationCos * vSkyDirection.z
+  ));
   float height = clamp(direction.y * 0.5 + 0.5, 0.0, 1.0);
 
   vec3 sky = mix(uHorizon, uUpper, smoothstep(0.02, 0.52, height));
@@ -87,12 +96,26 @@ void main() {
   float moonDisc = pow(moonDot, 900.0 / moonSize);
   sky += uMoon * (moonHalo * 0.10 + moonDisc * 1.25) * uMoonGlow;
 
-  // Sparse, deterministic stars keep the sky alive without competing with the scene.
+  // Render stars as anti-aliased radial points instead of full grid cells.
+  // A tiny animated pulse gives the brightest points a restrained sparkle.
   float starFade = smoothstep(0.08, 0.45, direction.y);
-  vec2 starGrid = floor(direction.xz / max(0.18, abs(direction.y)) * 52.0);
+  vec2 starSpace = direction.xz / max(0.22, abs(direction.y)) * 44.0;
+  vec2 starCell = floor(starSpace);
+  vec2 starLocal = fract(starSpace) - 0.5;
+  float starSeed = hash21(starCell);
+  vec2 starOffset = vec2(
+    hash21(starCell + 17.0),
+    hash21(starCell + 43.0)
+  ) - 0.5;
+  float starDistance = length(starLocal - starOffset * 0.58);
+  float starRadius = mix(0.035, 0.085, hash21(starCell + 61.0));
+  float starCore = 1.0 - smoothstep(starRadius * 0.12, starRadius, starDistance);
+  float starHalo = 1.0 - smoothstep(starRadius, starRadius * 3.2, starDistance);
   float threshold = 1.0 - 0.004 * clamp(uStarDensity, 0.0, 2.0);
-  float star = step(threshold, hash21(starGrid));
-  sky += uStar * star * starFade * 0.14 * uStarIntensity;
+  float starVisible = step(threshold, starSeed);
+  float sparkle = 0.88 + 0.12 * sin(uTime * 1.7 + starSeed * 6.28318);
+  float starShape = (starCore + starHalo * 0.16) * sparkle;
+  sky += uStar * starVisible * starShape * starFade * 0.18 * uStarIntensity;
 
   gl_FragColor = vec4(sky * max(0.0, uExposure), 1.0);
 }
@@ -120,6 +143,7 @@ function normalizeSkyConfig(config?: Partial<SceneSkyConfig>): SceneSkyConfig {
   return {
     ...DEFAULT_CINEMATIC_SKY,
     ...(config ?? {}),
+    rotationY: clamp(config?.rotationY ?? DEFAULT_CINEMATIC_SKY.rotationY, 0, 360),
     moonAzimuth: clamp(config?.moonAzimuth ?? DEFAULT_CINEMATIC_SKY.moonAzimuth, -180, 180),
     moonElevation: clamp(config?.moonElevation ?? DEFAULT_CINEMATIC_SKY.moonElevation, -10, 90),
     moonSize: clamp(config?.moonSize ?? DEFAULT_CINEMATIC_SKY.moonSize, 0.2, 3),
@@ -152,6 +176,7 @@ function applySkyConfig(
     uniforms.uStarDensity.value = config.starDensity;
     uniforms.uStarIntensity.value = config.starIntensity;
     uniforms.uExposure.value = config.exposure;
+    uniforms.uRotationY.value = THREE.MathUtils.degToRad(config.rotationY);
   }
   uniforms.uHorizonMist.value.setHex(horizon.color);
   uniforms.uHorizonMistOpacity.value = horizon.enabled ? horizon.opacity : 0;
@@ -187,6 +212,8 @@ function makeSky(
       uStarDensity: { value: 1 },
       uStarIntensity: { value: 1 },
       uExposure: { value: 1 },
+      uRotationY: { value: 0 },
+      uTime: { value: 0 },
       uHorizonMist: { value: new THREE.Color() },
       uHorizonMistOpacity: { value: 0.72 },
       uHorizonHeight: { value: 0 },
@@ -246,6 +273,12 @@ export function setCinematicSkyConfig(
 export function setCinematicHorizonConfig(scene: THREE.Scene, horizon: Partial<SceneHorizonConfig>) {
   const sky = skies.get(scene) ?? ensureCinematicSky(scene, true, undefined, horizon);
   applySkyConfig(sky.material, undefined, horizon);
+}
+
+export function tickCinematicSky(scene: THREE.Scene, elapsed: number) {
+  const sky = skies.get(scene);
+  if (!sky) return;
+  sky.material.uniforms.uTime.value = elapsed;
 }
 
 export function disposeCinematicSky(scene: THREE.Scene) {

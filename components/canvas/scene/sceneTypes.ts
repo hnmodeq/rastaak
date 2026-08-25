@@ -89,6 +89,8 @@ export interface SceneSkyConfig {
   warmthColor: number;
   moonColor: number;
   starColor: number;
+  /** Rotation of the entire sky dome around world Y, in degrees. */
+  rotationY: number;
   moonAzimuth: number;
   moonElevation: number;
   moonSize: number;

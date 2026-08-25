@@ -29,6 +29,7 @@ import {
   setCinematicHorizonConfig,
   setCinematicSkyConfig,
   setCinematicSkyEnabled,
+  tickCinematicSky,
 } from './scene/CinematicSky';
 import { subscribeLive } from '@/components/live/liveChannel';
 import type { CameraKeyframe, CameraMethod, CameraStop, LightConfig, MaterialsConfig, SceneEnvironmentConfig } from './scene/sceneTypes';
@@ -318,6 +319,8 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         }
         if (envPatch.horizon) {
           SCENE_CONFIG.environment.horizon = { ...(SCENE_CONFIG.environment.horizon ?? {}), ...envPatch.horizon } as NonNullable<SceneEnvironmentConfig['horizon']>;
+          SCENE_CONFIG.environment.fogColor = SCENE_CONFIG.environment.horizon.color;
+          if (scene.fog) (scene.fog as THREE.Fog).color.setHex(SCENE_CONFIG.environment.horizon.color);
           setCinematicHorizonConfig(scene, SCENE_CONFIG.environment.horizon);
         }
         if (envPatch.shadowColor !== undefined) SCENE_CONFIG.environment.shadowColor = envPatch.shadowColor;
@@ -588,6 +591,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       window.dispatchEvent(new CustomEvent(STORY_FRAME_EVENT, { detail: frame }));
 
       studioGUI?.tick();
+      tickCinematicSky(scene, elapsed);
       tickLookOverlay(elapsed);
       renderer.render(scene, camera);
       lookPost.composite(scene, camera);

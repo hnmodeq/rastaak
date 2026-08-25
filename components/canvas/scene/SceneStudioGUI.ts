@@ -1728,6 +1728,7 @@ export class SceneStudioGUI {
         warmthColor: skyColor(activeSky.warmthColor),
         moonColor: skyColor(activeSky.moonColor),
         starColor: skyColor(activeSky.starColor),
+        rotationY: activeSky.rotationY,
         moonAzimuth: activeSky.moonAzimuth,
         moonElevation: activeSky.moonElevation,
         moonSize: activeSky.moonSize,
@@ -1754,6 +1755,7 @@ export class SceneStudioGUI {
           warmthColor: new THREE.Color(skyParams.warmthColor).getHex(),
           moonColor: new THREE.Color(skyParams.moonColor).getHex(),
           starColor: new THREE.Color(skyParams.starColor).getHex(),
+          rotationY: skyParams.rotationY,
           moonAzimuth: skyParams.moonAzimuth,
           moonElevation: skyParams.moonElevation,
           moonSize: skyParams.moonSize,
@@ -1773,6 +1775,7 @@ export class SceneStudioGUI {
       skyFolder.addColor(skyParams, 'warmthColor').name('Horizon warmth').onChange(applySky);
       skyFolder.addColor(skyParams, 'moonColor').name('Moon color').onChange(applySky);
       skyFolder.addColor(skyParams, 'starColor').name('Star color').onChange(applySky);
+      skyFolder.add(skyParams, 'rotationY', 0, 360, 1).name('Sky rotation Y').onChange(applySky);
       skyFolder.add(skyParams, 'moonAzimuth', -180, 180, 1).name('Moon azimuth').onChange(applySky);
       skyFolder.add(skyParams, 'moonElevation', -10, 90, 1).name('Moon elevation').onChange(applySky);
       skyFolder.add(skyParams, 'moonSize', 0.2, 3, 0.01).name('Moon size').onChange(applySky);
@@ -1800,6 +1803,10 @@ export class SceneStudioGUI {
           softness: horizonParams.softness,
         };
         SCENE_CONFIG.environment.horizon = nextHorizon;
+        // Match the scene fog to the horizon veil so the far ground dissolves
+        // into the same atmospheric color instead of forming a second seam.
+        SCENE_CONFIG.environment.fogColor = nextHorizon.color;
+        if (this.scene.fog) (this.scene.fog as THREE.Fog).color.setHex(nextHorizon.color);
         setCinematicHorizonConfig(this.scene, nextHorizon);
         this.broadcastLive();
       };

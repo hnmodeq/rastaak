@@ -113,7 +113,7 @@ export const tokens = {
     cinematicSkyWarmth: 0x4d3044,
     cinematicSkyMoon: 0xffdfb4,
     cinematicSkyStar: 0xc8dcff,
-    cinematicHorizonMist: 0x14233c,
+    cinematicHorizonMist: 0x101a2e,
   },
 
   dataStorageScene: {

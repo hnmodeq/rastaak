@@ -254,9 +254,9 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 
       const environment = {
         backgroundColor: hexLit(asHexNumber(body.environment?.backgroundColor, 0x1c1d22)),
-        fogColor: hexLit(asHexNumber(body.environment?.fogColor ?? body.environment?.backgroundColor, 0x1c1d22)),
-        fogStart: asFinite(body.environment?.fogStart, 15),
-        fogEnd: asFinite(body.environment?.fogEnd, 110),
+        fogColor: hexLit(asHexNumber(body.environment?.fogColor ?? body.environment?.backgroundColor, 0x101a2e)),
+        fogStart: asFinite(body.environment?.fogStart, 12),
+        fogEnd: asFinite(body.environment?.fogEnd, 60),
         fogEnabled: body.environment?.fogEnabled !== false,
         skyEnabled: body.environment?.skyEnabled !== false,
         sky: {
@@ -266,6 +266,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
           warmthColor: hexLit(asHexNumber(body.environment?.sky?.warmthColor, 0x4d3044)),
           moonColor: hexLit(asHexNumber(body.environment?.sky?.moonColor, 0xffdfb4)),
           starColor: hexLit(asHexNumber(body.environment?.sky?.starColor, 0xc8dcff)),
+          rotationY: Math.min(360, Math.max(0, asFinite(body.environment?.sky?.rotationY, 0))),
           moonAzimuth: Math.min(180, Math.max(-180, asFinite(body.environment?.sky?.moonAzimuth, -109))),
           moonElevation: Math.min(90, Math.max(-10, asFinite(body.environment?.sky?.moonElevation, 31))),
           moonSize: Math.min(3, Math.max(0.2, asFinite(body.environment?.sky?.moonSize, 1))),
@@ -277,10 +278,10 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
         },
         horizon: {
           enabled: body.environment?.horizon?.enabled !== false,
-          color: hexLit(asHexNumber(body.environment?.horizon?.color, 0x14233c)),
-          opacity: Math.min(1, Math.max(0, asFinite(body.environment?.horizon?.opacity, 0.72))),
-          height: Math.min(0.6, Math.max(-0.6, asFinite(body.environment?.horizon?.height, 0))),
-          softness: Math.min(1, Math.max(0.02, asFinite(body.environment?.horizon?.softness, 0.28))),
+          color: hexLit(asHexNumber(body.environment?.horizon?.color, 0x101a2e)),
+          opacity: Math.min(1, Math.max(0, asFinite(body.environment?.horizon?.opacity, 0.92))),
+          height: Math.min(0.6, Math.max(-0.6, asFinite(body.environment?.horizon?.height, -0.03))),
+          softness: Math.min(1, Math.max(0.02, asFinite(body.environment?.horizon?.softness, 0.72))),
         },
         shadowColor: hexLit(asHexNumber(body.environment?.shadowColor, 0x000000)),
         shadowOpacity: Math.min(1, Math.max(0, asFinite(body.environment?.shadowOpacity, 1))),
