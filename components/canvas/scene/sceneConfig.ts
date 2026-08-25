@@ -116,6 +116,7 @@ export const SCENE_CONFIG: SceneConfig = {
 
   scroll: {
     headerScrollMultiplier: 5,
+    journeyScrollLength: 1,
     cameraDamping: 3.71,
     idleFloatAmount: 0.08,
     idleFloatSpeed: 0.4

@@ -308,6 +308,7 @@ export const LIGHTS_CONFIG: LightConfig[] = ${emit(lights, 0)};
 
       const scroll = {
         headerScrollMultiplier: asFinite(body.scroll?.headerScrollMultiplier, 2.5),
+        journeyScrollLength: Math.min(6, Math.max(0.5, asFinite(body.scroll?.journeyScrollLength, 1))),
         cameraDamping: asFinite(body.scroll?.cameraDamping, 3.71),
         idleFloatAmount: asFinite(body.scroll?.idleFloatAmount, 0.2),
         idleFloatSpeed: asFinite(body.scroll?.idleFloatSpeed, 0.4),

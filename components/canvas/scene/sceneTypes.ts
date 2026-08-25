@@ -71,6 +71,8 @@ export interface MaterialsConfig {
 
 export interface SceneScrollConfig {
   headerScrollMultiplier: number;
+  /** Multiplies the scroll distance of the camera journey. Higher means slower progression per wheel scroll. */
+  journeyScrollLength?: number;
   cameraDamping: number;
   idleFloatAmount: number;
   idleFloatSpeed: number;

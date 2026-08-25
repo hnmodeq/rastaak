@@ -921,6 +921,43 @@ export class StoryRuntime {
   }
 }
 
+export const JOURNEY_SCROLL_LENGTH_EVENT = 'rastaak-journey-scroll-length-changed';
+
+const MIN_JOURNEY_SCROLL_LENGTH = 0.5;
+const MAX_JOURNEY_SCROLL_LENGTH = 6;
+
+function normalizedJourneyScrollLength(value = SCENE_CONFIG.scroll.journeyScrollLength): number {
+  const finite = Number.isFinite(value) ? Number(value) : 1;
+  return Math.min(MAX_JOURNEY_SCROLL_LENGTH, Math.max(MIN_JOURNEY_SCROLL_LENGTH, finite));
+}
+
+/**
+ * Apply the authored scroll distance to the sticky flow section. The mobile
+ * layout already uses a 1.25x base height, so preserve that baseline and layer
+ * the editor's multiplier on top of it.
+ */
+export function applyJourneyScrollLength(): number {
+  const multiplier = normalizedJourneyScrollLength();
+  SCENE_CONFIG.scroll.journeyScrollLength = multiplier;
+  if (typeof document === 'undefined' || typeof window === 'undefined') return multiplier;
+
+  const flow = document.querySelector<HTMLElement>('.flow');
+  if (!flow) return multiplier;
+  const baseMultiplier = window.matchMedia('(max-width: 820px)').matches ? 1.25 : 1;
+  flow.style.setProperty('--flow-height-multiplier', String(baseMultiplier * multiplier));
+  return multiplier;
+}
+
+/** Set the amount of physical scroll required to complete the camera journey. */
+export function setJourneyScrollLength(value: number): number {
+  SCENE_CONFIG.scroll.journeyScrollLength = normalizedJourneyScrollLength(value);
+  const multiplier = applyJourneyScrollLength();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(JOURNEY_SCROLL_LENGTH_EVENT));
+  }
+  return multiplier;
+}
+
 export function readStoryScrollProgress(fallbackMultiplier: number): number {
   if (typeof document === 'undefined' || typeof window === 'undefined') return 0;
   const flow = document.querySelector('.flow') as HTMLElement | null;
@@ -928,6 +965,6 @@ export function readStoryScrollProgress(fallbackMultiplier: number): number {
     const end = flow.offsetTop + flow.offsetHeight - window.innerHeight;
     if (end > 1) return Math.max(0, Math.min(1, window.scrollY / end));
   }
-  const span = Math.max(1, window.innerHeight * fallbackMultiplier);
+  const span = Math.max(1, window.innerHeight * fallbackMultiplier * normalizedJourneyScrollLength());
   return Math.max(0, Math.min(1, window.scrollY / span));
 }

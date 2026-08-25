@@ -11,6 +11,7 @@ import {
 } from './shadowSetup';
 import type { CameraKeyframe, CameraStop, LightConfig, StudioSavePayload } from './sceneTypes';
 import { STORY_CONFIG, STORY_FRAME_EVENT, applyStoryTheme, needEndAt, storyBuildingLabel, type StoryFrame } from './storyConfig';
+import { setJourneyScrollLength } from './storyRuntime';
 import { sampleSceneJourney } from './journeyMath';
 import { FLOW_CONFIG, FLOW_CHROME, applyFlowChrome, syncFlowDom } from '@/components/home/flowConfig';
 import { HERO_COPY, applyHeroCopy } from '@/components/home/heroCopy';
@@ -1009,6 +1010,7 @@ export class SceneStudioGUI {
       SCENE_CONFIG.renderer.shadowMapType = payload.renderer.shadowMapType;
     }
     SCENE_CONFIG.scroll.headerScrollMultiplier = payload.scroll.headerScrollMultiplier;
+    setJourneyScrollLength(payload.scroll.journeyScrollLength ?? 1);
     SCENE_CONFIG.scroll.cameraDamping = payload.scroll.cameraDamping;
     SCENE_CONFIG.scroll.idleFloatAmount = payload.scroll.idleFloatAmount;
     SCENE_CONFIG.scroll.idleFloatSpeed = payload.scroll.idleFloatSpeed;
@@ -1342,6 +1344,18 @@ export class SceneStudioGUI {
           this.isManualMode = false;
           this.isOrbitMode = v === viewportLabel;
           this.onOrbitModeToggle?.(this.isOrbitMode);
+        });
+
+      const journeyScrollFolder = camFolder.addFolder('Scroll journey');
+      const journeyScrollParams = {
+        distance: SCENE_CONFIG.scroll.journeyScrollLength ?? 1,
+      };
+      journeyScrollFolder
+        .add(journeyScrollParams, 'distance', 0.5, 6, 0.1)
+        .name('Scroll distance')
+        .onChange((value: number) => {
+          journeyScrollParams.distance = setJourneyScrollLength(value);
+          this.broadcastLive();
         });
 
       camFolder

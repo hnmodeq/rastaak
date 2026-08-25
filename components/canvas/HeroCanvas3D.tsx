@@ -21,7 +21,13 @@ import { applyTreeVisibility } from './scene/treeVisibility';
 import { applySceneShadows, tintWorldShadows } from './scene/shadowTint';
 import { applyLightShadow, applyRendererShadowFilter } from './scene/shadowSetup';
 import { STORY_FRAME_EVENT } from './scene/storyConfig';
-import { StoryRuntime, readStoryScrollProgress } from './scene/storyRuntime';
+import {
+  applyJourneyScrollLength,
+  JOURNEY_SCROLL_LENGTH_EVENT,
+  StoryRuntime,
+  readStoryScrollProgress,
+  setJourneyScrollLength,
+} from './scene/storyRuntime';
 import { BuildingNamePlateSet } from './scene/BuildingNamePlates';
 import {
   ensureCinematicSky,
@@ -330,6 +336,10 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       if (patch.renderer && typeof patch.renderer === 'object' && 'toneMappingExposure' in (patch.renderer as object)) {
         renderer.toneMappingExposure = Number((patch.renderer as { toneMappingExposure: number }).toneMappingExposure);
       }
+      if (patch.scroll && typeof patch.scroll === 'object') {
+        Object.assign(SCENE_CONFIG.scroll, patch.scroll as Partial<typeof SCENE_CONFIG.scroll>);
+        setJourneyScrollLength(SCENE_CONFIG.scroll.journeyScrollLength ?? 1);
+      }
       if (patch.cameraMethod === 'stops' || patch.cameraMethod === 'progress') {
         SCENE_CONFIG.cameraMethod = patch.cameraMethod as CameraMethod;
       }
@@ -485,9 +495,15 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     const handleScroll = () => {
       targetScrollProgress = readStoryScrollProgress(SCENE_CONFIG.scroll.headerScrollMultiplier);
     };
+    const handleJourneyScrollLengthChange = () => {
+      applyJourneyScrollLength();
+      handleScroll();
+    };
 
+    applyJourneyScrollLength();
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener(JOURNEY_SCROLL_LENGTH_EVENT, handleJourneyScrollLengthChange);
 
     const handleResize = () => {
       if (!containerRef.current) return;
@@ -495,7 +511,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       camera.updateProjectionMatrix();
       renderer.setSize(viewW(), viewH(), false);
       lookPost.setSize(viewW(), viewH());
-      handleScroll();
+      handleJourneyScrollLengthChange();
     };
     window.addEventListener('resize', handleResize);
     const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
@@ -621,6 +637,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       cancelAnimationFrame(animationFrameId);
       host.removeEventListener('wheel', stopPageWheel);
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener(JOURNEY_SCROLL_LENGTH_EVENT, handleJourneyScrollLengthChange);
       window.removeEventListener('resize', handleResize);
       resizeObserver?.disconnect();
       window.removeEventListener('rastaak-studio-before-save', onStudioBeforeSave);
