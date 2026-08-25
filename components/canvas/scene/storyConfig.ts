@@ -127,7 +127,7 @@ export const STORY_CONFIG: StoryConfig = {
       label: "Government Organization",
       need: "به یه زیرساخت با سرعت 200 ترابیت در ثانیه نیاز داریم!",
       needAfter: "انجام شد.",
-      appear: 0.02627,
+      appear: 0.041745,
       dispatch: 0.086965,
       arrive: 0.156956,
       resolve: 0.56,
