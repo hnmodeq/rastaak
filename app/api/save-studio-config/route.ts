@@ -391,6 +391,9 @@ export const SCENE_CONFIG: SceneConfig = {
       const rawCaptions = Array.isArray(rawStory.captions) ? rawStory.captions : [];
       const insaneStart = Math.min(0.99, Math.max(0, asFinite(rawStory.insaneShooting?.start, 0.92851)));
       const insaneEnd = Math.min(1, Math.max(insaneStart + 0.01, asFinite(rawStory.insaneShooting?.end, 1)));
+      const insaneLaunch = asVec3(rawStory.insaneShooting?.launch, [0, 0, 0]);
+      const insaneRequestColor = rawStory.insaneShooting?.requestColor === 'after' ? 'after' : 'before';
+      const insaneShootingColor = rawStory.insaneShooting?.shootingColor === 'before' ? 'before' : 'after';
       const layoutStart = Math.min(0.99, Math.max(0, asFinite(rawStory.layoutReveal?.start, 0.945668)));
       const layoutEnd = Math.min(1, Math.max(layoutStart + 0.01, asFinite(rawStory.layoutReveal?.end, 0.988562)));
       const story = {
@@ -445,6 +448,9 @@ export const SCENE_CONFIG: SceneConfig = {
           enabled: rawStory.insaneShooting?.enabled !== false,
           start: insaneStart,
           end: insaneEnd,
+          launch: insaneLaunch,
+          requestColor: insaneRequestColor,
+          shootingColor: insaneShootingColor,
         },
         layoutReveal: {
           start: layoutStart,
@@ -505,10 +511,15 @@ export interface StoryCaptionConfig {
   range: [number, number];
 }
 
+export type InsaneShootingColor = 'before' | 'after';
+
 export interface InsaneShootingConfig {
   enabled: boolean;
   start: number;
   end: number;
+  launch?: [number, number, number];
+  requestColor?: InsaneShootingColor;
+  shootingColor?: InsaneShootingColor;
 }
 
 export interface LayoutRevealConfig {
@@ -581,6 +592,9 @@ const DEFAULT_INSANE_SHOOTING: InsaneShootingConfig = {
   enabled: true,
   start: 0.92851,
   end: 1,
+  launch: [0, 0, 0],
+  requestColor: 'before',
+  shootingColor: 'after',
 };
 
 export function insaneShootingConfig(): InsaneShootingConfig {
@@ -590,6 +604,14 @@ export function insaneShootingConfig(): InsaneShootingConfig {
   config.start = start;
   config.end = end;
   config.enabled = config.enabled !== false;
+  const launch = config.launch ?? [0, 0, 0];
+  config.launch = [
+    Number.isFinite(launch[0]) ? launch[0] : 0,
+    Number.isFinite(launch[1]) ? launch[1] : 0,
+    Number.isFinite(launch[2]) ? launch[2] : 0,
+  ];
+  config.requestColor = config.requestColor === 'after' ? 'after' : 'before';
+  config.shootingColor = config.shootingColor === 'before' ? 'before' : 'after';
   return config;
 }
 

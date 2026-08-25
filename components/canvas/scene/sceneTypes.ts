@@ -205,6 +205,9 @@ export interface StudioStorySave {
     enabled: boolean;
     start: number;
     end: number;
+    launch?: [number, number, number];
+    requestColor?: 'before' | 'after';
+    shootingColor?: 'before' | 'after';
   };
   layoutReveal?: {
     start: number;

@@ -2720,6 +2720,35 @@ export class SceneStudioGUI {
       STORY_CONFIG.burstSparks = value;
     });
 
+    const insaneFolder = root.addFolder('Insane shooting');
+    const insane = insaneShootingConfig();
+    const insaneParams = {
+      startX: insane.launch?.[0] ?? 0,
+      startY: insane.launch?.[1] ?? 0,
+      startZ: insane.launch?.[2] ?? 0,
+      beforeLogoColor: insane.requestColor === 'after' ? 'Client after' : 'Client before',
+      flyingLogoColor: insane.shootingColor === 'before' ? 'Client before' : 'Client after',
+    };
+    const writeInsaneLaunch = () => {
+      insane.launch = [insaneParams.startX, insaneParams.startY, insaneParams.startZ];
+    };
+    const outroColorChoices = ['Client before', 'Client after'] as const;
+    insaneFolder.add(insaneParams, 'startX', -12, 12, 0.01).name('Logo start X').onChange(writeInsaneLaunch);
+    insaneFolder.add(insaneParams, 'startY', -8, 12, 0.01).name('Logo start Y').onChange(writeInsaneLaunch);
+    insaneFolder.add(insaneParams, 'startZ', -12, 12, 0.01).name('Logo start Z').onChange(writeInsaneLaunch);
+    insaneFolder
+      .add(insaneParams, 'beforeLogoColor', outroColorChoices)
+      .name('Before logo color')
+      .onChange((value: (typeof outroColorChoices)[number]) => {
+        insane.requestColor = value === 'Client after' ? 'after' : 'before';
+      });
+    insaneFolder
+      .add(insaneParams, 'flyingLogoColor', outroColorChoices)
+      .name('While flying color')
+      .onChange((value: (typeof outroColorChoices)[number]) => {
+        insane.shootingColor = value === 'Client before' ? 'before' : 'after';
+      });
+
     STORY_CONFIG.clients.forEach((client) => {
       const folder = root.addFolder(storyBuildingLabel(client));
       const row = {

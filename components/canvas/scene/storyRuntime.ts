@@ -816,21 +816,26 @@ export class StoryRuntime {
       const requestAt = config.start + (staggerSpan * actor.index) / lastIndex;
       const dispatchAt = Math.min(config.end, requestAt + requestSpan);
       const arriveAt = Math.min(config.end, dispatchAt + flightSpan);
-      const state = t < requestAt ? 0 : t < arriveAt ? 1 : 2;
+      const requestState = config.requestColor === 'after' ? 2 : 1;
+      const shootingState = config.shootingColor === 'before' ? 1 : 2;
+      // The second colour begins exactly when the logo launches and persists
+      // after arrival, so blue can sweep across the city while logos fly.
+      const state = t < requestAt ? 0 : t < dispatchAt ? requestState : shootingState;
 
       if (!actor.object.visible) {
         this.hidePacket(actor.packet);
         continue;
       }
 
-      // Red request, then blue resolved — no overlay title for these outro-only actors.
+      // The two colour stages are selected in the Shooting logo panel.
+      // No overlay title is created for these outro-only actors.
       // Before the finale starts, leave idle materials untouched for performance.
       if (state > 0 || actor.blend !== state) {
         applyBuildingLook(actor.slots, state);
         actor.blend = state;
       }
       const showPacket = !reducedMotion && !compact && t >= dispatchAt && t < arriveAt;
-      this.updateOutroPacket(actor, dispatchAt, arriveAt, t, showPacket);
+      this.updateOutroPacket(actor, dispatchAt, arriveAt, t, showPacket, config.launch);
     }
   }
 
@@ -845,7 +850,14 @@ export class StoryRuntime {
   }
 
   /** Lightweight logo flight for the many targets in the finale — no extra point lights or bursts. */
-  private updateOutroPacket(actor: OutroActor, dispatch: number, arrive: number, t: number, show: boolean) {
+  private updateOutroPacket(
+    actor: OutroActor,
+    dispatch: number,
+    arrive: number,
+    t: number,
+    show: boolean,
+    launchOffset: readonly [number, number, number] | undefined,
+  ) {
     const packet = actor.packet;
     if (!show || !this.hub) {
       this.hidePacket(packet);
@@ -856,6 +868,10 @@ export class StoryRuntime {
     const u = Math.max(0, Math.min(1, (t - dispatch) / span));
     _landing.copy(actor.roof);
     _launch.copy(this.hub.origin);
+    _launch.x += launchOffset?.[0] ?? 0;
+    _launch.y += launchOffset?.[1] ?? 0;
+    _launch.z += launchOffset?.[2] ?? 0;
+    // A subtle spread prevents every logo from occupying the identical pixel.
     const angle = actor.index * 2.399963229728653;
     _launch.x += Math.cos(angle) * 0.12;
     _launch.y += ((actor.index % 3) - 1) * 0.045;
