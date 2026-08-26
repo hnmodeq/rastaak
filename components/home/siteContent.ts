@@ -171,20 +171,20 @@ export const SITE_CONTENT: SiteContentConfig = {
     title: "هونامیک ارتباط رستاک چطور میتونه همراه سازمان شما باشه؟",
     items: [
       {
-        question: "How fast can crews be mobilized?",
-        answer: "We move at the speed of your schedule. Our platform maintains a deep network of verified industrial craft, eliminating the weeks wasted in traditional hiring cycles. One call activates our mobilization engine to source and deploy precision-matched crews in hours, not days, ensuring your most critical paths remain fully manned."
+        question: "تامین کالا چقدر سریع اتفاق میفته؟",
+        answer: "هونامیک ارتباط رستاک توسط ارتباطات گسترده‌ای که تو کشورمون داره هر کالای خاصی که سازمان شما به اون نیاز داره به همراه مشاوره و نصب تا نهایتا 24 ساعت برای شما تامین و نصب میکنه."
       },
       {
-        question: "How do you handle compliance & background checks?",
-        answer: "We use a Zero-Fail Compliance model. Before a worker is even cleared for dispatch, our system automates the verification of background checks, drug testing (FFD), and site-specific certifications including nuclear grade requirements. We block access to the gate for anyone who isn't 100% cleared, ensuring your badging office has zero headaches on Day 1."
+        question: "پشتیبانی و مانیتورینگ سلامت تجهیزات چطور اتفاق میفته؟",
+        answer: "کارشناسان فنی هونامیک ارتباط رستاک به صورت مدوام سلامت عملکرد محصولات و راه‌کار رو پایش میکنن و همچنین به صورت ماهانه از سازمان شما بازدید خواهند داشت."
       },
       {
-        question: "What is the coverage during outages?",
-        answer: "We provide 24/7 active coordination to match the 24/7 nature of an outage. Our coverage spans the full range of outage craft: from general laborers and painters to specialized repairs and schedulers. More importantly, we manage the \"last mile\" of arrival, monitoring deployments in real-time to ensure your night and day shifts remain fully manned, even when field conditions shift."
+        question: "اگه نقصی برای محصول پیش بیاد چی میشه؟",
+        answer: "در صورت رویت هرگونه نقص که متوجه محصول یا راه‌کار باشه متخصصین فنی تا رفع نقص سیستم در کنار شما خواهند بود."
       },
       {
-        question: "How does Rastaak differ from traditional staffing vendors?",
-        answer: "Traditional vendors are reactive; Rastaak is an operational engine. While legacy agencies rely on manual resumes and 'available' warm bodies, we use intelligent workflows and expert curation to deliver field-validated precision. We don't just find people who are looking for work; we deploy proven crews that are engineered for the high-tempo grind of a critical path environment."
+        question: "تفاوت هونامیک ارتباط رستاک با رقبا چیه؟!",
+        answer: "هونامیک ارتباط رستاک با افتخار تنها وارد کننده محصولاتی خاص در زمینه زیرساخت و ذخیره‌سازی داده است و با مجرب‌ترین کارشناسان فنی محیطی رو برای آسایش سازمان‌ها در رابطه با ذخیره‌سازی داده فراهم کرده است."
       }
     ]
   },
