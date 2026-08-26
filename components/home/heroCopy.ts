@@ -22,7 +22,7 @@ export const HERO_COPY: HeroCopyConfig = {
   titleLine2: "",
   titleColor: 0xe1e1e1,
   titlePaddingTop: 92,
-  subtitleLine1: "تنها یک خطا  کافی است، تا سال‌ها اطلاعات در یک ثانیه از بین برود.",
+  subtitleLine1: "یک خطای انسانی کافی است، تا سال‌ها اطلاعات در لحظه‌ای از بین برود.",
   subtitleLine2: "",
   subtitleColor: 0x959595,
   subtitlePaddingTop: 9,
