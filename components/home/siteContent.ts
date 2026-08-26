@@ -135,7 +135,7 @@ export const SITE_CONTENT: SiteContentConfig = {
       {
         icon: "rapid",
         title: "Rapid Activation",
-        description: "We believe speed is a skill. Our platform uses machine learning to turn staffing into instant logistics, deploying a precisely matched workforce the moment demand strikes.d"
+        description: ""
       },
       {
         icon: "selection",
@@ -206,8 +206,8 @@ export const SITE_CONTENT: SiteContentConfig = {
     faqDirection: "rtl",
     ctaDirection: "rtl",
     footerDirection: "rtl",
-    featuresAlign: "end",
-    featuresItemAlign: "end",
+    featuresAlign: "start",
+    featuresItemAlign: "start",
     standardsAlign: "end",
     faqAlign: "end",
     faqItemAlign: "end",
