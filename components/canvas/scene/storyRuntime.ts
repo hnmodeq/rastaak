@@ -207,6 +207,15 @@ function normalizeName(value: string): string {
     .replace(/\s+/g, ' ');
 }
 
+/** A stable pseudo-random key keeps the finale staggered but scrub-friendly. */
+function outroShuffleKey(name: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < name.length; index++) {
+    hash = Math.imul(hash ^ name.charCodeAt(index), 16777619);
+  }
+  return hash >>> 0;
+}
+
 function collectNamedObjects(root: THREE.Object3D): THREE.Object3D[] {
   const nodes: THREE.Object3D[] = [];
   root.traverse((child) => {
@@ -621,6 +630,12 @@ export class StoryRuntime {
         index: this.outroActors.length,
       });
     }
+    // Do not fire in building-number order: a stable shuffle makes the city
+    // light up in a random-looking, one-by-one cascade on every scrub.
+    this.outroActors.sort((a, b) => outroShuffleKey(a.id) - outroShuffleKey(b.id));
+    this.outroActors.forEach((actor, index) => {
+      actor.index = index;
+    });
 
     void loadPacketMarkTexture()
       .then((texture) => {
@@ -807,10 +822,10 @@ export class StoryRuntime {
       const dispatchAt = Math.min(config.end, requestAt + requestSpan);
       const arriveAt = Math.min(config.end, dispatchAt + flightSpan);
       const requestState = config.requestColor === 'after' ? 2 : 1;
-      const shootingState = config.shootingColor === 'before' ? 1 : 2;
-      // The second colour begins exactly when the logo launches and persists
-      // after arrival, so blue can sweep across the city while logos fly.
-      const state = t < requestAt ? 0 : t < dispatchAt ? requestState : shootingState;
+      const landedState = config.shootingColor === 'before' ? 1 : 2;
+      // Step 1: colour the building. Step 2: launch the logo. Step 3: only
+      // when the logo reaches the building do we apply the second colour.
+      const state = t < requestAt ? 0 : t < arriveAt ? requestState : landedState;
 
       if (!actor.object.visible) {
         this.hidePacket(actor.packet);

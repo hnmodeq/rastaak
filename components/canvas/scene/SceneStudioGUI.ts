@@ -2726,7 +2726,7 @@ export class SceneStudioGUI {
       startY: insane.launch?.[1] ?? 0,
       startZ: insane.launch?.[2] ?? 0,
       beforeLogoColor: insane.requestColor === 'after' ? 'Client after' : 'Client before',
-      flyingLogoColor: insane.shootingColor === 'before' ? 'Client before' : 'Client after',
+      afterLandingColor: insane.shootingColor === 'before' ? 'Client before' : 'Client after',
     };
     const writeInsaneLaunch = () => {
       insane.launch = [insaneParams.startX, insaneParams.startY, insaneParams.startZ];
@@ -2742,8 +2742,8 @@ export class SceneStudioGUI {
         insane.requestColor = value === 'Client after' ? 'after' : 'before';
       });
     insaneFolder
-      .add(insaneParams, 'flyingLogoColor', outroColorChoices)
-      .name('While flying color')
+      .add(insaneParams, 'afterLandingColor', outroColorChoices)
+      .name('After landing color')
       .onChange((value: (typeof outroColorChoices)[number]) => {
         insane.shootingColor = value === 'Client before' ? 'before' : 'after';
       });
