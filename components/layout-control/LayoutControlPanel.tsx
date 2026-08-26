@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { publishLive } from '@/components/live/liveChannel';
 import {
   SITE_CONTENT,
@@ -44,10 +44,44 @@ function uploadedFile(file: File, apply: (dataUrl: string) => void) {
 }
 
 export function LayoutControlPanel() {
+  const panelRef = useRef<HTMLElement>(null);
   const [revision, setRevision] = useState(0);
   const [collapsed, setCollapsed] = useState(true);
+  const [tabsExpanded, setTabsExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('Live changes are not saved until Apply & Save.');
+
+  useEffect(() => {
+    let observer: ResizeObserver | null = null;
+    const updateBottom = () => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const timeline = document.getElementById('rastaak-story-timeline');
+      const sheet = timeline?.querySelector('.stl-sheet') as HTMLElement | null;
+      const hidden = !timeline || timeline.dataset.collapsed === 'true';
+      const bottom = hidden ? 28 : Math.max(28, Math.ceil((sheet?.offsetHeight ?? 0) + 24));
+      panel.style.setProperty('--layout-bottom', `${bottom}px`);
+    };
+    const bindTimeline = () => {
+      observer?.disconnect();
+      const sheet = document.querySelector('#rastaak-story-timeline .stl-sheet');
+      if (typeof ResizeObserver !== 'undefined' && sheet instanceof HTMLElement) {
+        observer = new ResizeObserver(updateBottom);
+        observer.observe(sheet);
+      }
+      updateBottom();
+    };
+    bindTimeline();
+    const timer = window.setTimeout(bindTimeline, 0);
+    window.addEventListener('rastaak-studio-chrome-layout', bindTimeline);
+    window.addEventListener('resize', updateBottom);
+    return () => {
+      window.clearTimeout(timer);
+      observer?.disconnect();
+      window.removeEventListener('rastaak-studio-chrome-layout', bindTimeline);
+      window.removeEventListener('resize', updateBottom);
+    };
+  }, []);
 
   const refresh = () => {
     applySiteContent();
@@ -81,13 +115,21 @@ export function LayoutControlPanel() {
     }
   };
 
+  const toggleTabs = () => {
+    const next = !tabsExpanded;
+    panelRef.current?.querySelectorAll('details').forEach((tab) => {
+      tab.open = next;
+    });
+    setTabsExpanded(next);
+  };
+
   const direction = SITE_CONTENT.layout.headerDirection;
   const footerAlignments: LayoutAlign[] = ['start', 'center', 'end'];
   const links = SITE_CONTENT.links;
   void revision;
 
   return (
-    <aside id="rastaak-layout-control" data-collapsed={collapsed ? 'true' : 'false'} dir="ltr">
+    <aside ref={panelRef} id="rastaak-layout-control" data-collapsed={collapsed ? 'true' : 'false'} dir="ltr">
       <button
         type="button"
         className="layout-control-edge"
@@ -100,13 +142,18 @@ export function LayoutControlPanel() {
       <div className="layout-control-sheet">
         <div className="layout-control-head">
           <strong>Layout Control</strong>
-          <button type="button" onClick={() => void save()} disabled={saving}>
-            {saving ? 'Saving…' : 'Apply & Save'}
-          </button>
+          <div className="layout-control-actions">
+            <button type="button" onClick={toggleTabs}>
+              {tabsExpanded ? 'Collapse all' : 'Expand all'}
+            </button>
+            <button type="button" onClick={() => void save()} disabled={saving}>
+              {saving ? 'Saving…' : 'Apply & Save'}
+            </button>
+          </div>
         </div>
         <p className="layout-control-note">{message}</p>
 
-        <details open>
+        <details>
           <summary>Section visibility</summary>
           <div className="layout-control-body layout-section-grid">
             {SECTION_ROWS.map(([key, label]) => (
@@ -199,6 +246,12 @@ export function LayoutControlPanel() {
             <label>
               <span>Text alignment</span>
               <select value={SITE_CONTENT.layout.featuresAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.featuresAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Each item justify</span>
+              <select value={SITE_CONTENT.layout.featuresItemAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.featuresItemAlign = event.target.value as LayoutAlign; })}>
                 {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
               </select>
             </label>
@@ -303,8 +356,20 @@ export function LayoutControlPanel() {
               </select>
             </label>
             <label>
-              <span>Text alignment</span>
+              <span>Title alignment</span>
               <select value={SITE_CONTENT.layout.faqAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.faqAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Question / icon justify</span>
+              <select value={SITE_CONTENT.layout.faqItemAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.faqItemAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Answer alignment</span>
+              <select value={SITE_CONTENT.layout.faqAnswerAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.faqAnswerAlign = event.target.value as LayoutAlign; })}>
                 {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
               </select>
             </label>
@@ -342,6 +407,12 @@ export function LayoutControlPanel() {
             <label>
               <span>Text alignment</span>
               <select value={SITE_CONTENT.layout.ctaAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.ctaAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Button justify</span>
+              <select value={SITE_CONTENT.layout.ctaButtonAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.ctaButtonAlign = event.target.value as LayoutAlign; })}>
                 {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
               </select>
             </label>
@@ -386,6 +457,10 @@ export function LayoutControlPanel() {
               <input value={SITE_CONTENT.footer.creditName} onChange={(event) => change(() => { SITE_CONTENT.footer.creditName = event.target.value; })} />
             </label>
             <label>
+              <span>Credit link</span>
+              <input value={SITE_CONTENT.footer.creditHref ?? 'http://www.bumims.ir'} onChange={(event) => change(() => { SITE_CONTENT.footer.creditHref = event.target.value; })} />
+            </label>
+            <label>
               <span>Credit accent color</span>
               <input type="color" value={hex(SITE_CONTENT.footer.creditColor)} onChange={(event) => change(() => { SITE_CONTENT.footer.creditColor = color(event.target.value); })} />
             </label>
@@ -414,6 +489,12 @@ export function LayoutControlPanel() {
             <label>
               <span>Meta alignment</span>
               <select value={SITE_CONTENT.layout.footerMetaAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.footerMetaAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Credit alignment</span>
+              <select value={SITE_CONTENT.layout.footerCreditAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.footerCreditAlign = event.target.value as LayoutAlign; })}>
                 {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
               </select>
             </label>

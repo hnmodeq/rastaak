@@ -353,8 +353,10 @@ export class SceneStudioGUI {
     this.panelOpacity = next;
     const host = document.getElementById('rastaak-studio-panel');
     const sheet = this.timelinePanel?.sheetElement() ?? document.querySelector('#rastaak-story-timeline .stl-sheet');
+    const layout = document.getElementById('rastaak-layout-control');
     if (host) host.style.opacity = String(next);
     if (sheet instanceof HTMLElement) sheet.style.opacity = String(next);
+    if (layout) layout.style.opacity = String(next);
   }
 
   private studioEdgeSvg(collapsed: boolean) {

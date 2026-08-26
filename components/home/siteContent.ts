@@ -78,11 +78,16 @@ export interface SiteContentConfig {
     ctaDirection: LayoutDirection;
     footerDirection: LayoutDirection;
     featuresAlign: LayoutAlign;
+    featuresItemAlign: LayoutAlign;
     standardsAlign: LayoutAlign;
     faqAlign: LayoutAlign;
+    faqItemAlign: LayoutAlign;
+    faqAnswerAlign: LayoutAlign;
     ctaAlign: LayoutAlign;
+    ctaButtonAlign: LayoutAlign;
     footerLogoAlign: LayoutAlign;
     footerMetaAlign: LayoutAlign;
+    footerCreditAlign: LayoutAlign;
     footerLogoScale: number;
     footerBottomPadding: number;
   };
@@ -100,6 +105,7 @@ export interface SiteContentConfig {
     termsHref?: string;
     creditPrefix: string;
     creditName: string;
+    creditHref?: string;
     creditColor: number;
   };
 }
@@ -189,11 +195,16 @@ export const SITE_CONTENT: SiteContentConfig = {
     ctaDirection: "rtl",
     footerDirection: "rtl",
     featuresAlign: "end",
+    featuresItemAlign: "end",
     standardsAlign: "end",
     faqAlign: "end",
+    faqItemAlign: "end",
+    faqAnswerAlign: "end",
     ctaAlign: "end",
+    ctaButtonAlign: "end",
     footerLogoAlign: "end",
     footerMetaAlign: "end",
+    footerCreditAlign: "end",
     footerLogoScale: 1,
     footerBottomPadding: 48
   },
@@ -227,6 +238,7 @@ export const SITE_CONTENT: SiteContentConfig = {
     termsHref: "/terms",
     creditPrefix: "طراحی شده توسط",
     creditName: "بومیم",
+    creditHref: "http://www.bumims.ir",
     creditColor: 0xf5b301
   }
 };
@@ -276,9 +288,13 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   root.dataset.dirCta = layout.ctaDirection ?? fallbackDirection;
   root.dataset.dirFooter = layout.footerDirection ?? fallbackDirection;
   root.style.setProperty('--features-align', layout.featuresAlign ?? 'end');
+  root.style.setProperty('--features-item-align', layout.featuresItemAlign ?? layout.featuresAlign ?? 'end');
   root.style.setProperty('--standards-align', layout.standardsAlign ?? 'end');
   root.style.setProperty('--faq-align', layout.faqAlign ?? 'end');
+  root.style.setProperty('--faq-item-align', layout.faqItemAlign ?? layout.faqAlign ?? 'end');
+  root.style.setProperty('--faq-answer-align', layout.faqAnswerAlign ?? layout.faqAlign ?? 'end');
   root.style.setProperty('--cta-align', layout.ctaAlign ?? 'end');
+  root.style.setProperty('--cta-button-align', layout.ctaButtonAlign ?? layout.ctaAlign ?? 'end');
   root.style.setProperty('--header-scene-color', hexCss(config.header.sceneColor));
   root.style.setProperty('--header-layout-color', hexCss(config.header.layoutColor));
   root.dataset.headerIndustries = config.links.industries.visible !== false ? 'on' : 'off';
@@ -287,6 +303,7 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   root.dataset.headerRequest = config.links.request.visible !== false ? 'on' : 'off';
   root.style.setProperty('--footer-logo-align', layout.footerLogoAlign ?? 'end');
   root.style.setProperty('--footer-meta-align', layout.footerMetaAlign ?? 'end');
+  root.style.setProperty('--footer-credit-align', layout.footerCreditAlign ?? layout.footerMetaAlign ?? 'end');
   root.style.setProperty('--footer-logo-scale', String(Math.max(0.4, Math.min(2.5, layout.footerLogoScale ?? 1))));
   root.style.setProperty('--footer-bottom-padding', `${Math.max(16, Math.min(160, layout.footerBottomPadding ?? 48))}px`);
   root.style.setProperty('--footer-credit-color', hexCss(config.footer.creditColor ?? 0xf5b301));
@@ -345,6 +362,7 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   setText('[data-footer="terms"]', config.footer.terms);
   setText('[data-footer="credit-prefix"]', config.footer.creditPrefix ?? 'طراحی شده توسط');
   setText('[data-footer="credit-name"]', config.footer.creditName ?? 'بومیم');
+  setHref('[data-footer="credit-name"]', config.footer.creditHref ?? 'http://www.bumims.ir');
   setHref('[data-footer="privacy"]', config.footer.privacyHref ?? '/privacy');
   setHref('[data-footer="terms"]', config.footer.termsHref ?? '/terms');
 }

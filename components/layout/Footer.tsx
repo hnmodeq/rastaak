@@ -46,7 +46,15 @@ export const Footer: React.FC = () => {
           <span className="footer__copyright" data-footer="copyright">© {currentYear} {SITE_CONTENT.footer.copyright}</span>
           <p className="footer__credit" dir="rtl">
             <span data-footer="credit-prefix">{SITE_CONTENT.footer.creditPrefix}</span>{' '}
-            <span className="footer__credit-name" data-footer="credit-name">{SITE_CONTENT.footer.creditName}</span>
+            <a
+              className="footer__credit-name"
+              data-footer="credit-name"
+              href={SITE_CONTENT.footer.creditHref ?? 'http://www.bumims.ir'}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {SITE_CONTENT.footer.creditName}
+            </a>
           </p>
           <Link href={SITE_CONTENT.footer.privacyHref ?? '/privacy'} className="footer__privacy" data-footer="privacy">{SITE_CONTENT.footer.privacy}</Link>
           <Link href={SITE_CONTENT.footer.termsHref ?? '/terms'} className="footer__privacy" data-footer="terms">{SITE_CONTENT.footer.terms}</Link>
