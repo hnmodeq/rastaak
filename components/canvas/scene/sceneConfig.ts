@@ -94,22 +94,15 @@ export const SCENE_CONFIG: SceneConfig = {
     {
       id: "keyframe_1_stop_1_overview",
       progress: 0,
-      camera: [6.9408, 1.2996, -13.7121],
-      target: [12.0468, 2.906, 2.5048],
+      camera: [-2.6937, 15.1755, -17.4141],
+      target: [14.1353, 2.5182, 0.8316],
       fov: 49
     },
     {
       id: "keyframe_2",
       progress: 0.036176,
-      camera: [11.4339, 2.7132, 0.5583],
-      target: [12.0468, 2.906, 2.5048],
-      fov: 49
-    },
-    {
-      id: "keyframe_3",
-      progress: 0.077089,
-      camera: [11.0072, 2.5731, -0.903],
-      target: [12.0772, 2.9096, 2.4949],
+      camera: [11.1999, 3.7547, 1.2224],
+      target: [12.0853, 3.0753, 2.5591],
       fov: 49
     },
     {
@@ -120,24 +113,10 @@ export const SCENE_CONFIG: SceneConfig = {
       fov: 49
     },
     {
-      id: "keyframe_4",
-      progress: 0.153316,
-      camera: [11.7309, 4.8713, -1.3698],
-      target: [13.052, 3.2161, 2.3644],
-      fov: 49
-    },
-    {
       id: "keyframe_5",
       progress: 0.195952,
       camera: [15.0667, 5.6958, -0.5407],
       target: [13.0881, 3.2161, 2.3516],
-      fov: 49
-    },
-    {
-      id: "keyframe_7",
-      progress: 0.225668,
-      camera: [25.6677, 14.8045, -17.4701],
-      target: [13.7552, -0.125, -0.0565],
       fov: 49
     },
     {
@@ -148,23 +127,9 @@ export const SCENE_CONFIG: SceneConfig = {
       fov: 49
     },
     {
-      id: "keyframe_8",
-      progress: 0.313953,
-      camera: [15.9173, 4.0936, -2.0509],
-      target: [13.4718, 0.2887, -4.3058],
-      fov: 49
-    },
-    {
       id: "keyframe_10",
       progress: 0.361326,
-      camera: [21.2082, 5.4418, 4.934],
-      target: [14.0473, 0.1755, -4.7079],
-      fov: 49
-    },
-    {
-      id: "keyframe_11",
-      progress: 0.403531,
-      camera: [20.1931, 10.5551, 0.4371],
+      camera: [21.2146, 7.6692, 3.3204],
       target: [14.0473, 0.1755, -4.7079],
       fov: 49
     },
@@ -176,59 +141,24 @@ export const SCENE_CONFIG: SceneConfig = {
       fov: 49
     },
     {
-      id: "keyframe_13",
-      progress: 0.477606,
-      camera: [15.7075, 0.5552, -7.3162],
-      target: [11.2659, 0.4204, -3.5903],
-      fov: 49
-    },
-    {
       id: "keyframe_14",
-      progress: 0.518088,
-      camera: [6.6149, 2.743, -8.271],
-      target: [10.9557, -0.5494, -4.157],
-      fov: 49
-    },
-    {
-      id: "keyframe_15",
-      progress: 0.562446,
-      camera: [8.8887, 0.8424, -5.8719],
-      target: [10.8082, -0.6135, -4.0527],
+      progress: 0.511628,
+      camera: [16.3103, 2.0871, -10.6386],
+      target: [10.679, -0.1192, -3.5793],
       fov: 49
     },
     {
       id: "keyframe_16",
-      progress: 0.608527,
-      camera: [8.7952, 0.5503, -5.9522],
-      target: [10.8829, -0.3223, -3.9537],
-      fov: 49
-    },
-    {
-      id: "keyframe_17",
-      progress: 0.649871,
-      camera: [6.2484, 0.3931, -7.2115],
-      target: [11.0375, 0.8957, -3.9801],
+      progress: 0.608958,
+      camera: [8.8424, 0.7005, -7.481],
+      target: [10.7944, 0.1979, -3.7686],
       fov: 49
     },
     {
       id: "keyframe_18",
-      progress: 0.698105,
-      camera: [8.2501, 2.181, -11.6464],
-      target: [11.1823, 1.0737, -4.2454],
-      fov: 49
-    },
-    {
-      id: "keyframe_19",
-      progress: 0.744617,
-      camera: [13.5886, 4.9144, -10.883],
-      target: [11.1823, 1.0737, -4.2454],
-      fov: 49
-    },
-    {
-      id: "keyframe_20",
-      progress: 0.778208,
-      camera: [19.1987, 5.6433, -3.4876],
-      target: [13.3924, 1.1502, -0.2169],
+      progress: 0.698536,
+      camera: [4.7788, 1.6871, -9.0411],
+      target: [11.1825, 1.0736, -4.2228],
       fov: 49
     },
     {
@@ -239,23 +169,16 @@ export const SCENE_CONFIG: SceneConfig = {
       fov: 49
     },
     {
-      id: "keyframe_22",
-      progress: 0.854005,
-      camera: [15.0766, 0.3979, -0.9661],
-      target: [14.2969, 0.127, 0.3713],
-      fov: 49
-    },
-    {
       id: "keyframe_23",
-      progress: 0.890181,
+      progress: 0.905254,
       camera: [13.5507, 0.0298, -2.0754],
       target: [14.4953, 1.1013, 0.3802],
       fov: 49
     },
     {
       id: "keyframe_24",
-      progress: 0.92851,
-      camera: [13.5018, 0.0298, -2.056],
+      progress: 0.944444,
+      camera: [11.0118, 0.2203, -6.2749],
       target: [14.4953, 1.1013, 0.3802],
       fov: 49
     },
