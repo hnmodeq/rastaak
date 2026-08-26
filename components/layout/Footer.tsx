@@ -44,6 +44,10 @@ export const Footer: React.FC = () => {
         <Logo variant="light" fontSize="text-2xl sm:text-3xl" className="footer__logo" />
         <div className="footer__meta">
           <span className="footer__copyright" data-footer="copyright">© {currentYear} {SITE_CONTENT.footer.copyright}</span>
+          <p className="footer__credit" dir="rtl">
+            <span data-footer="credit-prefix">{SITE_CONTENT.footer.creditPrefix}</span>{' '}
+            <span className="footer__credit-name" data-footer="credit-name">{SITE_CONTENT.footer.creditName}</span>
+          </p>
           <Link href={SITE_CONTENT.footer.privacyHref ?? '/privacy'} className="footer__privacy" data-footer="privacy">{SITE_CONTENT.footer.privacy}</Link>
           <Link href={SITE_CONTENT.footer.termsHref ?? '/terms'} className="footer__privacy" data-footer="terms">{SITE_CONTENT.footer.terms}</Link>
         </div>

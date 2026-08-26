@@ -21,6 +21,8 @@ export interface SiteFaqItem {
 export interface SiteLinkItem {
   label: string;
   href: string;
+  /** Header visibility only; footer navigation can remain independently visible. */
+  visible?: boolean;
 }
 
 export type LayoutDirection = 'ltr' | 'rtl';
@@ -96,6 +98,9 @@ export interface SiteContentConfig {
     privacyHref?: string;
     terms: string;
     termsHref?: string;
+    creditPrefix: string;
+    creditName: string;
+    creditColor: number;
   };
 }
 
@@ -195,19 +200,23 @@ export const SITE_CONTENT: SiteContentConfig = {
   links: {
     industries: {
       label: "درباره ما",
-      href: "/industries"
+      href: "/industries",
+      visible: true
     },
     mission: {
       label: "چرا هونامیک ارتباط رستاک؟",
-      href: "/our-mission"
+      href: "/our-mission",
+      visible: true
     },
     apply: {
       label: "درخواست",
-      href: "/apply"
+      href: "/apply",
+      visible: true
     },
     request: {
       label: "همکاری با ما",
-      href: "/request-crew"
+      href: "/request-crew",
+      visible: true
     }
   },
   footer: {
@@ -215,7 +224,10 @@ export const SITE_CONTENT: SiteContentConfig = {
     privacy: "Privacy",
     privacyHref: "/privacy",
     terms: "Terms",
-    termsHref: "/terms"
+    termsHref: "/terms",
+    creditPrefix: "طراحی شده توسط",
+    creditName: "بومیم",
+    creditColor: 0xf5b301
   }
 };
 
@@ -269,10 +281,15 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   root.style.setProperty('--cta-align', layout.ctaAlign ?? 'end');
   root.style.setProperty('--header-scene-color', hexCss(config.header.sceneColor));
   root.style.setProperty('--header-layout-color', hexCss(config.header.layoutColor));
+  root.dataset.headerIndustries = config.links.industries.visible !== false ? 'on' : 'off';
+  root.dataset.headerMission = config.links.mission.visible !== false ? 'on' : 'off';
+  root.dataset.headerApply = config.links.apply.visible !== false ? 'on' : 'off';
+  root.dataset.headerRequest = config.links.request.visible !== false ? 'on' : 'off';
   root.style.setProperty('--footer-logo-align', layout.footerLogoAlign ?? 'end');
   root.style.setProperty('--footer-meta-align', layout.footerMetaAlign ?? 'end');
   root.style.setProperty('--footer-logo-scale', String(Math.max(0.4, Math.min(2.5, layout.footerLogoScale ?? 1))));
   root.style.setProperty('--footer-bottom-padding', `${Math.max(16, Math.min(160, layout.footerBottomPadding ?? 48))}px`);
+  root.style.setProperty('--footer-credit-color', hexCss(config.footer.creditColor ?? 0xf5b301));
 
   setText('[data-features-title="1"]', config.features.titleLine1);
   setText('[data-features-title="2"]', config.features.titleLine2);
@@ -326,6 +343,8 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   setText('[data-footer="copyright"]', `© ${year} ${config.footer.copyright}`);
   setText('[data-footer="privacy"]', config.footer.privacy);
   setText('[data-footer="terms"]', config.footer.terms);
+  setText('[data-footer="credit-prefix"]', config.footer.creditPrefix ?? 'طراحی شده توسط');
+  setText('[data-footer="credit-name"]', config.footer.creditName ?? 'بومیم');
   setHref('[data-footer="privacy"]', config.footer.privacyHref ?? '/privacy');
   setHref('[data-footer="terms"]', config.footer.termsHref ?? '/terms');
 }

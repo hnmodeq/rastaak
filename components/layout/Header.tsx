@@ -8,8 +8,8 @@ export const Header: React.FC = () => {
   return (
     <header data-site-section="header">
       <nav className="header__nav-left" data-site-section="links">
-        <Link href={SITE_CONTENT.links.industries.href} data-link="industries">{SITE_CONTENT.links.industries.label}</Link>
-        <Link href={SITE_CONTENT.links.mission.href} data-link="mission">{SITE_CONTENT.links.mission.label}</Link>
+        <Link href={SITE_CONTENT.links.industries.href} data-link="industries" data-header-link="industries">{SITE_CONTENT.links.industries.label}</Link>
+        <Link href={SITE_CONTENT.links.mission.href} data-link="mission" data-header-link="mission">{SITE_CONTENT.links.mission.label}</Link>
       </nav>
 
       <div className="header__logo">
@@ -20,10 +20,10 @@ export const Header: React.FC = () => {
 
       <nav className="header__nav-right">
         <div className="header__ctas">
-          <Link href={SITE_CONTENT.links.apply.href} className="pill-btn pill-btn--glass">
+          <Link href={SITE_CONTENT.links.apply.href} className="pill-btn pill-btn--glass" data-header-link="apply">
             <span className="pill-btn-span" data-link="apply">{SITE_CONTENT.links.apply.label}</span>
           </Link>
-          <Link href={SITE_CONTENT.links.request.href} className="pill-btn pill-btn--dark">
+          <Link href={SITE_CONTENT.links.request.href} className="pill-btn pill-btn--dark" data-header-link="request">
             <span className="pill-btn-span" data-link="request">{SITE_CONTENT.links.request.label}</span>
           </Link>
         </div>
@@ -52,20 +52,20 @@ export const Header: React.FC = () => {
           </div>
           <ul className="mobile-nav__list">
             <li className="mobile-nav__item">
-              <Link href={SITE_CONTENT.links.industries.href} data-link="industries">{SITE_CONTENT.links.industries.label}</Link>
+              <Link href={SITE_CONTENT.links.industries.href} data-link="industries" data-header-link="industries">{SITE_CONTENT.links.industries.label}</Link>
             </li>
             <li className="mobile-nav__item">
-              <Link href={SITE_CONTENT.links.mission.href} data-link="mission">{SITE_CONTENT.links.mission.label}</Link>
+              <Link href={SITE_CONTENT.links.mission.href} data-link="mission" data-header-link="mission">{SITE_CONTENT.links.mission.label}</Link>
             </li>
           </ul>
           <div className="mobile-nav__ctas">
             <div className="mncta">
-              <Link href={SITE_CONTENT.links.apply.href} className="pill-btn pill-btn--glass mobile-nav__cta">
+              <Link href={SITE_CONTENT.links.apply.href} className="pill-btn pill-btn--glass mobile-nav__cta" data-header-link="apply">
                 <span className="pill-btn-span" data-link="apply">{SITE_CONTENT.links.apply.label}</span>
               </Link>
             </div>
             <div className="mncta">
-              <Link href={SITE_CONTENT.links.request.href} className="pill-btn pill-btn--dark mobile-nav__cta">
+              <Link href={SITE_CONTENT.links.request.href} className="pill-btn pill-btn--dark mobile-nav__cta" data-header-link="request">
                 <span className="pill-btn-span" data-link="request">{SITE_CONTENT.links.request.label}</span>
               </Link>
             </div>

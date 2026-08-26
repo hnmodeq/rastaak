@@ -163,6 +163,10 @@ export function LayoutControlPanel() {
             {(['industries', 'mission', 'apply', 'request'] as const).map((key) => (
               <fieldset key={key}>
                 <legend>{key === 'industries' ? 'Our Industries' : key === 'mission' ? 'Our Mission' : key === 'apply' ? 'Apply' : 'Request Crews'}</legend>
+                <label className="layout-toggle">
+                  <span>Show in header</span>
+                  <input type="checkbox" checked={links[key].visible !== false} onChange={(event) => change(() => { links[key].visible = event.target.checked; })} />
+                </label>
                 <label>
                   <span>Label</span>
                   <input value={links[key].label} onChange={(event) => change(() => { links[key].label = event.target.value; })} />
@@ -372,6 +376,18 @@ export function LayoutControlPanel() {
             <label>
               <span>Copyright phrase</span>
               <input value={SITE_CONTENT.footer.copyright} onChange={(event) => change(() => { SITE_CONTENT.footer.copyright = event.target.value; })} />
+            </label>
+            <label>
+              <span>Credit prefix</span>
+              <input value={SITE_CONTENT.footer.creditPrefix} onChange={(event) => change(() => { SITE_CONTENT.footer.creditPrefix = event.target.value; })} />
+            </label>
+            <label>
+              <span>Credit name</span>
+              <input value={SITE_CONTENT.footer.creditName} onChange={(event) => change(() => { SITE_CONTENT.footer.creditName = event.target.value; })} />
+            </label>
+            <label>
+              <span>Credit accent color</span>
+              <input type="color" value={hex(SITE_CONTENT.footer.creditColor)} onChange={(event) => change(() => { SITE_CONTENT.footer.creditColor = color(event.target.value); })} />
             </label>
             <label>
               <span>Privacy label</span>

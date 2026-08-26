@@ -8,11 +8,14 @@ import { HERO_COPY } from './heroCopy';
 import { applySiteContent, SITE_CONTENT, SITE_CONTENT_EVENT } from './siteContent';
 
 export const HomeContent: React.FC = () => {
-  const [, setRevision] = useState(0);
+  // Render from a fresh snapshot. Layout Control mutates the source config,
+  // then emits SITE_CONTENT_EVENT; copying here guarantees titles, cards, and
+  // dynamic FAQ rows visibly update instead of relying on DOM patching alone.
+  const [content, setContent] = useState(() => structuredClone(SITE_CONTENT));
 
   useEffect(() => {
     const refresh = () => {
-      setRevision((value) => value + 1);
+      setContent(structuredClone(SITE_CONTENT));
       requestAnimationFrame(() => applySiteContent());
     };
     window.addEventListener(SITE_CONTENT_EVENT, refresh);
@@ -95,12 +98,12 @@ export const HomeContent: React.FC = () => {
         <section className="features" data-site-section="features">
           <div className="features__sticky">
             <h2 className="features__title">
-              <span data-features-title="1">{SITE_CONTENT.features.titleLine1}</span>
+              <span data-features-title="1">{content.features.titleLine1}</span>
               <br className="pc" />
-              <span data-features-title="2">{SITE_CONTENT.features.titleLine2}</span>
+              <span data-features-title="2">{content.features.titleLine2}</span>
             </h2>
             <div className="features__grid">
-              {SITE_CONTENT.features.items.map((item, index) => (
+              {content.features.items.map((item, index) => (
                 <article className="feature-item" key={`${index}-${item.title}`}>
                   <div className="feature-item__content">
                     <div className="feature-item__icon">
@@ -124,8 +127,8 @@ export const HomeContent: React.FC = () => {
         <section className="standards">
           <div className="standards__container">
             <div className="standards__image">
-              {SITE_CONTENT.standards.imageSrc ? (
-                <img src={SITE_CONTENT.standards.imageSrc} alt="" loading="lazy" decoding="async" width={800} height={400} />
+              {content.standards.imageSrc ? (
+                <img src={content.standards.imageSrc} alt="" loading="lazy" decoding="async" width={800} height={400} />
               ) : (
                 <picture>
                   <source srcSet="/_astro/apply-door.CA6YLUcA_HnYyn.avif 360w, /_astro/apply-door.CA6YLUcA_ZmDXJs.avif 720w, /_astro/apply-door.CA6YLUcA_Z1Wri67.avif 800w" type="image/avif" sizes="(max-width: 820px) 100vw, 800px" />
@@ -136,16 +139,14 @@ export const HomeContent: React.FC = () => {
             </div>
             <div className="standards__content">
               <h2 className="standards__title">
-                <span>Nuclear-grade </span>
-                <span>standards across </span>
-                <span>every site.</span>
+                <span>{content.standards.titleLine1}</span>
+                <span>{content.standards.titleLine2}</span>
+                <span>{content.standards.titleLine3}</span>
               </h2>
-              <p className="standards__description">
-                Modeled on nuclear-grade environments, our process enforces badge compliance, protected timelines and zero-error tolerance.
-              </p>
+              <p className="standards__description">{content.standards.description}</p>
               <div className="flx">
-                <Link href="/industries" className="pill-btn pill-btn--dark">
-                  <span className="pill-btn-span">Explore our industries</span>
+                <Link href={content.standards.href} className="pill-btn pill-btn--dark">
+                  <span className="pill-btn-span">{content.standards.cta}</span>
                 </Link>
               </div>
             </div>
@@ -155,11 +156,11 @@ export const HomeContent: React.FC = () => {
         <section className="faq" data-site-section="faq">
           <div className="faq__container">
             <div className="faq__left">
-              <h2 className="faq__title">{SITE_CONTENT.faq.title}</h2>
+              <h2 className="faq__title">{content.faq.title}</h2>
             </div>
             <div className="faq_split_bar" />
             <div className="faq__right">
-              {SITE_CONTENT.faq.items.map((item, index) => (
+              {content.faq.items.map((item, index) => (
                 <div key={item.question} className={index === 0 ? 'faq-item faq-item--open' : 'faq-item'}>
                   <button className="faq-item__header" type="button" aria-expanded={index === 0 ? 'true' : 'false'}>
                     <span className="faq-item__question">{item.question}</span>
@@ -178,12 +179,12 @@ export const HomeContent: React.FC = () => {
 
         <section className="cta-section" data-site-section="cta">
           <h2 className="cta-section__title">
-            <span>{SITE_CONTENT.cta.titleLine1}</span>
-            <span>{SITE_CONTENT.cta.titleLine2}</span>
+            <span>{content.cta.titleLine1}</span>
+            <span>{content.cta.titleLine2}</span>
           </h2>
           <div className="flx">
-            <Link href={SITE_CONTENT.cta.href} className="pill-btn pill-btn--light">
-              <span className="pill-btn-span">{SITE_CONTENT.cta.button}</span>
+            <Link href={content.cta.href} className="pill-btn pill-btn--light">
+              <span className="pill-btn-span">{content.cta.button}</span>
             </Link>
           </div>
         </section>

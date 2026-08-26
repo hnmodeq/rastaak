@@ -673,6 +673,13 @@ html[data-sec-header='off'] header {
   display: none !important;
 }
 
+html[data-header-industries='off'] [data-header-link='industries'],
+html[data-header-mission='off'] [data-header-link='mission'],
+html[data-header-apply='off'] [data-header-link='apply'],
+html[data-header-request='off'] [data-header-link='request'] {
+  display: none !important;
+}
+
 header .header__nav-left a,
 header .header__ctas .pill-btn--glass {
   color: var(--header-layout-color, var(--color-text)) !important;
@@ -709,6 +716,17 @@ html[data-chrome='layout'] header .header__ctas .pill-btn--dark {
 .footer__meta {
   width: 100%;
   justify-content: var(--footer-meta-align, start);
+}
+
+.footer__credit {
+  margin: 0;
+  color: var(--color-content-subtle);
+  white-space: nowrap;
+}
+
+.footer__credit-name {
+  color: var(--footer-credit-color, var(--color-state-warning));
+  font-weight: 700;
 }
 
 html[data-dir-header='rtl'] header {
