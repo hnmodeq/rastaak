@@ -29,18 +29,14 @@ export interface StoryCaptionConfig {
   range: [number, number];
 }
 
-/** A single outro beat that cascades shooting logos across every remaining building. */
 export type InsaneShootingColor = 'before' | 'after';
 
 export interface InsaneShootingConfig {
   enabled: boolean;
   start: number;
   end: number;
-  /** Offset from the Rastaak logo launch point used by every finale logo. */
   launch?: [number, number, number];
-  /** Building colour between its request and logo launch. */
   requestColor?: InsaneShootingColor;
-  /** Building colour while its logo is in flight and after it arrives. */
   shootingColor?: InsaneShootingColor;
 }
 
@@ -212,12 +208,11 @@ export const STORY_CONFIG: StoryConfig = {
   ],
   insaneShooting: {
     enabled: true,
-    // Keyframes 24 → 25: the zoom-out finale.
     start: 0.92851,
     end: 1,
-    launch: [0, 0, 0],
-    requestColor: 'before',
-    shootingColor: 'after'
+    launch: [-0.38, -0.13, 0.71],
+    requestColor: "before",
+    shootingColor: "after"
   },
   chipHoldAfterArrive: 0.14,
   captionFadeIn: 0.06,
@@ -251,7 +246,6 @@ const DEFAULT_INSANE_SHOOTING: InsaneShootingConfig = {
   shootingColor: 'after',
 };
 
-/** Returns the editable outro beat, normalized to a valid timeline span. */
 export function insaneShootingConfig(): InsaneShootingConfig {
   const config = STORY_CONFIG.insaneShooting ?? (STORY_CONFIG.insaneShooting = { ...DEFAULT_INSANE_SHOOTING });
   const start = Math.min(0.99, Math.max(0, Number.isFinite(config.start) ? config.start : DEFAULT_INSANE_SHOOTING.start));
