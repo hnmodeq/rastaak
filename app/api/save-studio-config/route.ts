@@ -456,6 +456,10 @@ export const SCENE_CONFIG: SceneConfig = {
         packetDistance: asFinite(rawStory.packetDistance, 9),
         packetGlow: asFinite(rawStory.packetGlow, 1),
         packetGlowSize: asFinite(rawStory.packetGlowSize, 0.22),
+        packetInnerGlowEnabled: rawStory.packetInnerGlowEnabled !== false,
+        packetInnerGlowOpacity: Math.min(1, Math.max(0, asFinite(rawStory.packetInnerGlowOpacity, 1))),
+        packetOuterGlowEnabled: rawStory.packetOuterGlowEnabled !== false,
+        packetOuterGlowOpacity: Math.min(1, Math.max(0, asFinite(rawStory.packetOuterGlowOpacity, 1))),
         packetCoreSize: asFinite(rawStory.packetCoreSize, 0.07),
         packetTrail: asFinite(rawStory.packetTrail, 0.7),
         burstDelay: Math.min(0.2, Math.max(0, asFinite(rawStory.burstDelay, 0.045))),
@@ -546,6 +550,10 @@ export interface StoryConfig {
   packetDistance: number;
   packetGlow: number;
   packetGlowSize: number;
+  packetInnerGlowEnabled?: boolean;
+  packetInnerGlowOpacity?: number;
+  packetOuterGlowEnabled?: boolean;
+  packetOuterGlowOpacity?: number;
   packetCoreSize: number;
   packetTrail: number;
   burstDelay?: number;

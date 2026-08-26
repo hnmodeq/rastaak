@@ -215,6 +215,10 @@ export interface StudioStorySave {
   packetDistance: number;
   packetGlow: number;
   packetGlowSize: number;
+  packetInnerGlowEnabled?: boolean;
+  packetInnerGlowOpacity?: number;
+  packetOuterGlowEnabled?: boolean;
+  packetOuterGlowOpacity?: number;
   packetCoreSize: number;
   packetTrail: number;
   burstDelay?: number;

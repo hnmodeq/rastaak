@@ -945,6 +945,10 @@ export class SceneStudioGUI {
         packetDistance: STORY_CONFIG.packetDistance,
         packetGlow: STORY_CONFIG.packetGlow,
         packetGlowSize: STORY_CONFIG.packetGlowSize,
+        packetInnerGlowEnabled: STORY_CONFIG.packetInnerGlowEnabled,
+        packetInnerGlowOpacity: STORY_CONFIG.packetInnerGlowOpacity,
+        packetOuterGlowEnabled: STORY_CONFIG.packetOuterGlowEnabled,
+        packetOuterGlowOpacity: STORY_CONFIG.packetOuterGlowOpacity,
         packetCoreSize: STORY_CONFIG.packetCoreSize,
         packetTrail: STORY_CONFIG.packetTrail,
         burstDelay: STORY_CONFIG.burstDelay,
@@ -2693,6 +2697,27 @@ export class SceneStudioGUI {
     root.add(lookParams, 'packetGlowSize', 0.04, 0.8, 0.01).name('Glow size').onChange((value: number) => {
       STORY_CONFIG.packetGlowSize = value;
     });
+
+    const glowLayers = root.addFolder('Glow layers');
+    const glowLayerParams = {
+      innerOn: STORY_CONFIG.packetInnerGlowEnabled !== false,
+      innerOpacity: STORY_CONFIG.packetInnerGlowOpacity ?? 1,
+      outerOn: STORY_CONFIG.packetOuterGlowEnabled !== false,
+      outerOpacity: STORY_CONFIG.packetOuterGlowOpacity ?? 1,
+    };
+    glowLayers.add(glowLayerParams, 'innerOn').name('Inner layer on').onChange((value: boolean) => {
+      STORY_CONFIG.packetInnerGlowEnabled = value;
+    });
+    glowLayers.add(glowLayerParams, 'innerOpacity', 0, 1, 0.01).name('Inner opacity').onChange((value: number) => {
+      STORY_CONFIG.packetInnerGlowOpacity = value;
+    });
+    glowLayers.add(glowLayerParams, 'outerOn').name('Outer layer on').onChange((value: boolean) => {
+      STORY_CONFIG.packetOuterGlowEnabled = value;
+    });
+    glowLayers.add(glowLayerParams, 'outerOpacity', 0, 1, 0.01).name('Outer opacity').onChange((value: number) => {
+      STORY_CONFIG.packetOuterGlowOpacity = value;
+    });
+
     root.add(lookParams, 'packetCoreSize', 0.02, 0.8, 0.005).name('Logo size').onChange((value: number) => {
       STORY_CONFIG.packetCoreSize = value;
     });

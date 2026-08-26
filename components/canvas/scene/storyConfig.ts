@@ -70,6 +70,10 @@ export interface StoryConfig {
   packetDistance: number;
   packetGlow: number;
   packetGlowSize: number;
+  packetInnerGlowEnabled?: boolean;
+  packetInnerGlowOpacity?: number;
+  packetOuterGlowEnabled?: boolean;
+  packetOuterGlowOpacity?: number;
   packetCoreSize: number;
   packetTrail: number;
   burstDelay?: number;
@@ -220,6 +224,10 @@ export const STORY_CONFIG: StoryConfig = {
   packetDistance: 1.1,
   packetGlow: 2,
   packetGlowSize: 0.13,
+  packetInnerGlowEnabled: true,
+  packetInnerGlowOpacity: 1,
+  packetOuterGlowEnabled: true,
+  packetOuterGlowOpacity: 1,
   packetCoreSize: 0.095,
   packetTrail: 1,
   burstDelay: 0,

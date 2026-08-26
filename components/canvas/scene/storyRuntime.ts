@@ -180,6 +180,15 @@ function burstSettings() {
   };
 }
 
+function glowLayerSettings() {
+  return {
+    innerOn: STORY_CONFIG.packetInnerGlowEnabled !== false,
+    innerOpacity: Math.max(0, Math.min(1, STORY_CONFIG.packetInnerGlowOpacity ?? 1)),
+    outerOn: STORY_CONFIG.packetOuterGlowEnabled !== false,
+    outerOpacity: Math.max(0, Math.min(1, STORY_CONFIG.packetOuterGlowOpacity ?? 1)),
+  };
+}
+
 const _box = new THREE.Box3();
 const _size = new THREE.Vector3();
 const _projected = new THREE.Vector3();
@@ -925,6 +934,7 @@ export class StoryRuntime {
     const pulse = 0.65 + Math.sin(u * Math.PI) * 0.35;
     const flicker = 0.75 + Math.sin((actor.index + u) * 42) * 0.25;
     const glow = Math.max(0, STORY_CONFIG.packetGlow ?? 1);
+    const layers = glowLayerSettings();
     const burstPop = bursting ? smooth01(burstK / 0.2) : 0;
     const burstDecay = bursting ? (burstK < 0.18 ? 1 : Math.pow(1 - (burstK - 0.18) / 0.82, 1.55)) : 0;
     const glowSize = Math.max(0.02, STORY_CONFIG.packetGlowSize ?? 0.22);
@@ -943,12 +953,12 @@ export class StoryRuntime {
     outerMat.color.copy(_packetOuter);
     packet.glowInner.scale.set(logoSize * (1.08 + glow * 0.06) + glowSize, logoSize * (1.08 + glow * 0.06) + glowSize, 1);
     packet.glowOuter.scale.set(logoSize * (1.22 + glow * 0.16) + glowSize * 2.4, logoSize * (1.22 + glow * 0.16) + glowSize * 2.4, 1);
-    innerMat.opacity = 0.5 * glow * pulse * logoFade;
-    outerMat.opacity = 0.22 * glow * pulse * logoFade;
+    innerMat.opacity = 0.5 * glow * pulse * logoFade * layers.innerOpacity;
+    outerMat.opacity = 0.22 * glow * pulse * logoFade * layers.outerOpacity;
     const hasMark = Boolean(coreMat.map);
     packet.core.visible = hasMark && logoFade > 0.02;
-    packet.glowInner.visible = hasMark && glow > 0.01 && logoFade > 0.02;
-    packet.glowOuter.visible = hasMark && glow > 0.01 && logoFade > 0.02;
+    packet.glowInner.visible = hasMark && layers.innerOn && layers.innerOpacity > 0.001 && glow > 0.01 && logoFade > 0.02;
+    packet.glowOuter.visible = hasMark && layers.outerOn && layers.outerOpacity > 0.001 && glow > 0.01 && logoFade > 0.02;
 
     const sparkMat = packet.sparks.material as THREE.PointsMaterial;
     sparkMat.color.copy(_packetSpark);
@@ -1051,6 +1061,7 @@ export class StoryRuntime {
     const pulse = 0.65 + Math.sin(u * Math.PI) * 0.35;
     const flicker = 0.75 + Math.sin(u * 42) * 0.25;
     const glow = Math.max(0, STORY_CONFIG.packetGlow ?? 1);
+    const layers = glowLayerSettings();
     const glowSize = Math.max(0.02, STORY_CONFIG.packetGlowSize ?? 0.22);
     const coreSize = Math.max(0.02, STORY_CONFIG.packetCoreSize ?? 0.07);
     const trailAmt = Math.max(0, Math.min(1, STORY_CONFIG.packetTrail ?? 0.7));
@@ -1082,12 +1093,12 @@ export class StoryRuntime {
     const outerSize = logoSize * (1.22 + glow * 0.16) + glowSize * 2.4 * appearScale;
     packet.glowInner.scale.set(innerSize, innerSize, 1);
     packet.glowOuter.scale.set(outerSize, outerSize, 1);
-    innerMat.opacity = 0.5 * glow * pulse * logoFade;
-    outerMat.opacity = 0.22 * glow * pulse * logoFade;
+    innerMat.opacity = 0.5 * glow * pulse * logoFade * layers.innerOpacity;
+    outerMat.opacity = 0.22 * glow * pulse * logoFade * layers.outerOpacity;
     const hasMark = Boolean(coreMat.map);
     packet.core.visible = hasMark && logoFade > 0.02;
-    packet.glowInner.visible = hasMark && glow > 0.01 && logoFade > 0.02;
-    packet.glowOuter.visible = hasMark && glow > 0.01 && logoFade > 0.02;
+    packet.glowInner.visible = hasMark && layers.innerOn && layers.innerOpacity > 0.001 && glow > 0.01 && logoFade > 0.02;
+    packet.glowOuter.visible = hasMark && layers.outerOn && layers.outerOpacity > 0.001 && glow > 0.01 && logoFade > 0.02;
 
     const sparkMat = packet.sparks.material as THREE.PointsMaterial;
     sparkMat.color.copy(_packetSpark);
