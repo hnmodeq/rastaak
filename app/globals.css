@@ -865,6 +865,18 @@ html[data-dir-footer='rtl'] .footer-nav {
   flex-direction: row-reverse;
 }
 
+html[data-dir-footer='rtl'] .footer-nav-btn__bg {
+  transform-origin: right center;
+}
+
+html[data-dir-footer='rtl'] .footer-nav-btn__arrows {
+  transform: scaleX(-1);
+}
+
+html[data-dir-footer='rtl'] .footer-nav-btn:hover .footer-nav-btn__label {
+  transform: translateX(-10px);
+}
+
 html[data-dir-footer='rtl'] .footer__copyright {
   margin-right: 0;
   margin-left: auto;
