@@ -192,7 +192,7 @@ export const SITE_CONTENT: SiteContentConfig = {
     titleLine1: "Staff your outage with fast response, ",
     titleLine2: "and crews you can rely on.",
     button: "Request Crews",
-    href: "/request-crew"
+    href: "#"
   },
   header: {
     sceneColor: 14803425,
@@ -249,9 +249,9 @@ export const SITE_CONTENT: SiteContentConfig = {
   footer: {
     copyright: "تمامی حقوق برای هونامیک محفوظ است.",
     privacy: "Privacy",
-    privacyHref: "/privacy",
+    privacyHref: "#",
     terms: "Terms",
-    termsHref: "/terms",
+    termsHref: "#",
     creditPrefix: "طراحی شده توسط",
     creditName: "بومیم",
     creditHref: "http://www.bumims.ir",
