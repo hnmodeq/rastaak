@@ -256,10 +256,10 @@ export const SITE_CONTENT: SiteContentConfig = {
     creditName: "بومیم",
     creditHref: "http://www.bumims.ir",
     creditColor: 16102145,
-    showLogo: true,
+    showLogo: false,
     showCopyright: true,
-    showPrivacy: true,
-    showTerms: true,
+    showPrivacy: false,
+    showTerms: false,
     showCredit: true
   }
 };
