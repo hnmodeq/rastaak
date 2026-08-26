@@ -67,7 +67,18 @@ export interface SiteContentConfig {
     layoutColor: number;
   };
   layout: {
+    /** Legacy global default; individual section controls override it. */
     direction: LayoutDirection;
+    headerDirection: LayoutDirection;
+    featuresDirection: LayoutDirection;
+    standardsDirection: LayoutDirection;
+    faqDirection: LayoutDirection;
+    ctaDirection: LayoutDirection;
+    footerDirection: LayoutDirection;
+    featuresAlign: LayoutAlign;
+    standardsAlign: LayoutAlign;
+    faqAlign: LayoutAlign;
+    ctaAlign: LayoutAlign;
     footerLogoAlign: LayoutAlign;
     footerMetaAlign: LayoutAlign;
     footerLogoScale: number;
@@ -166,6 +177,16 @@ export const SITE_CONTENT: SiteContentConfig = {
   },
   layout: {
     direction: "rtl",
+    headerDirection: "rtl",
+    featuresDirection: "rtl",
+    standardsDirection: "rtl",
+    faqDirection: "rtl",
+    ctaDirection: "rtl",
+    footerDirection: "rtl",
+    featuresAlign: "end",
+    standardsAlign: "end",
+    faqAlign: "end",
+    ctaAlign: "end",
     footerLogoAlign: "end",
     footerMetaAlign: "end",
     footerLogoScale: 1,
@@ -233,13 +254,25 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   root.dataset.secCta = on.cta ? 'on' : 'off';
   root.dataset.secLinks = on.links ? 'on' : 'off';
   root.dataset.secFooter = on.footer ? 'on' : 'off';
-  root.dataset.layoutDir = config.layout.direction;
+  const layout = config.layout;
+  const fallbackDirection = layout.direction ?? 'rtl';
+  root.dataset.layoutDir = fallbackDirection;
+  root.dataset.dirHeader = layout.headerDirection ?? fallbackDirection;
+  root.dataset.dirFeatures = layout.featuresDirection ?? fallbackDirection;
+  root.dataset.dirStandards = layout.standardsDirection ?? fallbackDirection;
+  root.dataset.dirFaq = layout.faqDirection ?? fallbackDirection;
+  root.dataset.dirCta = layout.ctaDirection ?? fallbackDirection;
+  root.dataset.dirFooter = layout.footerDirection ?? fallbackDirection;
+  root.style.setProperty('--features-align', layout.featuresAlign ?? 'end');
+  root.style.setProperty('--standards-align', layout.standardsAlign ?? 'end');
+  root.style.setProperty('--faq-align', layout.faqAlign ?? 'end');
+  root.style.setProperty('--cta-align', layout.ctaAlign ?? 'end');
   root.style.setProperty('--header-scene-color', hexCss(config.header.sceneColor));
   root.style.setProperty('--header-layout-color', hexCss(config.header.layoutColor));
-  root.style.setProperty('--footer-logo-align', config.layout.footerLogoAlign);
-  root.style.setProperty('--footer-meta-align', config.layout.footerMetaAlign);
-  root.style.setProperty('--footer-logo-scale', String(Math.max(0.4, Math.min(2.5, config.layout.footerLogoScale))));
-  root.style.setProperty('--footer-bottom-padding', `${Math.max(16, Math.min(160, config.layout.footerBottomPadding))}px`);
+  root.style.setProperty('--footer-logo-align', layout.footerLogoAlign ?? 'end');
+  root.style.setProperty('--footer-meta-align', layout.footerMetaAlign ?? 'end');
+  root.style.setProperty('--footer-logo-scale', String(Math.max(0.4, Math.min(2.5, layout.footerLogoScale ?? 1))));
+  root.style.setProperty('--footer-bottom-padding', `${Math.max(16, Math.min(160, layout.footerBottomPadding ?? 48))}px`);
 
   setText('[data-features-title="1"]', config.features.titleLine1);
   setText('[data-features-title="2"]', config.features.titleLine2);

@@ -45,7 +45,7 @@ function uploadedFile(file: File, apply: (dataUrl: string) => void) {
 
 export function LayoutControlPanel() {
   const [revision, setRevision] = useState(0);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('Live changes are not saved until Apply & Save.');
 
@@ -81,7 +81,7 @@ export function LayoutControlPanel() {
     }
   };
 
-  const direction = SITE_CONTENT.layout.direction;
+  const direction = SITE_CONTENT.layout.headerDirection;
   const footerAlignments: LayoutAlign[] = ['start', 'center', 'end'];
   const links = SITE_CONTENT.links;
   void revision;
@@ -132,7 +132,7 @@ export function LayoutControlPanel() {
               <select
                 value={direction}
                 onChange={(event) => change(() => {
-                  SITE_CONTENT.layout.direction = event.target.value as LayoutDirection;
+                  SITE_CONTENT.layout.headerDirection = event.target.value as LayoutDirection;
                 })}
               >
                 <option value="rtl">RTL — فارسی</option>
@@ -187,6 +187,18 @@ export function LayoutControlPanel() {
           <summary>Competitive Items</summary>
           <div className="layout-control-body">
             <label>
+              <span>Direction</span>
+              <select value={SITE_CONTENT.layout.featuresDirection} onChange={(event) => change(() => { SITE_CONTENT.layout.featuresDirection = event.target.value as LayoutDirection; })}>
+                <option value="rtl">RTL</option><option value="ltr">LTR</option>
+              </select>
+            </label>
+            <label>
+              <span>Text alignment</span>
+              <select value={SITE_CONTENT.layout.featuresAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.featuresAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
               <span>Title line 1</span>
               <input value={SITE_CONTENT.features.titleLine1} onChange={(event) => change(() => { SITE_CONTENT.features.titleLine1 = event.target.value; })} />
             </label>
@@ -232,6 +244,18 @@ export function LayoutControlPanel() {
         <details>
           <summary>Blog</summary>
           <div className="layout-control-body">
+            <label>
+              <span>Direction</span>
+              <select value={SITE_CONTENT.layout.standardsDirection} onChange={(event) => change(() => { SITE_CONTENT.layout.standardsDirection = event.target.value as LayoutDirection; })}>
+                <option value="rtl">RTL</option><option value="ltr">LTR</option>
+              </select>
+            </label>
+            <label>
+              <span>Text alignment</span>
+              <select value={SITE_CONTENT.layout.standardsAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.standardsAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
             {(['titleLine1', 'titleLine2', 'titleLine3'] as const).map((key, index) => (
               <label key={key}>
                 <span>Title line {index + 1}</span>
@@ -269,6 +293,18 @@ export function LayoutControlPanel() {
           <summary>Q&amp;A</summary>
           <div className="layout-control-body">
             <label>
+              <span>Direction</span>
+              <select value={SITE_CONTENT.layout.faqDirection} onChange={(event) => change(() => { SITE_CONTENT.layout.faqDirection = event.target.value as LayoutDirection; })}>
+                <option value="rtl">RTL</option><option value="ltr">LTR</option>
+              </select>
+            </label>
+            <label>
+              <span>Text alignment</span>
+              <select value={SITE_CONTENT.layout.faqAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.faqAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
               <span>Section title</span>
               <textarea rows={3} value={SITE_CONTENT.faq.title} onChange={(event) => change(() => { SITE_CONTENT.faq.title = event.target.value; })} />
             </label>
@@ -294,6 +330,18 @@ export function LayoutControlPanel() {
           <summary>CTA</summary>
           <div className="layout-control-body">
             <label>
+              <span>Direction</span>
+              <select value={SITE_CONTENT.layout.ctaDirection} onChange={(event) => change(() => { SITE_CONTENT.layout.ctaDirection = event.target.value as LayoutDirection; })}>
+                <option value="rtl">RTL</option><option value="ltr">LTR</option>
+              </select>
+            </label>
+            <label>
+              <span>Text alignment</span>
+              <select value={SITE_CONTENT.layout.ctaAlign} onChange={(event) => change(() => { SITE_CONTENT.layout.ctaAlign = event.target.value as LayoutAlign; })}>
+                {footerAlignments.map((align) => <option key={align} value={align}>{align}</option>)}
+              </select>
+            </label>
+            <label>
               <span>Title line 1</span>
               <input value={SITE_CONTENT.cta.titleLine1} onChange={(event) => change(() => { SITE_CONTENT.cta.titleLine1 = event.target.value; })} />
             </label>
@@ -315,6 +363,12 @@ export function LayoutControlPanel() {
         <details>
           <summary>Footer</summary>
           <div className="layout-control-body">
+            <label>
+              <span>Direction</span>
+              <select value={SITE_CONTENT.layout.footerDirection} onChange={(event) => change(() => { SITE_CONTENT.layout.footerDirection = event.target.value as LayoutDirection; })}>
+                <option value="rtl">RTL</option><option value="ltr">LTR</option>
+              </select>
+            </label>
             <label>
               <span>Copyright phrase</span>
               <input value={SITE_CONTENT.footer.copyright} onChange={(event) => change(() => { SITE_CONTENT.footer.copyright = event.target.value; })} />

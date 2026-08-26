@@ -711,114 +711,156 @@ html[data-chrome='layout'] header .header__ctas .pill-btn--dark {
   justify-content: var(--footer-meta-align, start);
 }
 
-html[data-layout-dir='rtl'] header {
+html[data-dir-header='rtl'] header {
   direction: rtl;
-}
-
-html[data-layout-dir='rtl'] header .header__nav-left {
-  order: 2;
-}
-
-html[data-layout-dir='rtl'] header .header__nav-right {
-  order: 1;
-  justify-content: flex-start;
-}
-
-html[data-layout-dir='rtl'] header .header__nav-right .header__ctas {
+  /* Reverse the actual header flex row: ghost links move right and CTAs left. */
   flex-direction: row-reverse;
 }
 
-html[data-layout-dir='rtl'] .features,
-html[data-layout-dir='rtl'] .standards,
-html[data-layout-dir='rtl'] .faq,
-html[data-layout-dir='rtl'] .cta-section,
-html[data-layout-dir='rtl'] .footer {
+html[data-dir-header='rtl'] header .header__nav-left,
+html[data-dir-header='rtl'] header .header__nav-right {
+  order: initial;
+}
+
+html[data-dir-header='rtl'] header .header__nav-right {
+  justify-content: flex-start;
+}
+
+html[data-dir-header='rtl'] header .header__nav-right .header__ctas {
+  flex-direction: row;
+}
+
+html[data-dir-features='rtl'] .features,
+html[data-dir-standards='rtl'] .standards,
+html[data-dir-faq='rtl'] .faq,
+html[data-dir-cta='rtl'] .cta-section,
+html[data-dir-footer='rtl'] .footer {
   direction: rtl;
 }
 
-html[data-layout-dir='rtl'] .features__sticky {
-  align-items: flex-end;
+.features__sticky {
+  align-items: var(--features-align, start);
 }
 
-html[data-layout-dir='rtl'] .features__title,
-html[data-layout-dir='rtl'] .feature-item,
-html[data-layout-dir='rtl'] .feature-item__text,
-html[data-layout-dir='rtl'] .standards__content,
-html[data-layout-dir='rtl'] .standards__title,
-html[data-layout-dir='rtl'] .standards__description,
-html[data-layout-dir='rtl'] .faq__title,
-html[data-layout-dir='rtl'] .faq-item__question,
-html[data-layout-dir='rtl'] .faq-item__answer,
-html[data-layout-dir='rtl'] .cta-section,
-html[data-layout-dir='rtl'] .footer__bottom,
-html[data-layout-dir='rtl'] .footer__meta {
+.features__title,
+.feature-item,
+.feature-item__text {
+  text-align: var(--features-align, start);
+}
+
+.standards__content {
+  align-items: var(--standards-align, start);
+}
+
+.standards__content,
+.standards__title,
+.standards__description {
+  text-align: var(--standards-align, start);
+}
+
+.faq__title,
+.faq-item__question,
+.faq-item__answer {
+  text-align: var(--faq-align, start);
+}
+
+.cta-section {
+  align-items: var(--cta-align, start);
+  text-align: var(--cta-align, start);
+}
+
+html[data-dir-features='rtl'] .features__sticky {
+  align-items: var(--features-align, end);
+}
+
+html[data-dir-features='rtl'] .features__title,
+html[data-dir-features='rtl'] .feature-item,
+html[data-dir-features='rtl'] .feature-item__text,
+html[data-dir-standards='rtl'] .standards__content,
+html[data-dir-standards='rtl'] .standards__title,
+html[data-dir-standards='rtl'] .standards__description,
+html[data-dir-faq='rtl'] .faq__title,
+html[data-dir-faq='rtl'] .faq-item__question,
+html[data-dir-faq='rtl'] .faq-item__answer,
+html[data-dir-cta='rtl'] .cta-section,
+html[data-dir-footer='rtl'] .footer__bottom,
+html[data-dir-footer='rtl'] .footer__meta {
   text-align: right;
 }
 
-html[data-layout-dir='rtl'] .features__grid {
+html[data-dir-features='rtl'] .features__grid {
   direction: rtl;
 }
 
-html[data-layout-dir='rtl'] .feature-item {
+html[data-dir-features='rtl'] .feature-item {
   padding-right: var(--space-lg);
   padding-left: 0;
   border-right: 1px solid var(--color-border);
   border-left: 0;
 }
 
-html[data-layout-dir='rtl'] .feature-item__content,
-html[data-layout-dir='rtl'] .feature-item__text {
+html[data-dir-features='rtl'] .feature-item__content,
+html[data-dir-features='rtl'] .feature-item__text {
   align-items: flex-end;
 }
 
-html[data-layout-dir='rtl'] .features__title,
-html[data-layout-dir='rtl'] .feature-item {
+html[data-dir-features='rtl'] .features__title,
+html[data-dir-features='rtl'] .feature-item {
   transform: translateX(36px);
 }
 
-html[data-layout-dir='rtl'] .features__title.is-in,
-html[data-layout-dir='rtl'] .feature-item.is-in {
+html[data-dir-features='rtl'] .features__title.is-in,
+html[data-dir-features='rtl'] .feature-item.is-in {
   transform: none;
 }
 
-html[data-layout-dir='rtl'] .standards__container {
+html[data-dir-standards='rtl'] .standards__container {
   flex-direction: row-reverse;
 }
 
-html[data-layout-dir='rtl'] .faq__container {
+html[data-dir-faq='rtl'] .faq__container {
   flex-direction: row-reverse;
 }
 
-html[data-layout-dir='rtl'] .faq-item__header {
-  flex-direction: row-reverse;
+html[data-dir-faq='rtl'] .faq-item__header {
+  /* Keep the collapse icon physically on the right while Persian copy starts right. */
+  direction: ltr;
+  flex-direction: row;
 }
 
-html[data-layout-dir='rtl'] .faq-item__icon {
-  transform: scaleX(-1);
+html[data-dir-faq='rtl'] .faq-item__question {
+  direction: rtl;
+  flex: 1;
+  text-align: right;
 }
 
-html[data-layout-dir='rtl'] .cta-section {
+html[data-dir-faq='rtl'] .faq-item__icon {
+  order: initial;
+  transform: none;
+}
+
+html[data-dir-cta='rtl'] .cta-section {
   align-items: flex-start;
 }
 
-html[data-layout-dir='rtl'] .footer-nav {
+html[data-dir-footer='rtl'] .footer-nav {
   flex-direction: row-reverse;
 }
 
-html[data-layout-dir='rtl'] .footer__copyright {
+html[data-dir-footer='rtl'] .footer__copyright {
   margin-right: 0;
   margin-left: auto;
 }
 
 @media (max-width: 1079px) {
-  html[data-layout-dir='rtl'] .standards__container,
-  html[data-layout-dir='rtl'] .faq__container {
+  html[data-dir-standards='rtl'] .standards__container,
+  html[data-dir-faq='rtl'] .faq__container {
     flex-direction: column;
   }
 }
 
 @media (max-width: 820px) {
-  html[data-layout-dir='rtl'] .feature-item {
+  html[data-dir-features='rtl'] .feature-item {
     padding-right: 0;
     border-right: 0;
   }
@@ -842,7 +884,8 @@ html[data-layout-dir='rtl'] .footer__copyright {
 }
 
 #rastaak-layout-control[data-collapsed='true'] {
-  transform: translate(calc(100% + 18px), -50%);
+  /* The sheet leaves the viewport, while its -22px edge button stays visible. */
+  transform: translate(100%, -50%);
 }
 
 #rastaak-layout-control .layout-control-edge {
@@ -1052,7 +1095,7 @@ html[data-layout-dir='rtl'] .footer__copyright {
   }
 
   #rastaak-layout-control[data-collapsed='true'] {
-    transform: translateX(calc(100% + 18px));
+    transform: translateX(100%);
   }
 
   #rastaak-layout-control .layout-control-sheet {
