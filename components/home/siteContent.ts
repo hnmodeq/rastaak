@@ -191,7 +191,7 @@ export const SITE_CONTENT: SiteContentConfig = {
   cta: {
     titleLine1: "ذخیره‌سازی داده‌های خودتون رو به ما بسپرید.",
     titleLine2: "",
-    button: "درخواست مشاوره",
+    button: "مشاوره سازمانی",
     href: "#"
   },
   header: {
@@ -225,24 +225,24 @@ export const SITE_CONTENT: SiteContentConfig = {
       label: "چرا هونامیک ارتباط رستاک؟",
       href: "#",
       visible: true,
-      side: "right"
+      side: "left"
     },
     mission: {
-      label: "درباره ما",
+      label: "مشاوره سازمانی",
       href: "#",
       visible: true,
-      side: "right"
+      side: "left"
     },
     apply: {
-      label: "درخواست",
+      label: "مشاوره سازمانی",
       href: "#",
-      visible: true,
+      visible: false,
       side: "left"
     },
     request: {
       label: "همکاری با ما",
       href: "#",
-      visible: true,
+      visible: false,
       side: "left"
     }
   },
