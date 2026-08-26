@@ -878,8 +878,27 @@ html[data-dir-standards='rtl'] .standards__container {
   flex-direction: row-reverse;
 }
 
-html[data-dir-faq='rtl'] .faq__container {
-  flex-direction: row-reverse;
+html[data-dir-faq='rtl'] .faq .faq__container {
+  flex-direction: row-reverse !important;
+}
+
+html[data-dir-faq='rtl'] .faq .faq__left {
+  order: 2;
+  text-align: right;
+}
+
+html[data-dir-faq='rtl'] .faq .faq__right {
+  order: 1;
+}
+
+html[data-dir-faq='rtl'] .faq .faq__title {
+  direction: rtl;
+  text-align: var(--faq-align, end) !important;
+}
+
+html[data-dir-faq='rtl'] .faq .faq-item__answer {
+  direction: rtl;
+  text-align: var(--faq-answer-align, var(--faq-align, end)) !important;
 }
 
 html[data-dir-faq='rtl'] .faq-item__header {

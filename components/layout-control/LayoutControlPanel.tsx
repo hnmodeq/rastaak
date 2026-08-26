@@ -96,6 +96,14 @@ export function LayoutControlPanel() {
     refresh();
   };
 
+  // Text inputs should not rerender this whole editor on every keystroke;
+  // doing so can steal focus while the live page still updates immediately.
+  const changeText = (mutate: () => void) => {
+    mutate();
+    applySiteContent();
+    notifySiteContentChanged();
+  };
+
   const save = async () => {
     setSaving(true);
     setMessage('Saving…');
@@ -264,11 +272,11 @@ export function LayoutControlPanel() {
             </label>
             <label>
               <span>Title line 1</span>
-              <input value={SITE_CONTENT.features.titleLine1} onChange={(event) => change(() => { SITE_CONTENT.features.titleLine1 = event.target.value; })} />
+              <input value={SITE_CONTENT.features.titleLine1} onChange={(event) => changeText(() => { SITE_CONTENT.features.titleLine1 = event.target.value; })} />
             </label>
             <label>
               <span>Title line 2</span>
-              <input value={SITE_CONTENT.features.titleLine2} onChange={(event) => change(() => { SITE_CONTENT.features.titleLine2 = event.target.value; })} />
+              <input value={SITE_CONTENT.features.titleLine2} onChange={(event) => changeText(() => { SITE_CONTENT.features.titleLine2 = event.target.value; })} />
             </label>
             {SITE_CONTENT.features.items.map((item, index) => (
               <fieldset key={`feature-${index}`}>
@@ -290,11 +298,11 @@ export function LayoutControlPanel() {
                 {item.iconImage ? <button type="button" onClick={() => change(() => { item.iconImage = undefined; })}>Use built-in icon</button> : null}
                 <label>
                   <span>Item title</span>
-                  <input value={item.title} onChange={(event) => change(() => { item.title = event.target.value; })} />
+                  <input value={item.title} onChange={(event) => changeText(() => { item.title = event.target.value; })} />
                 </label>
                 <label>
                   <span>Description</span>
-                  <textarea rows={3} value={item.description} onChange={(event) => change(() => { item.description = event.target.value; })} />
+                  <textarea rows={3} value={item.description} onChange={(event) => changeText(() => { item.description = event.target.value; })} />
                 </label>
                 <button type="button" className="layout-danger" disabled={SITE_CONTENT.features.items.length <= 1} onClick={() => change(() => { SITE_CONTENT.features.items.splice(index, 1); })}>Remove item</button>
               </fieldset>
@@ -382,18 +390,18 @@ export function LayoutControlPanel() {
             </label>
             <label>
               <span>Section title</span>
-              <textarea rows={3} value={SITE_CONTENT.faq.title} onChange={(event) => change(() => { SITE_CONTENT.faq.title = event.target.value; })} />
+              <textarea rows={3} value={SITE_CONTENT.faq.title} onChange={(event) => changeText(() => { SITE_CONTENT.faq.title = event.target.value; })} />
             </label>
             {SITE_CONTENT.faq.items.map((item, index) => (
               <fieldset key={`faq-${index}`}>
                 <legend>Question {index + 1}</legend>
                 <label>
                   <span>Question</span>
-                  <textarea rows={2} value={item.question} onChange={(event) => change(() => { item.question = event.target.value; })} />
+                  <textarea rows={2} value={item.question} onChange={(event) => changeText(() => { item.question = event.target.value; })} />
                 </label>
                 <label>
                   <span>Answer</span>
-                  <textarea rows={4} value={item.answer} onChange={(event) => change(() => { item.answer = event.target.value; })} />
+                  <textarea rows={4} value={item.answer} onChange={(event) => changeText(() => { item.answer = event.target.value; })} />
                 </label>
                 <button type="button" className="layout-danger" disabled={SITE_CONTENT.faq.items.length <= 1} onClick={() => change(() => { SITE_CONTENT.faq.items.splice(index, 1); })}>Remove question</button>
               </fieldset>
