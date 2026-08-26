@@ -166,6 +166,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       if (!el || typeof el.closest !== 'function') return false;
       return Boolean(
         el.closest('#rastaak-studio-dock') ||
+          el.closest('#rastaak-layout-control') ||
           el.closest('#rastaak-story-timeline') ||
           el.closest('.lil-gui') ||
           el.closest('input, textarea, select, button, a, label, [contenteditable="true"]'),

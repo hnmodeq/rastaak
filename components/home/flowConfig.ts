@@ -15,6 +15,7 @@ export interface FlowChromeConfig {
   align: 'left' | 'right';
   dir: 'ltr' | 'rtl';
   titleColor: number;
+  titleActiveColor: number;
   titleBg?: number;
   titleBgOpacity?: number;
   numberColor: number;
@@ -62,6 +63,7 @@ export const FLOW_CHROME: FlowChromeConfig = {
   align: "right",
   dir: "rtl",
   titleColor: 0xe1e1e1,
+  titleActiveColor: 0xe1e1e1,
   titleBg: 0x0c0d12,
   titleBgOpacity: 0,
   numberColor: 0xe1e1e1,
@@ -95,6 +97,7 @@ export function applyFlowChrome() {
   flow.dataset.dir = FLOW_CHROME.dir;
   flow.removeAttribute('dir');
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
+  flow.style.setProperty('--flow-title-active', hexCss(FLOW_CHROME.titleActiveColor ?? FLOW_CHROME.titleColor));
   flow.style.setProperty('--flow-number', hexCss(FLOW_CHROME.numberColor));
   flow.style.setProperty('--flow-number-active', hexCss(FLOW_CHROME.numberActiveColor));
   flow.style.setProperty('--flow-number-bg', hexCss(FLOW_CHROME.numberBg));

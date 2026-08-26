@@ -5,7 +5,7 @@ import { applyStoryTheme } from '@/components/canvas/scene/storyConfig';
 import { HERO_COPY, applyHeroCopy } from './heroCopy';
 import { FLOW_CHROME, FLOW_CONFIG, applyFlowChrome, syncFlowDom } from './flowConfig';
 import { TYPE_CHROME, applyTypeChrome } from './typeChrome';
-import { SITE_CONTENT, applySiteContent, mergeSiteContent } from './siteContent';
+import { SITE_CONTENT, applySiteContent, mergeSiteContent, notifySiteContentChanged } from './siteContent';
 import { subscribeLive } from '@/components/live/liveChannel';
 
 export function HomeTheme() {
@@ -27,9 +27,12 @@ export function HomeTheme() {
         Object.assign(SITE_CONTENT.faq, next.faq);
         SITE_CONTENT.faq.items = next.faq.items;
         Object.assign(SITE_CONTENT.cta, next.cta);
+        Object.assign(SITE_CONTENT.header, next.header);
+        Object.assign(SITE_CONTENT.layout, next.layout);
         Object.assign(SITE_CONTENT.links, next.links);
         Object.assign(SITE_CONTENT.footer, next.footer);
         applySiteContent(SITE_CONTENT);
+        notifySiteContentChanged();
       }
       if (patch.typeChrome && typeof patch.typeChrome === 'object') {
         Object.assign(TYPE_CHROME, patch.typeChrome);

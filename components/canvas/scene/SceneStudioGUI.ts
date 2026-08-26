@@ -455,6 +455,13 @@ export class SceneStudioGUI {
         border-bottom: 1px solid rgba(255,255,255,0.08);
         flex: 0 0 auto;
       }
+      #rastaak-studio-title {
+        margin-right: auto;
+        color: #f3f3f0;
+        font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
       #rastaak-studio-foldall,
       #rastaak-studio-apply {
         border: 1px solid rgba(255,255,255,0.16);
@@ -536,6 +543,9 @@ export class SceneStudioGUI {
       host.dir = 'ltr';
       const toolbar = document.createElement('div');
       toolbar.id = 'rastaak-studio-toolbar';
+      const title = document.createElement('strong');
+      title.id = 'rastaak-studio-title';
+      title.textContent = '3D Studio';
       const fold = document.createElement('button');
       fold.type = 'button';
       fold.id = 'rastaak-studio-foldall';
@@ -548,6 +558,7 @@ export class SceneStudioGUI {
       apply.addEventListener('click', () => {
         void this.handleApplyClick();
       });
+      toolbar.appendChild(title);
       toolbar.appendChild(fold);
       toolbar.appendChild(apply);
       host.appendChild(toolbar);
@@ -655,6 +666,7 @@ export class SceneStudioGUI {
       if (
         (e.target as HTMLElement)?.closest('.lil-gui') ||
         (e.target as HTMLElement)?.closest('#rastaak-studio-dock') ||
+        (e.target as HTMLElement)?.closest('#rastaak-layout-control') ||
         (e.target as HTMLElement)?.closest('#rastaak-story-timeline')
       ) {
         return;
@@ -2355,6 +2367,7 @@ export class SceneStudioGUI {
       align: FLOW_CHROME.align,
       dir: FLOW_CHROME.dir,
       titleColor: hex(FLOW_CHROME.titleColor),
+      titleActiveColor: hex(FLOW_CHROME.titleActiveColor ?? FLOW_CHROME.titleColor),
       numberColor: hex(FLOW_CHROME.numberColor),
       numberActiveColor: hex(FLOW_CHROME.numberActiveColor),
       numberBg: hex(FLOW_CHROME.numberBg),
@@ -2376,11 +2389,12 @@ export class SceneStudioGUI {
         FLOW_CHROME.dir = value;
         applyFlowChrome();
       });
-    const applyTimelineColor = (key: 'titleColor' | 'numberColor' | 'numberActiveColor' | 'numberBg' | 'descriptionColor' | 'trackColor' | 'trackFillColor', value: string) => {
+    const applyTimelineColor = (key: 'titleColor' | 'titleActiveColor' | 'numberColor' | 'numberActiveColor' | 'numberBg' | 'descriptionColor' | 'trackColor' | 'trackFillColor', value: string) => {
       FLOW_CHROME[key] = new THREE.Color(value).getHex();
       applyFlowChrome();
     };
     chapterFolder.addColor(timelineParams, 'titleColor').name('Title color').onChange((value: string) => applyTimelineColor('titleColor', value));
+    chapterFolder.addColor(timelineParams, 'titleActiveColor').name('Active title color').onChange((value: string) => applyTimelineColor('titleActiveColor', value));
     chapterFolder.addColor(timelineParams, 'numberColor').name('Number color').onChange((value: string) => applyTimelineColor('numberColor', value));
     chapterFolder.addColor(timelineParams, 'numberActiveColor').name('Active number color').onChange((value: string) => applyTimelineColor('numberActiveColor', value));
     chapterFolder.addColor(timelineParams, 'numberBg').name('Number background').onChange((value: string) => applyTimelineColor('numberBg', value));

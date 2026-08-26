@@ -258,6 +258,7 @@ export interface StudioFlowChromeSave {
   align: 'left' | 'right';
   dir: 'ltr' | 'rtl';
   titleColor: number;
+  titleActiveColor: number;
   titleBg?: number;
   titleBgOpacity?: number;
   numberColor: number;

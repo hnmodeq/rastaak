@@ -25,9 +25,12 @@ export function HomeInteractions() {
     }
     const revealFallback = window.setTimeout(revealHero, 28000);
 
-    const faqHeaders = Array.from(document.querySelectorAll<HTMLElement>('.faq-item__header'));
+    // Delegate FAQ clicks so questions added from Layout Control work without a page reload.
     const onFaqClick = (event: Event) => {
-      const item = (event.currentTarget as HTMLElement).closest('.faq-item');
+      const target = event.target as HTMLElement | null;
+      const header = target?.closest<HTMLElement>('.faq-item__header');
+      if (!header) return;
+      const item = header.closest('.faq-item');
       if (!item) return;
       const content = item.querySelector<HTMLElement>('.faq-item__content');
       const isOpen = item.classList.contains('faq-item--open');
@@ -41,14 +44,14 @@ export function HomeInteractions() {
       if (isOpen) {
         if (content) content.style.maxHeight = '0px';
         item.classList.remove('faq-item--open');
-        item.querySelector('.faq-item__header')?.setAttribute('aria-expanded', 'false');
+        header.setAttribute('aria-expanded', 'false');
       } else {
         item.classList.add('faq-item--open');
-        item.querySelector('.faq-item__header')?.setAttribute('aria-expanded', 'true');
+        header.setAttribute('aria-expanded', 'true');
         if (content) content.style.maxHeight = `${content.scrollHeight}px`;
       }
     };
-    faqHeaders.forEach((header) => header.addEventListener('click', onFaqClick));
+    document.addEventListener('click', onFaqClick);
     document.querySelectorAll('.faq-item--open .faq-item__content').forEach((content) => {
       (content as HTMLElement).style.maxHeight = `${content.scrollHeight}px`;
     });
@@ -129,6 +132,7 @@ export function HomeInteractions() {
     // Story Timeline edits can change chapter ranges without a page scroll.
     window.addEventListener('rastaak-studio-timing-changed', updateScrollUi);
     window.addEventListener('rastaak-flow-timing-changed', updateScrollUi);
+    window.addEventListener('rastaak-site-content-changed', updateScrollUi);
 
     const menuBtn = document.querySelector<HTMLButtonElement>('.menu-btn');
     const mobileNav = document.querySelector<HTMLElement>('.mobile-nav');
@@ -171,11 +175,12 @@ export function HomeInteractions() {
     return () => {
       window.removeEventListener('rastaak-loader-done', revealHero);
       window.clearTimeout(revealFallback);
-      faqHeaders.forEach((header) => header.removeEventListener('click', onFaqClick));
+      document.removeEventListener('click', onFaqClick);
       window.removeEventListener('scroll', updateScrollUi);
       window.removeEventListener('resize', updateScrollUi);
       window.removeEventListener('rastaak-studio-timing-changed', updateScrollUi);
       window.removeEventListener('rastaak-flow-timing-changed', updateScrollUi);
+      window.removeEventListener('rastaak-site-content-changed', updateScrollUi);
       menuBtn?.removeEventListener('click', toggleMenu);
       overlay?.removeEventListener('click', closeMenu);
       closeBtn?.removeEventListener('click', closeMenu);

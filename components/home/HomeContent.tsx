@@ -1,11 +1,24 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, FeatureIcon } from '../ui/Icons';
 import { FLOW_CONFIG, FLOW_CHROME } from './flowConfig';
 import { HERO_COPY } from './heroCopy';
-import { SITE_CONTENT } from './siteContent';
+import { applySiteContent, SITE_CONTENT, SITE_CONTENT_EVENT } from './siteContent';
 
 export const HomeContent: React.FC = () => {
+  const [, setRevision] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => {
+      setRevision((value) => value + 1);
+      requestAnimationFrame(() => applySiteContent());
+    };
+    window.addEventListener(SITE_CONTENT_EVENT, refresh);
+    return () => window.removeEventListener(SITE_CONTENT_EVENT, refresh);
+  }, []);
+
   return (
     <div data-taxi-view="home">
       <div className="top">
@@ -87,11 +100,15 @@ export const HomeContent: React.FC = () => {
               <span data-features-title="2">{SITE_CONTENT.features.titleLine2}</span>
             </h2>
             <div className="features__grid">
-              {SITE_CONTENT.features.items.map((item) => (
-                <article className="feature-item" key={item.icon}>
+              {SITE_CONTENT.features.items.map((item, index) => (
+                <article className="feature-item" key={`${index}-${item.title}`}>
                   <div className="feature-item__content">
                     <div className="feature-item__icon">
-                      <FeatureIcon name={item.icon} label={item.title} width={96} height={96} />
+                      {item.iconImage ? (
+                        <img src={item.iconImage} alt="" width={96} height={96} />
+                      ) : (
+                        <FeatureIcon name={item.icon} label={item.title} width={96} height={96} />
+                      )}
                     </div>
                     <div className="feature-item__text">
                       <h3 className="feature-item__title">{item.title}</h3>
@@ -107,11 +124,15 @@ export const HomeContent: React.FC = () => {
         <section className="standards">
           <div className="standards__container">
             <div className="standards__image">
-              <picture>
-                <source srcSet="/_astro/apply-door.CA6YLUcA_HnYyn.avif 360w, /_astro/apply-door.CA6YLUcA_ZmDXJs.avif 720w, /_astro/apply-door.CA6YLUcA_Z1Wri67.avif 800w" type="image/avif" sizes="(max-width: 820px) 100vw, 800px" />
-                <source srcSet="/_astro/apply-door.CA6YLUcA_GOkXG.webp 360w, /_astro/apply-door.CA6YLUcA_ZndCk9.webp 720w, /_astro/apply-door.CA6YLUcA_Z1X0VFN.webp 800w" type="image/webp" sizes="(max-width: 820px) 100vw, 800px" />
-                <img src="/_astro/apply-door.CA6YLUcA_Z12L5fE.png" srcSet="/_astro/apply-door.CA6YLUcA_1C4coP.png 360w, /_astro/apply-door.CA6YLUcA_x1e60.png 720w, /_astro/apply-door.CA6YLUcA_Z12L5fE.png 800w" alt="Workers in safety vests coordinating at industrial site" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 800px" width={800} height={400} />
-              </picture>
+              {SITE_CONTENT.standards.imageSrc ? (
+                <img src={SITE_CONTENT.standards.imageSrc} alt="" loading="lazy" decoding="async" width={800} height={400} />
+              ) : (
+                <picture>
+                  <source srcSet="/_astro/apply-door.CA6YLUcA_HnYyn.avif 360w, /_astro/apply-door.CA6YLUcA_ZmDXJs.avif 720w, /_astro/apply-door.CA6YLUcA_Z1Wri67.avif 800w" type="image/avif" sizes="(max-width: 820px) 100vw, 800px" />
+                  <source srcSet="/_astro/apply-door.CA6YLUcA_GOkXG.webp 360w, /_astro/apply-door.CA6YLUcA_ZndCk9.webp 720w, /_astro/apply-door.CA6YLUcA_Z1X0VFN.webp 800w" type="image/webp" sizes="(max-width: 820px) 100vw, 800px" />
+                  <img src="/_astro/apply-door.CA6YLUcA_Z12L5fE.png" srcSet="/_astro/apply-door.CA6YLUcA_1C4coP.png 360w, /_astro/apply-door.CA6YLUcA_x1e60.png 720w, /_astro/apply-door.CA6YLUcA_Z12L5fE.png 800w" alt="Workers in safety vests coordinating at industrial site" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 800px" width={800} height={400} />
+                </picture>
+              )}
             </div>
             <div className="standards__content">
               <h2 className="standards__title">

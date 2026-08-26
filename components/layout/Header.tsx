@@ -6,7 +6,7 @@ import { SITE_CONTENT } from '@/components/home/siteContent';
 
 export const Header: React.FC = () => {
   return (
-    <header>
+    <header data-site-section="header">
       <nav className="header__nav-left" data-site-section="links">
         <Link href={SITE_CONTENT.links.industries.href} data-link="industries">{SITE_CONTENT.links.industries.label}</Link>
         <Link href={SITE_CONTENT.links.mission.href} data-link="mission">{SITE_CONTENT.links.mission.label}</Link>

@@ -778,6 +778,7 @@ export function applyHeroCopy() {
         align: rawChrome?.align === 'right' ? 'right' : 'left',
         dir: rawChrome?.dir === 'rtl' ? 'rtl' : 'ltr',
         titleColor: hexLit(asHexNumber(rawChrome?.titleColor, 0xf5f5f2)),
+        titleActiveColor: hexLit(asHexNumber(rawChrome?.titleActiveColor ?? rawChrome?.titleColor, 0xf5f5f2)),
         titleBg: hexLit(asHexNumber(rawChrome?.titleBg, 0x0c0d12)),
         titleBgOpacity: Math.min(1, Math.max(0, asFinite(rawChrome?.titleBgOpacity, 0))),
         numberColor: hexLit(asHexNumber(rawChrome?.numberColor, 0xf5f5f2)),
@@ -816,6 +817,7 @@ export interface FlowChromeConfig {
   align: 'left' | 'right';
   dir: 'ltr' | 'rtl';
   titleColor: number;
+  titleActiveColor: number;
   titleBg?: number;
   titleBgOpacity?: number;
   numberColor: number;
@@ -853,6 +855,7 @@ export function applyFlowChrome() {
   flow.dataset.dir = FLOW_CHROME.dir;
   flow.removeAttribute('dir');
   flow.style.setProperty('--flow-title', hexCss(FLOW_CHROME.titleColor));
+  flow.style.setProperty('--flow-title-active', hexCss(FLOW_CHROME.titleActiveColor ?? FLOW_CHROME.titleColor));
   flow.style.setProperty('--flow-number', hexCss(FLOW_CHROME.numberColor));
   flow.style.setProperty('--flow-number-active', hexCss(FLOW_CHROME.numberActiveColor));
   flow.style.setProperty('--flow-number-bg', hexCss(FLOW_CHROME.numberBg));

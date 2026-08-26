@@ -160,12 +160,12 @@ export class StoryTimelinePanel {
     root.dataset.collapsed = 'true';
     if (host) root.dataset.docked = 'true';
     root.innerHTML = `
-      <button type="button" class="stl-edge" title="Show story timeline" aria-label="Show story timeline">
+      <button type="button" class="stl-edge" title="Show Timeline Panel" aria-label="Show Timeline Panel">
         <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="stl-sheet">
         <div class="stl-head">
-          <strong>Story Timeline</strong>
+          <strong>Timeline Panel</strong>
           <div class="stl-actions">
             <button type="button" data-undo>Undo</button>
             <button type="button" data-redo>Redo</button>
@@ -241,7 +241,7 @@ export class StoryTimelinePanel {
     if (!this.root) return;
     this.root.dataset.collapsed = collapsed ? 'true' : 'false';
     if (this.edgeBtn) {
-      this.edgeBtn.title = collapsed ? 'Show story timeline' : 'Hide story timeline';
+      this.edgeBtn.title = collapsed ? 'Show Timeline Panel' : 'Hide Timeline Panel';
       this.edgeBtn.setAttribute('aria-label', this.edgeBtn.title);
       this.edgeBtn.innerHTML = collapsed
         ? '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 8l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'

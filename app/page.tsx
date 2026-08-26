@@ -5,6 +5,7 @@ import { HomeTheme } from '@/components/home/HomeTheme';
 import { HomeInteractions } from '@/components/layout/HomeInteractions';
 import { HeroSceneBoot } from '@/components/canvas/HeroSceneBoot';
 import { HeroCanvasWrapper } from '@/components/canvas/HeroCanvasWrapper';
+import { LayoutControlBoot } from '@/components/layout-control/LayoutControlBoot';
 
 export default function HomePage() {
   return (
@@ -14,6 +15,7 @@ export default function HomePage() {
           while leaving the rest of the legacy bundle untouched. */}
       <HeroSceneBoot />
       <HeroCanvasWrapper />
+      <LayoutControlBoot />
       <HeroScrollMotion />
       <HomeTheme />
       <HomeInteractions />

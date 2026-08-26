@@ -7,6 +7,8 @@ export type FeatureIconName = 'rapid' | 'selection' | 'verified' | 'outcomes';
 
 export interface SiteFeatureItem {
   icon: FeatureIconName;
+  /** Optional uploaded icon data URL; falls back to the selected built-in icon. */
+  iconImage?: string;
   title: string;
   description: string;
 }
@@ -21,13 +23,18 @@ export interface SiteLinkItem {
   href: string;
 }
 
+export type LayoutDirection = 'ltr' | 'rtl';
+export type LayoutAlign = 'start' | 'center' | 'end';
+
 export interface SiteContentConfig {
   sections: {
+    header: boolean;
     scene: boolean;
     features: boolean;
     standards: boolean;
     faq: boolean;
     cta: boolean;
+    /** Legacy sub-toggle for link rows; retained for saved configurations. */
     links: boolean;
     footer: boolean;
   };
@@ -43,6 +50,7 @@ export interface SiteContentConfig {
     description: string;
     cta: string;
     href: string;
+    imageSrc?: string;
   };
   faq: {
     title: string;
@@ -54,6 +62,17 @@ export interface SiteContentConfig {
     button: string;
     href: string;
   };
+  header: {
+    sceneColor: number;
+    layoutColor: number;
+  };
+  layout: {
+    direction: LayoutDirection;
+    footerLogoAlign: LayoutAlign;
+    footerMetaAlign: LayoutAlign;
+    footerLogoScale: number;
+    footerBottomPadding: number;
+  };
   links: {
     industries: SiteLinkItem;
     mission: SiteLinkItem;
@@ -63,12 +82,15 @@ export interface SiteContentConfig {
   footer: {
     copyright: string;
     privacy: string;
+    privacyHref?: string;
     terms: string;
+    termsHref?: string;
   };
 }
 
 export const SITE_CONTENT: SiteContentConfig = {
   sections: {
+    header: true,
     scene: true,
     features: true,
     standards: true,
@@ -147,6 +169,17 @@ export const SITE_CONTENT: SiteContentConfig = {
     button: 'Request Crews',
     href: '/request-crew',
   },
+  header: {
+    sceneColor: 0xe1e1e1,
+    layoutColor: 0x1a1b22,
+  },
+  layout: {
+    direction: 'rtl',
+    footerLogoAlign: 'end',
+    footerMetaAlign: 'end',
+    footerLogoScale: 1,
+    footerBottomPadding: 48,
+  },
   links: {
     industries: { label: 'Our Industries', href: '/industries' },
     mission: { label: 'Our Mission', href: '/our-mission' },
@@ -156,9 +189,17 @@ export const SITE_CONTENT: SiteContentConfig = {
   footer: {
     copyright: 'All rights reserved.',
     privacy: 'Privacy',
+    privacyHref: '/privacy',
     terms: 'Terms',
+    termsHref: '/terms',
   },
 };
+
+export const SITE_CONTENT_EVENT = 'rastaak-site-content-changed';
+
+function hexCss(value: number): string {
+  return '#' + (value >>> 0).toString(16).padStart(6, '0');
+}
 
 function setText(selector: string, value: string) {
   document.querySelectorAll<HTMLElement>(selector).forEach((el) => {
@@ -166,10 +207,22 @@ function setText(selector: string, value: string) {
   });
 }
 
+function setHref(selector: string, value: string) {
+  document.querySelectorAll<HTMLAnchorElement>(selector).forEach((el) => {
+    if (el.getAttribute('href') !== value) el.setAttribute('href', value);
+  });
+}
+
+export function notifySiteContentChanged() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(SITE_CONTENT_EVENT));
+}
+
 export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   const on = config.sections;
+  root.dataset.secHeader = on.header !== false ? 'on' : 'off';
   root.dataset.secScene = on.scene ? 'on' : 'off';
   root.dataset.secFeatures = on.features ? 'on' : 'off';
   root.dataset.secStandards = on.standards ? 'on' : 'off';
@@ -177,6 +230,13 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   root.dataset.secCta = on.cta ? 'on' : 'off';
   root.dataset.secLinks = on.links ? 'on' : 'off';
   root.dataset.secFooter = on.footer ? 'on' : 'off';
+  root.dataset.layoutDir = config.layout.direction;
+  root.style.setProperty('--header-scene-color', hexCss(config.header.sceneColor));
+  root.style.setProperty('--header-layout-color', hexCss(config.header.layoutColor));
+  root.style.setProperty('--footer-logo-align', config.layout.footerLogoAlign);
+  root.style.setProperty('--footer-meta-align', config.layout.footerMetaAlign);
+  root.style.setProperty('--footer-logo-scale', String(Math.max(0.4, Math.min(2.5, config.layout.footerLogoScale))));
+  root.style.setProperty('--footer-bottom-padding', `${Math.max(16, Math.min(160, config.layout.footerBottomPadding))}px`);
 
   setText('[data-features-title="1"]', config.features.titleLine1);
   setText('[data-features-title="2"]', config.features.titleLine2);
@@ -221,11 +281,17 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   setText('[data-link="mission"]', config.links.mission.label);
   setText('[data-link="apply"]', config.links.apply.label);
   setText('[data-link="request"]', config.links.request.label);
+  setHref('[data-link="industries"]', config.links.industries.href);
+  setHref('[data-link="mission"]', config.links.mission.href);
+  setHref('[data-link="apply"]', config.links.apply.href);
+  setHref('[data-link="request"]', config.links.request.href);
 
   const year = new Date().getFullYear();
   setText('[data-footer="copyright"]', `© ${year} ${config.footer.copyright}`);
   setText('[data-footer="privacy"]', config.footer.privacy);
   setText('[data-footer="terms"]', config.footer.terms);
+  setHref('[data-footer="privacy"]', config.footer.privacyHref ?? '/privacy');
+  setHref('[data-footer="terms"]', config.footer.termsHref ?? '/terms');
 }
 
 export function mergeSiteContent(raw: unknown): SiteContentConfig {
@@ -255,6 +321,8 @@ export function mergeSiteContent(raw: unknown): SiteContentConfig {
     };
   }
   if (value.cta) next.cta = { ...next.cta, ...value.cta };
+  if (value.header) next.header = { ...next.header, ...value.header };
+  if (value.layout) next.layout = { ...next.layout, ...value.layout };
   if (value.links) {
     next.links = {
       industries: { ...next.links.industries, ...value.links.industries },
