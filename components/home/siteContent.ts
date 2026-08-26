@@ -217,28 +217,28 @@ export const SITE_CONTENT: SiteContentConfig = {
   },
   links: {
     industries: {
-      label: "درباره ما",
+      label: "چرا هونامیک ارتباط رستاک؟",
       href: "/industries",
       visible: true,
-      side: "right"
+      side: "left"
     },
     mission: {
-      label: "چرا هونامیک ارتباط رستاک؟",
+      label: "درخواست مشاوره",
       href: "/our-mission",
       visible: true,
-      side: "right"
+      side: "left"
     },
     apply: {
       label: "درخواست",
       href: "/apply",
-      visible: true,
-      side: "left"
+      visible: false,
+      side: "right"
     },
     request: {
       label: "همکاری با ما",
       href: "/request-crew",
-      visible: true,
-      side: "left"
+      visible: false,
+      side: "right"
     }
   },
   footer: {
@@ -250,7 +250,7 @@ export const SITE_CONTENT: SiteContentConfig = {
     creditPrefix: "طراحی شده توسط",
     creditName: "بومیم",
     creditHref: "http://www.bumims.ir",
-    creditColor: 0xf5b301,
+    creditColor: 16102145,
     showLogo: true,
     showCopyright: true,
     showPrivacy: true,
