@@ -163,9 +163,9 @@ export const SCENE_CONFIG: SceneConfig = {
     },
     {
       id: "keyframe_21",
-      progress: 0.815245,
-      camera: [15.2322, 1.247, -0.2125],
-      target: [14.2969, 0.127, 0.3713],
+      progress: 0.816968,
+      camera: [16.3508, 1.767, -1.0968],
+      target: [14.3604, -0.1302, 0.2354],
       fov: 49
     },
     {
@@ -259,12 +259,12 @@ export const SCENE_CONFIG: SceneConfig = {
     treeLeafColor: 0x00240c,
     globalFacadeColor: 0x0a0a0a,
     globalWindowColor: 0x6e6e6e,
-    roughness: 0.37,
-    metalness: 0.8,
+    roughness: 0.65,
+    metalness: 0.48,
     envMapIntensity: 1.3,
     groundRoughness: 0.64,
     groundMetalness: 0.74,
-    groundEnvMapIntensity: 0.95,
+    groundEnvMapIntensity: 0.85,
     overrides: {}
   } as MaterialsConfig,
 
