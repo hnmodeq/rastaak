@@ -135,7 +135,7 @@ export const SITE_CONTENT: SiteContentConfig = {
       {
         icon: "rapid",
         title: "Rapid Activation",
-        description: "We believe speed is a skill. Our platform uses machine learning to turn staffing into instant logistics, deploying a precisely matched workforce the moment demand strikes."
+        description: "We believe speed is a skill. Our platform uses machine learning to turn staffing into instant logistics, deploying a precisely matched workforce the moment demand strikes.d"
       },
       {
         icon: "selection",
@@ -151,6 +151,11 @@ export const SITE_CONTENT: SiteContentConfig = {
         icon: "outcomes",
         title: "Controlled Outcomes",
         description: "We guarantee controlled outcomes by managing staffing's biggest variables—cost and compliance—prioritizing local mobilization and automating safety for every dispatch."
+      },
+      {
+        icon: "rapid",
+        title: "New competitive item",
+        description: "Describe this competitive advantage."
       }
     ]
   },
@@ -163,7 +168,7 @@ export const SITE_CONTENT: SiteContentConfig = {
     href: "/industries"
   },
   faq: {
-    title: "How we work and how we deliver industrial-grade staffing.",
+    title: "How we work and how we deliver industrial-grade staffing.ی",
     items: [
       {
         question: "How fast can crews be mobilized?",
@@ -218,25 +223,25 @@ export const SITE_CONTENT: SiteContentConfig = {
   links: {
     industries: {
       label: "چرا هونامیک ارتباط رستاک؟",
-      href: "/industries",
+      href: "#",
       visible: true,
       side: "right"
     },
     mission: {
       label: "درباره ما",
-      href: "/our-mission",
+      href: "#",
       visible: true,
       side: "right"
     },
     apply: {
       label: "درخواست",
-      href: "/apply",
+      href: "#",
       visible: true,
       side: "left"
     },
     request: {
       label: "همکاری با ما",
-      href: "/request-crew",
+      href: "#",
       visible: true,
       side: "left"
     }
