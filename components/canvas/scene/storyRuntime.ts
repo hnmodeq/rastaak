@@ -714,6 +714,13 @@ export class StoryRuntime {
       if (input.reducedMotion || !this.enabled || jumped) {
         client.blend = targetBlend;
       } else {
+        // A blend value above 1 represents the solved colour. When scrolling
+        // backward into the request state, easing toward 1 from above never
+        // crosses that boundary, so the before colour could stay stuck. Snap
+        // to the request boundary first, then keep the normal idle fade.
+        if (targetBlend < client.blend && client.blend > 1) {
+          client.blend = 1;
+        }
         const k = 1 - Math.exp(-input.delta * 14);
         client.blend += (targetBlend - client.blend) * k;
       }

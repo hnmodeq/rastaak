@@ -1060,6 +1060,11 @@ export function applyTypeChrome() {
   root.style.setProperty('--site-name-layout-color', layoutColor);
   document.querySelectorAll<HTMLElement>('.site-name').forEach((el) => {
     if (el.textContent !== TYPE_CHROME.siteName) el.textContent = TYPE_CHROME.siteName;
+    el.style.setProperty('font-size', TYPE_CHROME.siteNameType.size + 'px', 'important');
+    el.style.setProperty('font-weight', String(TYPE_CHROME.siteNameType.weight), 'important');
+    el.style.setProperty('line-height', String(TYPE_CHROME.siteNameType.lineHeight ?? 1.15), 'important');
+    el.style.setProperty('letter-spacing', (TYPE_CHROME.siteNameType.letterSpacing ?? 0) + 'px', 'important');
+    el.style.setProperty('text-shadow', shadowCss(TYPE_CHROME.siteNameType), 'important');
     el.style.removeProperty('color');
   });
   applyStudioChrome();

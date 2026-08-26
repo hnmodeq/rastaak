@@ -14,7 +14,7 @@ import { tokens } from '@/tokens/design-tokens';
 import { SCENE_CONFIG } from './scene/sceneConfig';
 import { sampleSceneJourney } from './scene/journeyMath';
 import { LIGHTS_CONFIG } from './scene/lightingConfig';
-import { SceneStudioGUI } from './scene/SceneStudioGUI';
+import type { SceneStudioGUI } from './scene/SceneStudioGUI';
 import { BlenderViewport } from './scene/BlenderViewport';
 import { applyMaterialsConfig } from './scene/materialKeys';
 import { applyBuildingVisibility } from './scene/buildingVisibility';
@@ -61,6 +61,28 @@ import {
 
 type HeroCanvasMode = 'public' | 'admin';
 
+type RenderProfile = {
+  lowPower: boolean;
+  pixelRatio: number;
+  shadowMapCap: number;
+  useBloom: boolean;
+};
+
+function renderProfile(): RenderProfile {
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const cores = nav.hardwareConcurrency ?? 8;
+  const memory = nav.deviceMemory ?? 8;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lowPower = reducedMotion || cores <= 4 || memory <= 4;
+  const highPower = !lowPower && cores >= 8 && memory >= 8;
+  return {
+    lowPower,
+    pixelRatio: Math.min(window.devicePixelRatio || 1, lowPower ? 1 : highPower ? 2 : 1.5),
+    shadowMapCap: lowPower ? 1024 : 2048,
+    useBloom: !lowPower,
+  };
+}
+
 function reportHeroLoad(progress: number) {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent('rastaak-load-progress', { detail: { progress } }));
@@ -80,6 +102,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
 
     let isDisposed = false;
     let animationFrameId: number;
+    let inactiveRenderTimer: number | null = null;
 
     const env = SCENE_CONFIG.environment;
     const camConfig = SCENE_CONFIG.camera;
@@ -96,6 +119,9 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     const host = containerRef.current;
     const viewW = () => Math.max(1, host.clientWidth || window.innerWidth);
     const viewH = () => Math.max(1, host.clientHeight || window.innerHeight);
+    const profile = renderProfile();
+    const shadowMapSize = (requested: number | undefined, fallback: number) =>
+      Math.min(profile.shadowMapCap, requested ?? fallback);
 
     const camera = new THREE.PerspectiveCamera(
       camConfig.defaultFov,
@@ -105,15 +131,15 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     );
     camera.layers.enable(STORY_BLOOM_LAYER);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: !profile.lowPower, alpha: true });
     renderer.setSize(viewW(), viewH());
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(profile.pixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = SCENE_CONFIG.renderer.toneMappingExposure ?? 1.15;
     renderer.shadowMap.enabled = true;
-    applyRendererShadowFilter(renderer, SCENE_CONFIG.renderer.shadowMapType);
-    const lookPost = new LookComposer(renderer);
-    lookPost.setSize(viewW(), viewH());
+    applyRendererShadowFilter(renderer, profile.lowPower ? 'basic' : SCENE_CONFIG.renderer.shadowMapType);
+    const lookPost = profile.useBloom ? new LookComposer(renderer) : null;
+    lookPost?.setSize(viewW(), viewH());
 
     host.innerHTML = '';
     renderer.domElement.classList.add('is-ready');
@@ -178,7 +204,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
           dirLight.shadow.camera.top = 45;
           dirLight.shadow.camera.bottom = -45;
           applyLightShadow(dirLight, {
-            shadowMapSize: cfg.shadowMapSize ?? 2048,
+            shadowMapSize: shadowMapSize(cfg.shadowMapSize, 2048),
             shadowBias: cfg.shadowBias ?? -0.0005,
             shadowNormalBias: cfg.shadowNormalBias,
             shadowNear: cfg.shadowNear ?? 1,
@@ -199,7 +225,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         if (cfg.castShadow) {
           ptLight.castShadow = true;
           applyLightShadow(ptLight, {
-            shadowMapSize: cfg.shadowMapSize ?? 1024,
+            shadowMapSize: shadowMapSize(cfg.shadowMapSize, 1024),
             shadowBias: cfg.shadowBias ?? 0,
             shadowNormalBias: cfg.shadowNormalBias,
             shadowNear: cfg.shadowNear,
@@ -227,7 +253,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
         if (cfg.castShadow) {
           spotLight.castShadow = true;
           applyLightShadow(spotLight, {
-            shadowMapSize: cfg.shadowMapSize ?? 1024,
+            shadowMapSize: shadowMapSize(cfg.shadowMapSize, 1024),
             shadowBias: cfg.shadowBias ?? -0.0005,
             shadowNormalBias: cfg.shadowNormalBias,
             shadowNear: cfg.shadowNear,
@@ -266,6 +292,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     let world: THREE.Group | null = null;
     let announcedReady = false;
     let studioGUI: SceneStudioGUI | null = null;
+    let studioBooting = false;
     const story = new StoryRuntime();
     const namePlates = new BuildingNamePlateSet();
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -385,57 +412,71 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       }
     });
 
-    const bootStudio = () => {
-      if (studioGUI || isDisposed) return;
-      document.documentElement.dataset.studio = 'true';
-      studioGUI = new SceneStudioGUI(
-        scene,
-        camera,
-        renderer,
-        lightsMap,
-        () => world,
-        (forcedT: number) => {
-          targetScrollProgress = forcedT;
-          currentScrollProgress = forcedT;
-          // In Blender viewport mode, a keyframe/timeline seek is a preview:
-          // show the exact final journey pose now, then leave navigation free
-          // for the user to compose or capture the next view.
-          if (viewport.enabled) {
-            applyJourneyToCamera(forcedT);
-          } else if (controls.enabled) {
-            orbitSeekT = forcedT;
-          }
-        },
-        (orbitEnabled: boolean) => {
-          if (mode === 'admin') {
+    const bootStudio = async () => {
+      if (studioGUI || studioBooting || isDisposed) return;
+      studioBooting = true;
+      try {
+        // Keep all Studio/timeline code out of the public visitor bundle. This
+        // import only runs after the server confirms an authenticated /admin session.
+        const { SceneStudioGUI: StudioGUI } = await import('./scene/SceneStudioGUI');
+        if (isDisposed) return;
+        document.documentElement.dataset.studio = 'true';
+        studioGUI = new StudioGUI(
+          scene,
+          camera,
+          renderer,
+          lightsMap,
+          () => world,
+          (forcedT: number) => {
+            targetScrollProgress = forcedT;
+            currentScrollProgress = forcedT;
+            // In Blender viewport mode, a keyframe/timeline seek is a preview:
+            // show the exact final journey pose now, then leave navigation free
+            // for the user to compose or capture the next view.
+            if (viewport.enabled) {
+              applyJourneyToCamera(forcedT);
+            } else if (controls.enabled) {
+              orbitSeekT = forcedT;
+            }
+          },
+          (orbitEnabled: boolean) => {
+            if (mode === 'admin') {
+              if (orbitEnabled) {
+                controls.target.copy(lookAt);
+                controls.enabled = true;
+              } else {
+                controls.enabled = false;
+              }
+              if (containerRef.current) {
+                containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
+              }
+              return;
+            }
             if (orbitEnabled) {
-              controls.target.copy(lookAt);
-              controls.enabled = true;
+              if (!viewport.enabled) viewport.target.copy(lookAt);
+              viewport.setEnabled(true);
             } else {
-              controls.enabled = false;
+              viewport.setEnabled(false);
             }
-            if (containerRef.current) {
-              containerRef.current.style.pointerEvents = orbitEnabled ? 'auto' : 'none';
-            }
-            return;
-          }
-          if (orbitEnabled) {
-            if (!viewport.enabled) viewport.target.copy(lookAt);
-            viewport.setEnabled(true);
-          } else {
-            viewport.setEnabled(false);
-          }
-        },
-        viewport,
-        () => (mode === 'admin' ? controls.target : viewport.target),
-      );
-      if (world) studioGUI.populateMaterials();
+          },
+          viewport,
+          () => (mode === 'admin' ? controls.target : viewport.target),
+        );
+        if (world) {
+          studioGUI.populateMaterials();
+          studioGUI.populateBuildingVisibility();
+        }
+      } catch (error) {
+        console.warn('[HeroCanvas3D] failed to load admin studio', error);
+      } finally {
+        studioBooting = false;
+      }
     };
 
     void fetch('/api/admin/session')
       .then((res) => res.json())
       .then((data) => {
-        if (data?.ok) bootStudio();
+        if (data?.ok) void bootStudio();
       })
       .catch(() => undefined);
 
@@ -533,7 +574,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       camera.aspect = viewW() / viewH();
       camera.updateProjectionMatrix();
       renderer.setSize(viewW(), viewH(), false);
-      lookPost.setSize(viewW(), viewH());
+      lookPost?.setSize(viewW(), viewH());
       handleJourneyScrollLengthChange();
     };
     window.addEventListener('resize', handleResize);
@@ -581,9 +622,35 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       host.addEventListener('wheel', stopPageWheel, { passive: false });
     }
 
+    const sceneNeedsFrame = () => {
+      if (document.hidden) return false;
+      if (mode === 'admin' || studioGUI?.isEditing) return true;
+      // Once opaque page content has taken over, the fixed canvas is hidden
+      // behind it. Pause costly WebGL frames until the visitor scrolls back.
+      const features = document.querySelector<HTMLElement>('.features');
+      return !features || features.getBoundingClientRect().top > 0;
+    };
+
+    const scheduleNextFrame = (active: boolean) => {
+      if (active) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
+      inactiveRenderTimer = window.setTimeout(() => {
+        inactiveRenderTimer = null;
+        animationFrameId = requestAnimationFrame(animate);
+      }, 250);
+    };
+
     const animate = () => {
       if (isDisposed) return;
       const now = performance.now();
+      const active = sceneNeedsFrame();
+      if (!active) {
+        lastTime = now;
+        scheduleNextFrame(false);
+        return;
+      }
       const delta = Math.min(0.05, (now - lastTime) / 1000);
       const elapsed = (now - startTime) / 1000;
       lastTime = now;
@@ -641,16 +708,16 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
 
       studioGUI?.tick();
       tickCinematicSky(scene, elapsed);
-      tickLookOverlay(elapsed);
+      if (!profile.lowPower) tickLookOverlay(elapsed);
       renderer.render(scene, camera);
-      lookPost.composite(scene, camera);
+      lookPost?.composite(scene, camera);
       if (world && !announcedReady) {
         announcedReady = true;
         reportHeroLoad(100);
         reportSceneReady();
         setIsLoaded(true);
       }
-      animationFrameId = requestAnimationFrame(animate);
+      scheduleNextFrame(true);
     };
 
     animate();
@@ -658,6 +725,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
     return () => {
       isDisposed = true;
       cancelAnimationFrame(animationFrameId);
+      if (inactiveRenderTimer !== null) window.clearTimeout(inactiveRenderTimer);
       host.removeEventListener('wheel', stopPageWheel);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener(JOURNEY_SCROLL_LENGTH_EVENT, handleJourneyScrollLengthChange);
@@ -695,7 +763,7 @@ export const HeroCanvas3D: React.FC<{ mode?: HeroCanvasMode }> = ({ mode = 'publ
       }
 
       disposeCinematicSky(scene);
-      lookPost.dispose();
+      lookPost?.dispose();
       dracoLoader.dispose();
       renderer.dispose();
 
