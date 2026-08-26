@@ -134,28 +134,28 @@ export const SITE_CONTENT: SiteContentConfig = {
     items: [
       {
         icon: "rapid",
-        title: "Rapid Activation",
-        description: ""
+        title: "خدمات پس از فروش",
+        description: "هونامیک ارتباط رستاک در از مشاوره تا نصب در کنار شما خواهد بود و در این مسیر با پشتیبانی فنی شما رو همراهی میکند."
       },
       {
         icon: "selection",
-        title: "Rigorous Selection",
-        description: "Geography is a core metric. Our engine uses AI to find and contact qualified talent within defined radii, securing top local contractors first, filtered for cost and skill."
+        title: "ارائه راه‌کارهای هوشمندانه و منحصر به فرد",
+        description: "با توجه به پیشرفت در دنیای تکنولوژی هونامیک ارتباط رستاک با دانش فنی به روز خود مناسب‌ترین و به روزترین راه‌کار رو به شما پیشنهاد میکنه."
       },
       {
         icon: "verified",
-        title: "100% Verified Before Arrival",
-        description: "We use a Zero-Trust verification model with secure API integrations to run automated background checks and drug testing, blocking dispatch access until fully cleared."
+        title: "گارانتی اصالت محصول",
+        description: "هونامیک ارتباط رستاک تمامی خدمات و اصلات و سلامت محصولات خودش رو تا 24 ماه  ضمانت میکنه."
       },
       {
         icon: "outcomes",
-        title: "Controlled Outcomes",
-        description: "We guarantee controlled outcomes by managing staffing's biggest variables—cost and compliance—prioritizing local mobilization and automating safety for every dispatch."
+        title: "مشاوره",
+        description: "قبل از اینکه اقدام به هزینه و خرید کنید هونامیک ارتباط رستاک متناسب با احساس نیاز سازمان شما مشاوره تخصصی و فنی ارائه میکنه."
       },
       {
         icon: "rapid",
-        title: "New competitive item",
-        description: "Describe this competitive advantage."
+        title: "واردات  مستقل",
+        description: "هونامیک ارتباط رستاک با تامین کالاهای زیرساختی از برندهای معتبر به افزایش کیفیت ذخیره‌ اطلاعات کشور سعی میکنه تا گامی رو  برداشته باشه."
       }
     ]
   },
