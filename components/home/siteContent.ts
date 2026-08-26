@@ -189,9 +189,9 @@ export const SITE_CONTENT: SiteContentConfig = {
     ]
   },
   cta: {
-    titleLine1: "Staff your outage with fast response, ",
-    titleLine2: "and crews you can rely on.",
-    button: "Request Crews",
+    titleLine1: "ذخیره‌سازی داده‌های خودتون رو به ما بسپرید.",
+    titleLine2: "",
+    button: "درخواست مشاوره",
     href: "#"
   },
   header: {
