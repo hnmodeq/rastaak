@@ -812,15 +812,22 @@ export class StoryRuntime {
     }
 
     const span = Math.max(0.01, config.end - config.start);
-    const requestSpan = Math.max(0.002, span * 0.12);
-    const flightSpan = Math.max(0.006, span * 0.27);
-    const staggerSpan = Math.max(0, span - requestSpan - flightSpan);
+    const requestSpan = span * 0.12;
+    const flightSpan = span * 0.27;
+    const burst = burstSettings();
+    // The finale has a faster burst than an individual story beat so every
+    // logo can land and finish exploding before the scroll reaches the end.
+    const outroBurstDelay = Math.min(burst.delay, span * 0.04);
+    const outroBurstSpan = Math.min(burst.span, span * 0.14);
+    const settleSpan = span * 0.06;
+    const staggerSpan = Math.max(0, span - requestSpan - flightSpan - outroBurstDelay - outroBurstSpan - settleSpan);
     const lastIndex = Math.max(1, this.outroActors.length - 1);
 
     for (const actor of this.outroActors) {
       const requestAt = config.start + (staggerSpan * actor.index) / lastIndex;
-      const dispatchAt = Math.min(config.end, requestAt + requestSpan);
-      const arriveAt = Math.min(config.end, dispatchAt + flightSpan);
+      const dispatchAt = requestAt + requestSpan;
+      const arriveAt = dispatchAt + flightSpan;
+      const burstEnd = arriveAt + outroBurstDelay + outroBurstSpan;
       const requestState = config.requestColor === 'after' ? 2 : 1;
       const landedState = config.shootingColor === 'before' ? 1 : 2;
       // Step 1: colour the building. Step 2: launch the logo. Step 3: only
@@ -839,8 +846,17 @@ export class StoryRuntime {
         applyBuildingLook(actor.slots, state);
         actor.blend = state;
       }
-      const showPacket = !reducedMotion && !compact && t >= dispatchAt && t < arriveAt;
-      this.updateOutroPacket(actor, dispatchAt, arriveAt, t, showPacket, config.launch);
+      const showPacket = !reducedMotion && !compact && t >= dispatchAt && t < burstEnd;
+      this.updateOutroPacket(
+        actor,
+        dispatchAt,
+        arriveAt,
+        t,
+        showPacket,
+        config.launch,
+        outroBurstDelay,
+        outroBurstSpan,
+      );
     }
   }
 
@@ -854,7 +870,7 @@ export class StoryRuntime {
     packet.burstSparks.visible = false;
   }
 
-  /** Lightweight logo flight for the many targets in the finale — no extra point lights or bursts. */
+  /** Lightweight logo flight for the many targets in the finale, with landing bursts but no extra point lights. */
   private updateOutroPacket(
     actor: OutroActor,
     dispatch: number,
@@ -862,6 +878,8 @@ export class StoryRuntime {
     t: number,
     show: boolean,
     launchOffset: readonly [number, number, number] | undefined,
+    burstDelay: number,
+    burstSpan: number,
   ) {
     const packet = actor.packet;
     if (!show || !this.hub) {
@@ -871,6 +889,11 @@ export class StoryRuntime {
 
     const span = Math.max(0.0001, arrive - dispatch);
     const u = Math.max(0, Math.min(1, (t - dispatch) / span));
+    const onTarget = t >= arrive;
+    const burst = burstSettings();
+    const blastStart = arrive + burstDelay;
+    const bursting = t >= blastStart;
+    const burstK = bursting ? Math.max(0, Math.min(1, (t - blastStart) / burstSpan)) : 0;
     _landing.copy(actor.roof);
     _launch.copy(this.hub.origin);
     _launch.x += launchOffset?.[0] ?? 0;
@@ -882,16 +905,21 @@ export class StoryRuntime {
     _launch.y += ((actor.index % 3) - 1) * 0.045;
     _launch.z += Math.sin(angle) * 0.12;
     updatePacketCurve(packet, _launch, _landing);
-    packet.curve.getPoint(u, packet.group.position);
+    if (onTarget) packet.group.position.copy(_landing);
+    else packet.curve.getPoint(u, packet.group.position);
     packet.group.visible = true;
     packet.light.visible = false;
     packet.light.intensity = 0;
 
     const fadeSpan = Math.max(0.002, Math.min(FADE_IN_T, span * 0.35));
-    const fadeIn = smooth01((t - dispatch) / fadeSpan);
+    const fadeIn = onTarget ? 1 : smooth01((t - dispatch) / fadeSpan);
+    const logoOut = bursting ? Math.max(0, 1 - burstK / 0.28) : 1;
+    const logoFade = fadeIn * logoOut;
     const pulse = 0.65 + Math.sin(u * Math.PI) * 0.35;
     const flicker = 0.75 + Math.sin((actor.index + u) * 42) * 0.25;
     const glow = Math.max(0, STORY_CONFIG.packetGlow ?? 1);
+    const burstPop = bursting ? smooth01(burstK / 0.2) : 0;
+    const burstDecay = bursting ? (burstK < 0.18 ? 1 : Math.pow(1 - (burstK - 0.18) / 0.82, 1.55)) : 0;
     const glowSize = Math.max(0.02, STORY_CONFIG.packetGlowSize ?? 0.22);
     const coreSize = Math.max(0.02, STORY_CONFIG.packetCoreSize ?? 0.07);
     const trailAmt = Math.max(0, Math.min(1, STORY_CONFIG.packetTrail ?? 0.7));
@@ -900,7 +928,7 @@ export class StoryRuntime {
     packet.core.scale.set(logoSize, logoSize, 1);
     const coreMat = packet.core.material as THREE.SpriteMaterial;
     coreMat.color.setHex(0xffffff);
-    coreMat.opacity = 0.96 * pulse * fadeIn;
+    coreMat.opacity = 0.96 * pulse * logoFade;
 
     const innerMat = packet.glowInner.material as THREE.SpriteMaterial;
     const outerMat = packet.glowOuter.material as THREE.SpriteMaterial;
@@ -908,18 +936,18 @@ export class StoryRuntime {
     outerMat.color.copy(_packetOuter);
     packet.glowInner.scale.set(logoSize * (1.08 + glow * 0.06) + glowSize, logoSize * (1.08 + glow * 0.06) + glowSize, 1);
     packet.glowOuter.scale.set(logoSize * (1.22 + glow * 0.16) + glowSize * 2.4, logoSize * (1.22 + glow * 0.16) + glowSize * 2.4, 1);
-    innerMat.opacity = 0.5 * glow * pulse * fadeIn;
-    outerMat.opacity = 0.22 * glow * pulse * fadeIn;
+    innerMat.opacity = 0.5 * glow * pulse * logoFade;
+    outerMat.opacity = 0.22 * glow * pulse * logoFade;
     const hasMark = Boolean(coreMat.map);
-    packet.core.visible = hasMark && fadeIn > 0.02;
-    packet.glowInner.visible = hasMark && glow > 0.01 && fadeIn > 0.02;
-    packet.glowOuter.visible = hasMark && glow > 0.01 && fadeIn > 0.02;
+    packet.core.visible = hasMark && logoFade > 0.02;
+    packet.glowInner.visible = hasMark && glow > 0.01 && logoFade > 0.02;
+    packet.glowOuter.visible = hasMark && glow > 0.01 && logoFade > 0.02;
 
     const sparkMat = packet.sparks.material as THREE.PointsMaterial;
     sparkMat.color.copy(_packetSpark);
-    sparkMat.opacity = Math.min(1, glow * 0.85 * flicker * fadeIn);
+    sparkMat.opacity = Math.min(1, glow * 0.85 * flicker * logoFade);
     sparkMat.size = coreSize * 0.7;
-    packet.sparks.visible = glow > 0.05 && fadeIn > 0.02;
+    packet.sparks.visible = glow > 0.05 && logoFade > 0.02;
     const sparkPos = packet.sparks.geometry.getAttribute('position') as THREE.BufferAttribute;
     for (let i = 0; i < sparkPos.count; i++) {
       const a = i * 2.399 + u * 18 + actor.index;
@@ -930,8 +958,8 @@ export class StoryRuntime {
 
     const trailMat = packet.trail.material as THREE.LineBasicMaterial;
     trailMat.color.copy(_packetColor);
-    trailMat.opacity = trailAmt * (0.45 + pulse * 0.55) * fadeIn;
-    packet.trail.visible = trailAmt > 0.02 && fadeIn > 0.02;
+    trailMat.opacity = trailAmt * (0.45 + pulse * 0.55) * fadeIn * (bursting ? 0 : 1);
+    packet.trail.visible = trailAmt > 0.02 && !bursting && fadeIn > 0.02;
     const from = Math.max(0, u - 0.2);
     for (let i = 0; i < TRAIL_POINTS; i++) {
       const tu = from + ((u - from) * i) / Math.max(1, TRAIL_POINTS - 1);
@@ -942,10 +970,48 @@ export class StoryRuntime {
     }
     const attr = packet.trail.geometry.getAttribute('position') as THREE.BufferAttribute;
     attr.needsUpdate = true;
-    packet.trail.geometry.setDrawRange(0, TRAIL_POINTS);
-    packet.burstCore.visible = false;
-    packet.burstRing.visible = false;
-    packet.burstSparks.visible = false;
+    packet.trail.geometry.setDrawRange(0, bursting ? 0 : TRAIL_POINTS);
+
+    const burstCoreMat = packet.burstCore.material as THREE.SpriteMaterial;
+    const burstRingMat = packet.burstRing.material as THREE.SpriteMaterial;
+    if (bursting && burstDecay > 0.02) {
+      const disc = getBurstDisc();
+      if (disc && burstCoreMat.map !== disc) {
+        burstCoreMat.map = disc;
+        burstRingMat.map = disc;
+        burstCoreMat.needsUpdate = true;
+        burstRingMat.needsUpdate = true;
+      }
+      const blast = (0.35 + burstPop * 2.8) * (glowSize + coreSize * 5.2) * burst.size;
+      packet.burstCore.scale.setScalar(blast);
+      packet.burstRing.scale.setScalar(blast * (1.35 + burstPop * 1.9));
+      burstCoreMat.color.copy(_packetInner);
+      burstRingMat.color.copy(_packetOuter);
+      burstCoreMat.opacity = Math.min(1, 0.95 * burstDecay * burst.exposure);
+      burstRingMat.opacity = Math.min(1, 0.42 * burstDecay * burst.exposure);
+      packet.burstCore.visible = true;
+      packet.burstRing.visible = true;
+
+      const burstSparkMat = packet.burstSparks.material as THREE.PointsMaterial;
+      burstSparkMat.color.copy(_packetSpark);
+      burstSparkMat.opacity = Math.min(1, 0.95 * burstDecay * burst.sparks);
+      burstSparkMat.size = 0.06 + burstPop * 0.12;
+      packet.burstSparks.visible = burst.sparks > 0.02;
+      const burstPos = packet.burstSparks.geometry.getAttribute('position') as THREE.BufferAttribute;
+      const reach = (0.2 + burstPop * 1.85) * (0.35 + glowSize * 4) * burst.size;
+      for (let i = 0; i < burstPos.count; i++) {
+        const a = i * 2.399 + actor.index;
+        const lift = ((i % 5) - 2) * 0.12;
+        burstPos.setXYZ(i, Math.cos(a) * reach, Math.sin(a * 1.35) * reach * 0.55 + lift * burstPop, Math.sin(a) * reach);
+      }
+      burstPos.needsUpdate = true;
+    } else {
+      packet.burstCore.visible = false;
+      packet.burstRing.visible = false;
+      packet.burstSparks.visible = false;
+      burstCoreMat.opacity = 0;
+      burstRingMat.opacity = 0;
+    }
   }
 
   private updatePacket(client: ClientActor, t: number, show: boolean) {
