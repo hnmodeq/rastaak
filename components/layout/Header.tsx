@@ -1,15 +1,67 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Logo } from '../ui/Logo';
 import { tokens } from '@/tokens/design-tokens';
-import { SITE_CONTENT } from '@/components/home/siteContent';
+import { SITE_CONTENT, SITE_CONTENT_EVENT } from '@/components/home/siteContent';
+
+type HeaderItemKey = 'industries' | 'mission' | 'apply' | 'request';
+
+const GHOST_ITEMS: HeaderItemKey[] = ['industries', 'mission'];
+const CTA_ITEMS: HeaderItemKey[] = ['apply', 'request'];
 
 export const Header: React.FC = () => {
+  const [content, setContent] = useState(() => structuredClone(SITE_CONTENT));
+
+  useEffect(() => {
+    const refresh = () => setContent(structuredClone(SITE_CONTENT));
+    window.addEventListener(SITE_CONTENT_EVENT, refresh);
+    return () => window.removeEventListener(SITE_CONTENT_EVENT, refresh);
+  }, []);
+
+  const item = (key: HeaderItemKey) => content.links[key];
+  const isVisible = (key: HeaderItemKey) => item(key).visible !== false;
+
+  const renderGhost = (key: HeaderItemKey) => {
+    const link = item(key);
+    return (
+      <Link key={key} href={link.href} className="header__nav-link" data-link={key} data-header-link={key}>
+        {link.label}
+      </Link>
+    );
+  };
+
+  const renderCta = (key: HeaderItemKey) => {
+    const link = item(key);
+    const dark = key === 'request';
+    return (
+      <Link
+        key={key}
+        href={link.href}
+        className={`pill-btn ${dark ? 'pill-btn--dark' : 'pill-btn--glass'}`}
+        data-header-link={key}
+      >
+        <span className="pill-btn-span" data-link={key}>{link.label}</span>
+      </Link>
+    );
+  };
+
+  const renderSide = (side: 'left' | 'right') => {
+    const ghosts = GHOST_ITEMS.filter((key) => isVisible(key) && (item(key).side ?? (key === 'apply' || key === 'request' ? 'left' : 'right')) === side);
+    const ctas = CTA_ITEMS.filter((key) => isVisible(key) && (item(key).side ?? 'left') === side);
+    return (
+      <>
+        {ghosts.map(renderGhost)}
+        {ctas.length ? <div className="header__ctas">{ctas.map(renderCta)}</div> : null}
+      </>
+    );
+  };
+
   return (
     <header data-site-section="header">
-      <nav className="header__nav-left" data-site-section="links">
-        <Link href={SITE_CONTENT.links.industries.href} data-link="industries" data-header-link="industries">{SITE_CONTENT.links.industries.label}</Link>
-        <Link href={SITE_CONTENT.links.mission.href} data-link="mission" data-header-link="mission">{SITE_CONTENT.links.mission.label}</Link>
+      <nav className="header__nav-left" aria-label="Header left actions">
+        {renderSide('left')}
       </nav>
 
       <div className="header__logo">
@@ -18,15 +70,8 @@ export const Header: React.FC = () => {
         </Link>
       </div>
 
-      <nav className="header__nav-right">
-        <div className="header__ctas">
-          <Link href={SITE_CONTENT.links.apply.href} className="pill-btn pill-btn--glass" data-header-link="apply">
-            <span className="pill-btn-span" data-link="apply">{SITE_CONTENT.links.apply.label}</span>
-          </Link>
-          <Link href={SITE_CONTENT.links.request.href} className="pill-btn pill-btn--dark" data-header-link="request">
-            <span className="pill-btn-span" data-link="request">{SITE_CONTENT.links.request.label}</span>
-          </Link>
-        </div>
+      <nav className="header__nav-right" aria-label="Header right actions">
+        {renderSide('right')}
         <button className="menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false">
           <span className="menu-btn__icon">
             <span className="menu-btn__line menu-btn__line--1" />
@@ -51,24 +96,24 @@ export const Header: React.FC = () => {
             </button>
           </div>
           <ul className="mobile-nav__list">
-            <li className="mobile-nav__item">
-              <Link href={SITE_CONTENT.links.industries.href} data-link="industries" data-header-link="industries">{SITE_CONTENT.links.industries.label}</Link>
-            </li>
-            <li className="mobile-nav__item">
-              <Link href={SITE_CONTENT.links.mission.href} data-link="mission" data-header-link="mission">{SITE_CONTENT.links.mission.label}</Link>
-            </li>
+            {GHOST_ITEMS.filter(isVisible).map((key) => (
+              <li className="mobile-nav__item" key={key}>
+                <Link href={item(key).href} data-link={key} data-header-link={key}>{item(key).label}</Link>
+              </li>
+            ))}
           </ul>
           <div className="mobile-nav__ctas">
-            <div className="mncta">
-              <Link href={SITE_CONTENT.links.apply.href} className="pill-btn pill-btn--glass mobile-nav__cta" data-header-link="apply">
-                <span className="pill-btn-span" data-link="apply">{SITE_CONTENT.links.apply.label}</span>
-              </Link>
-            </div>
-            <div className="mncta">
-              <Link href={SITE_CONTENT.links.request.href} className="pill-btn pill-btn--dark mobile-nav__cta" data-header-link="request">
-                <span className="pill-btn-span" data-link="request">{SITE_CONTENT.links.request.label}</span>
-              </Link>
-            </div>
+            {CTA_ITEMS.filter(isVisible).map((key) => (
+              <div className="mncta" key={key}>
+                <Link
+                  href={item(key).href}
+                  className={`pill-btn ${key === 'request' ? 'pill-btn--dark' : 'pill-btn--glass'} mobile-nav__cta`}
+                  data-header-link={key}
+                >
+                  <span className="pill-btn-span" data-link={key}>{item(key).label}</span>
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </nav>

@@ -23,6 +23,8 @@ export interface SiteLinkItem {
   href: string;
   /** Header visibility only; footer navigation can remain independently visible. */
   visible?: boolean;
+  /** Physical desktop header side selected in Layout Control. */
+  side?: 'left' | 'right';
 }
 
 export type LayoutDirection = 'ltr' | 'rtl';
@@ -107,6 +109,11 @@ export interface SiteContentConfig {
     creditName: string;
     creditHref?: string;
     creditColor: number;
+    showLogo: boolean;
+    showCopyright: boolean;
+    showPrivacy: boolean;
+    showTerms: boolean;
+    showCredit: boolean;
   };
 }
 
@@ -212,22 +219,26 @@ export const SITE_CONTENT: SiteContentConfig = {
     industries: {
       label: "درباره ما",
       href: "/industries",
-      visible: true
+      visible: true,
+      side: "right"
     },
     mission: {
       label: "چرا هونامیک ارتباط رستاک؟",
       href: "/our-mission",
-      visible: true
+      visible: true,
+      side: "right"
     },
     apply: {
       label: "درخواست",
       href: "/apply",
-      visible: true
+      visible: true,
+      side: "left"
     },
     request: {
       label: "همکاری با ما",
       href: "/request-crew",
-      visible: true
+      visible: true,
+      side: "left"
     }
   },
   footer: {
@@ -239,7 +250,12 @@ export const SITE_CONTENT: SiteContentConfig = {
     creditPrefix: "طراحی شده توسط",
     creditName: "بومیم",
     creditHref: "http://www.bumims.ir",
-    creditColor: 0xf5b301
+    creditColor: 0xf5b301,
+    showLogo: true,
+    showCopyright: true,
+    showPrivacy: true,
+    showTerms: true,
+    showCredit: true
   }
 };
 
@@ -301,6 +317,11 @@ export function applySiteContent(config: SiteContentConfig = SITE_CONTENT) {
   root.dataset.headerMission = config.links.mission.visible !== false ? 'on' : 'off';
   root.dataset.headerApply = config.links.apply.visible !== false ? 'on' : 'off';
   root.dataset.headerRequest = config.links.request.visible !== false ? 'on' : 'off';
+  root.dataset.footerLogo = config.footer.showLogo !== false ? 'on' : 'off';
+  root.dataset.footerCopyright = config.footer.showCopyright !== false ? 'on' : 'off';
+  root.dataset.footerPrivacy = config.footer.showPrivacy !== false ? 'on' : 'off';
+  root.dataset.footerTerms = config.footer.showTerms !== false ? 'on' : 'off';
+  root.dataset.footerCredit = config.footer.showCredit !== false ? 'on' : 'off';
   root.style.setProperty('--footer-logo-align', layout.footerLogoAlign ?? 'end');
   root.style.setProperty('--footer-meta-align', layout.footerMetaAlign ?? 'end');
   root.style.setProperty('--footer-credit-align', layout.footerCreditAlign ?? layout.footerMetaAlign ?? 'end');

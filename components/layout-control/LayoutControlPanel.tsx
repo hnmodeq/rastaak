@@ -215,6 +215,13 @@ export function LayoutControlPanel() {
                   <input type="checkbox" checked={links[key].visible !== false} onChange={(event) => change(() => { links[key].visible = event.target.checked; })} />
                 </label>
                 <label>
+                  <span>Desktop side</span>
+                  <select value={links[key].side ?? (key === 'industries' || key === 'mission' ? 'right' : 'left')} onChange={(event) => change(() => { links[key].side = event.target.value as 'left' | 'right'; })}>
+                    <option value="left">left</option>
+                    <option value="right">right</option>
+                  </select>
+                </label>
+                <label>
                   <span>Label</span>
                   <input value={links[key].label} onChange={(event) => change(() => { links[key].label = event.target.value; })} />
                 </label>
@@ -444,6 +451,11 @@ export function LayoutControlPanel() {
                 <option value="rtl">RTL</option><option value="ltr">LTR</option>
               </select>
             </label>
+            <label className="layout-toggle"><span>Show logo</span><input type="checkbox" checked={SITE_CONTENT.footer.showLogo !== false} onChange={(event) => change(() => { SITE_CONTENT.footer.showLogo = event.target.checked; })} /></label>
+            <label className="layout-toggle"><span>Show copyright</span><input type="checkbox" checked={SITE_CONTENT.footer.showCopyright !== false} onChange={(event) => change(() => { SITE_CONTENT.footer.showCopyright = event.target.checked; })} /></label>
+            <label className="layout-toggle"><span>Show designer credit</span><input type="checkbox" checked={SITE_CONTENT.footer.showCredit !== false} onChange={(event) => change(() => { SITE_CONTENT.footer.showCredit = event.target.checked; })} /></label>
+            <label className="layout-toggle"><span>Show privacy</span><input type="checkbox" checked={SITE_CONTENT.footer.showPrivacy !== false} onChange={(event) => change(() => { SITE_CONTENT.footer.showPrivacy = event.target.checked; })} /></label>
+            <label className="layout-toggle"><span>Show terms</span><input type="checkbox" checked={SITE_CONTENT.footer.showTerms !== false} onChange={(event) => change(() => { SITE_CONTENT.footer.showTerms = event.target.checked; })} /></label>
             <label>
               <span>Copyright phrase</span>
               <input value={SITE_CONTENT.footer.copyright} onChange={(event) => change(() => { SITE_CONTENT.footer.copyright = event.target.value; })} />

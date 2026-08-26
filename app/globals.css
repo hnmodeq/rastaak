@@ -680,9 +680,28 @@ html[data-header-request='off'] [data-header-link='request'] {
   display: none !important;
 }
 
+html[data-footer-logo='off'] .footer__logo,
+html[data-footer-copyright='off'] [data-footer='copyright'],
+html[data-footer-credit='off'] .footer__credit,
+html[data-footer-privacy='off'] [data-footer='privacy'],
+html[data-footer-terms='off'] [data-footer='terms'] {
+  display: none !important;
+}
+
 header .header__nav-left a,
+header .header__nav-link,
 header .header__ctas .pill-btn--glass {
   color: var(--header-layout-color, var(--color-text)) !important;
+}
+
+header .header__nav-link {
+  padding: 16px;
+  font-size: var(--text-xs);
+  line-height: 100%;
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 html[data-chrome='scene'] header .header__nav-left a,
@@ -733,21 +752,16 @@ html[data-chrome='layout'] header .header__ctas .pill-btn--dark {
 
 html[data-dir-header='rtl'] header {
   direction: rtl;
-  /* Reverse the actual header flex row: ghost links move right and CTAs left. */
-  flex-direction: row-reverse;
+  /* Physical sides are now chosen per item in Layout Control. */
+  flex-direction: row;
 }
 
-html[data-dir-header='rtl'] header .header__nav-left,
-html[data-dir-header='rtl'] header .header__nav-right {
-  order: initial;
-}
-
-html[data-dir-header='rtl'] header .header__nav-right {
+html[data-dir-header='rtl'] header .header__nav-left {
   justify-content: flex-start;
 }
 
-html[data-dir-header='rtl'] header .header__nav-right .header__ctas {
-  flex-direction: row;
+html[data-dir-header='rtl'] header .header__nav-right {
+  justify-content: flex-end;
 }
 
 html[data-dir-features='rtl'] .features,
@@ -898,7 +912,26 @@ html[data-dir-footer='rtl'] .footer-nav-btn__bg {
 }
 
 html[data-dir-footer='rtl'] .footer-nav-btn__arrows {
+  transform: none;
+}
+
+html[data-dir-footer='rtl'] .footer-nav-btn__arrow {
+  left: auto;
+  right: 0;
   transform: scaleX(-1);
+}
+
+html[data-dir-footer='rtl'] .footer-nav-btn__arrow--next {
+  left: auto;
+  right: -100%;
+}
+
+html[data-dir-footer='rtl'] .footer-nav-btn:hover .footer-nav-btn__arrow--current {
+  transform: translateX(-200%) scaleX(-1);
+}
+
+html[data-dir-footer='rtl'] .footer-nav-btn:hover .footer-nav-btn__arrow--next {
+  transform: translateX(-100%) scaleX(-1);
 }
 
 html[data-dir-footer='rtl'] .footer-nav-btn:hover .footer-nav-btn__label {
