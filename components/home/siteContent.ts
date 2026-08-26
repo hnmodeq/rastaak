@@ -220,25 +220,25 @@ export const SITE_CONTENT: SiteContentConfig = {
       label: "چرا هونامیک ارتباط رستاک؟",
       href: "/industries",
       visible: true,
-      side: "left"
+      side: "right"
     },
     mission: {
-      label: "درخواست مشاوره",
+      label: "درباره ما",
       href: "/our-mission",
       visible: true,
-      side: "left"
+      side: "right"
     },
     apply: {
       label: "درخواست",
       href: "/apply",
-      visible: false,
-      side: "right"
+      visible: true,
+      side: "left"
     },
     request: {
       label: "همکاری با ما",
       href: "/request-crew",
-      visible: false,
-      side: "right"
+      visible: true,
+      side: "left"
     }
   },
   footer: {
