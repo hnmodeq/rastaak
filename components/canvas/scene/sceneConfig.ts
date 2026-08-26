@@ -170,9 +170,9 @@ export const SCENE_CONFIG: SceneConfig = {
     },
     {
       id: "keyframe_23",
-      progress: 0.905254,
-      camera: [13.5507, 0.0298, -2.0754],
-      target: [14.4953, 1.1013, 0.3802],
+      progress: 0.8816,
+      camera: [13.9413, 0.3202, -1.504],
+      target: [14.5728, 1.1893, 0.4942],
       fov: 49
     },
     {
