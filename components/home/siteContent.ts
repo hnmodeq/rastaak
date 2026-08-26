@@ -168,7 +168,7 @@ export const SITE_CONTENT: SiteContentConfig = {
     href: "/industries"
   },
   faq: {
-    title: "How we work and how we deliver industrial-grade staffing.ی",
+    title: "هونامیک ارتباط رستاک چطور میتونه همراه سازمان شما باشه؟",
     items: [
       {
         question: "How fast can crews be mobilized?",
@@ -209,9 +209,9 @@ export const SITE_CONTENT: SiteContentConfig = {
     featuresAlign: "start",
     featuresItemAlign: "start",
     standardsAlign: "end",
-    faqAlign: "end",
-    faqItemAlign: "end",
-    faqAnswerAlign: "end",
+    faqAlign: "start",
+    faqItemAlign: "start",
+    faqAnswerAlign: "start",
     ctaAlign: "end",
     ctaButtonAlign: "end",
     footerLogoAlign: "end",
