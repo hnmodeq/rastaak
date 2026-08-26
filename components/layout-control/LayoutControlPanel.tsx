@@ -264,7 +264,7 @@ export function LayoutControlPanel() {
               <input value={SITE_CONTENT.features.titleLine2} onChange={(event) => change(() => { SITE_CONTENT.features.titleLine2 = event.target.value; })} />
             </label>
             {SITE_CONTENT.features.items.map((item, index) => (
-              <fieldset key={`${index}-${item.title}`}>
+              <fieldset key={`feature-${index}`}>
                 <legend>Item {index + 1}</legend>
                 <label>
                   <span>Built-in icon</span>
@@ -378,7 +378,7 @@ export function LayoutControlPanel() {
               <textarea rows={3} value={SITE_CONTENT.faq.title} onChange={(event) => change(() => { SITE_CONTENT.faq.title = event.target.value; })} />
             </label>
             {SITE_CONTENT.faq.items.map((item, index) => (
-              <fieldset key={`${index}-${item.question}`}>
+              <fieldset key={`faq-${index}`}>
                 <legend>Question {index + 1}</legend>
                 <label>
                   <span>Question</span>

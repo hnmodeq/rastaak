@@ -104,7 +104,7 @@ export const HomeContent: React.FC = () => {
             </h2>
             <div className="features__grid">
               {content.features.items.map((item, index) => (
-                <article className="feature-item" key={`${index}-${item.title}`}>
+                <article className="feature-item" key={`feature-${index}`}>
                   <div className="feature-item__content">
                     <div className="feature-item__icon">
                       {item.iconImage ? (
@@ -161,7 +161,7 @@ export const HomeContent: React.FC = () => {
             <div className="faq_split_bar" />
             <div className="faq__right">
               {content.faq.items.map((item, index) => (
-                <div key={item.question} className={index === 0 ? 'faq-item faq-item--open' : 'faq-item'}>
+                <div key={`faq-${index}`} className={index === 0 ? 'faq-item faq-item--open' : 'faq-item'}>
                   <button className="faq-item__header" type="button" aria-expanded={index === 0 ? 'true' : 'false'}>
                     <span className="faq-item__question">{item.question}</span>
                     <span className="faq-item__icon">
