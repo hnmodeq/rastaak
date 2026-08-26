@@ -190,7 +190,7 @@ export const SITE_CONTENT: SiteContentConfig = {
     }
   },
   footer: {
-    copyright: "All rights reserved.",
+    copyright: "تمامی حقوق برای هونامیک محفوظ است.",
     privacy: "Privacy",
     privacyHref: "/privacy",
     terms: "Terms",
