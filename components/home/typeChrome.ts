@@ -141,8 +141,8 @@ export const TYPE_CHROME: TypeChromeConfig = {
     shadowY: 0
   },
   siteNameType: {
-    size: 22,
-    weight: 400,
+    size: 14,
+    weight: 300,
     lineHeight: 1.15,
     letterSpacing: 0,
     shadowColor: 0xffffff,
